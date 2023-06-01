@@ -202,7 +202,13 @@ class ProcessCardController {
 
   /// минимальое кол-во активно изучаемых групп,
   /// если кол-во меньше лимита - система пытается выбрать карточку из новой группы
-  static const int minCountHotGroup = 15;
+  static const int minCountHotQualityGroup = 15;
+
+  static const int lowGroupAvgQualityTopLimit = 10; // Среднее качество по карточкам входящим в группу
+
+  /// мксимальное кол-во групп в начальной стадии изучения,
+  /// если кол-во роавно лимиту - система выбирает карточки из уже изучаемых групп
+  static const int maxCountLowQualityGroup = 2;
 
   /// понижение качества при малом объёме статистики
   ///   если по новой карточке с самого начала будут очень хорошие результаты
@@ -363,6 +369,7 @@ class ProcessCardController {
     await _refreshGroupInfo();
 
     int countHotGroup = 0;
+    int countLowGroup = 0;
     for (var group in groupList) {
       if ( group.statCount < group.cardCount
       ||   group.lowQuality <= hotGroupMinQualityTopLimit
@@ -370,9 +377,13 @@ class ProcessCardController {
       ){
         countHotGroup ++;
       }
+
+      if ((group.totalQuality / group.statCount) <= lowGroupAvgQualityTopLimit) {
+        countLowGroup ++;
+      }
     }
 
-    if (countHotGroup < minCountHotGroup) {
+    if (countHotGroup < minCountHotQualityGroup && countLowGroup < maxCountLowQualityGroup ) {
       // Выбираем новую группу, а в группе выбираем первую карточку
       final cardPointer = await _selectNewCard( false );
       if (cardPointer != null) return cardPointer;

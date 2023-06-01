@@ -52,7 +52,7 @@ class _DeCardState extends State<DeCard> {
                     TextConst.txtLastDownloadError
                   ],
 
-                  TextConst.txtStartTest,
+                  // TextConst.txtStartTest,
 
                   // TextConst.txtInitDirList,
                   // TextConst.txtClearDB,
