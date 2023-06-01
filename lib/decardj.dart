@@ -17,7 +17,7 @@ class JsonFile{
 	static const String license = "license"; // license
 
 	static const String cardStyleList    = "cardStyleList";    // list of card styles
-  static const String qualityLevelList = "qualityLevelList"; // list of quality levels, used in card.upLinks
+        static const String qualityLevelList = "qualityLevelList"; // list of quality levels, used in card.upLinks
 	static const String templateList     = "templateList";     // list of templates to generate cards
 	static const String templatesSources = "templatesSources"; // the data for the templates
 	static const String cardLis          = "cardList";         // list of cards
@@ -41,4 +41,41 @@ class JsonCardStyle { // cardStyleList element
 	static const String answerInputMode            = "answerInputMode";            // string, fixed value set, see cardStyle.answerInputMode enumeration below
 	static const String widgetKeyboard             = "widgetKeyboard";             // virtual keyboard: list of buttons on the keyboard, buttons can contain several characters, button delimiter symbol "\t" string translation "\n"
 }
+
+class JsonQualityLevel {
+	static const String qualityName = "qlName";     // the name of the quality level
+	static const String minQuality  = "minQuality"; // minimum quality
+	static const String avgQuality  = "avgQuality"; // medium quality
+}
+
+class JsonCardTemplate
+{
+	static const String templateName = "templateName"; // template name
+	
+	// one or more card templates
+	// The card template is written exactly the same way as a normal card
+	// only these fields may contain characters <@field name source@> these characters are replaced with the corresponding value from source
+	static const String cardTemplateList = "cardTemplateList"; 
+}
+
+class JsonTemplateSource {
+	static const String templateName = "templateName"; // template name
+}
+
+class JsonCard { // element of JsonFile.cardList 
+	static const String id       = "id";       // string, unique identifier of the card within the file
+	static const String title    = "title";    // title
+	static const String group    = "group";    // string, name of the group of cards
+        static const String tags     = "tags";     // [<tag1>, <tag2>,...] card tags,
+        static const String upLinks  = "upLinks";  // [<upLink>,...] links to the cards to be studied earlier (predecessors)
+	static const String bodyList = "bodyList"; // list of the card bodies
+}
+
+class JsonUpLink { // element of JsonCard.upLinks 
+	static const String qualityName = "qlName"; // string, JsonQualityLevel.qualityName
+	static const String tags        = "tags";   // array of tags from predecessor cards
+	static const String cards       = "cards";  // array JsonCard.id
+	static const String groups      = "groups"; // array JsonCard.group
+}
+
 
