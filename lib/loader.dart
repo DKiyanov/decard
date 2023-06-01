@@ -4,6 +4,7 @@ import 'package:flutter_archive/flutter_archive.dart';
 import 'package:path/path.dart' as path_util;
 
 import 'db.dart';
+import 'decardj.dart';
 
 enum DecardFileType {
   json,
@@ -28,30 +29,8 @@ class DataLoader {
 
   static const String _subDirPrefix    = 'j'; // прификс для имени подкаталога
 
-  static const String _kStyleKey       = 'id';
-  static const String _kCardStyleList  = 'cardStyleList';
-  static const String _kQualityLevelList = 'qualityLevelList';
-  static const String _kCardList       = 'cardList';
-  static const String _kCardBodyList   = 'bodyList';
-  static const String _kCardKey        = 'id';
-  static const String _kGroupKey       = 'group';
-  static const String _kTags           = 'tags';
-
-  static const String _kQualityLevelName = 'qlName';
-  static const String _kMinQuality       = 'minQuality';
-  static const String _kAvgQuality       = 'avgQuality';
-
-  static const String _kUpLinks        = 'upLinks'; // теги карточек которые должны быть изучены раньше текущей
-  static const String _kCards          = 'cards';
-  static const String _kGroups         = 'groups';
-
-  static const String _prefixCard      = 'id@';
-  static const String _prefixGroup     = 'grp@';
-
-  static const String _kTemplateList     = 'templateList';     // список шаблоов
-  static const String _kTemplatesSources = 'templatesSources'; // данные для шаблонов
-  static const String _kTemplateName     = 'tName';     // Имя шаблона
-  static const String _cardTemplateList  = 'cardTemplateList'; // Массив с шаблонами карточек
+//  static const String _prefixCard      = 'id@';
+//  static const String _prefixGroup     = 'grp@';
 
   final DbSource dbSource;
 
@@ -160,34 +139,34 @@ class DataLoader {
 
     final int jsonFileID = dbSource.tabJsonFile.jsonFileID;
 
-    final styleList = (json[_kCardStyleList]) as List;
+    final styleList = (json[DjfFile.cardStyleList]) as List;
     for (Map<String, dynamic> cardStyle in styleList) {
       await dbSource.tabCardStyle.insertRow(
         jsonFileID   : jsonFileID,
-        cardStyleKey : cardStyle[_kStyleKey],
+        cardStyleKey : cardStyle[DjfCardStyle.id],
         jsonStr      : jsonEncode(cardStyle)
       );
     }
 
-    final qualityLevelList = (json[_kQualityLevelList]) as List;
+    final qualityLevelList = (json[DjfFile.qualityLevelList]) as List;
     for (Map<String, dynamic> qualityLevel in qualityLevelList) {
       await dbSource.tabQualityLevel.insertRow(
           jsonFileID   : jsonFileID,
-          qualityName  : qualityLevel[_kQualityLevelName],
-          minQuality   : qualityLevel[_kMinQuality],
-          avgQuality   : qualityLevel[_kAvgQuality],
+          qualityName  : qualityLevel[DjfQualityLevel.qualityName],
+          minQuality   : qualityLevel[DjfQualityLevel.minQuality],
+          avgQuality   : qualityLevel[DjfQualityLevel.avgQuality],
       );
     }
 
     final cardKeyList = <String>[];
 
-    final templateList = (json[_kTemplateList]) as List?;
-    final templatesSources = (json[_kTemplatesSources]) as List?;
+    final templateList = (json[DjfFile.templateList]) as List?;
+    final templatesSources = (json[DjfFile.templatesSources]) as List?;
     if (templateList != null && templatesSources != null) {
       await _processTemplateList(jsonFileID: jsonFileID, templateList : templateList, sourceList: templatesSources, cardKeyList : cardKeyList);
     }
 
-    final cardList = (json[_kCardList]) as List?;
+    final cardList = (json[DjfFile.cardList]) as List?;
     if (cardList != null) {
       await _processCardList(jsonFileID: jsonFileID, cardList : cardList, cardKeyList : cardKeyList);
     }
@@ -201,18 +180,18 @@ class DataLoader {
 
   Future<void> _processTemplateList({required int jsonFileID, required List templateList, required List sourceList, required List<String> cardKeyList}) async {
     for (var template in templateList) {
-      final templateName = template[_kTemplateName] as String;
-      final cardTemplateList = template[_cardTemplateList];
+      final templateName = template[DjfCardTemplate.templateName] as String;
+      final cardTemplateList = template[DjfCardTemplate.cardTemplateList];
       final cardsTemplatesJsonStr = jsonEncode(cardTemplateList);
 
 
       for (Map<String, dynamic> sourceRow in sourceList) {
-        if (sourceRow[_kTemplateName] == templateName) {
+        if (sourceRow[DjfTemplateSource.templateName] == templateName) {
 
           String curTemplate = cardsTemplatesJsonStr;
 
           sourceRow.forEach((key, value) {
-            curTemplate =  curTemplate.replaceAll('<@$key@>', value);
+            curTemplate =  curTemplate.replaceAll('${DjfTemplateSource.paramBegin}$key${DjfTemplateSource.paramEnd}', value);
           });
 
           final cardList = jsonDecode(curTemplate) as List;
@@ -226,20 +205,20 @@ class DataLoader {
 
   Future<void> _processCardList({required int jsonFileID, required List cardList, required List<String> cardKeyList}) async {
     for (Map<String, dynamic> card in cardList) {
-      final String cardKey = card[_kCardKey];
+      final String cardKey = card[DjfCard.id];
 
       if (cardKey.isEmpty) continue; // карточка обязательно должна иметь уникальный в рамках файла идентификатор
       if (cardKeyList.contains(cardKey)) continue; // идентификаторы карточки должны быть уникальными
 
       cardKeyList.add(cardKey);
 
-      final bodyList = (card[_kCardBodyList]) as List;
+      final bodyList = (card[DjfCard.bodyList]) as List;
 
       final cardID = await dbSource.tabCardHead.insertRow(
         jsonFileID   : jsonFileID,
         cardKey      : cardKey,
         title        : card[TabCardHead.kTitle],
-        cardGroupKey : card[_kGroupKey],
+        cardGroupKey : card[DjfCard.group],
         bodyCount    : bodyList.length,
       );
 
@@ -253,14 +232,14 @@ class DataLoader {
         jsonFileID : jsonFileID,
         cardID     : cardID,
         cardKey    : cardKey,
-        groupKey   : card[_kGroupKey],
-        tagList    : card[_kTags] as List?,
+        groupKey   : card[DjfCard.group],
+        tagList    : card[DjfCard.tags] as List?,
       );
 
       await _processCardLinkList(
         jsonFileID : jsonFileID,
         cardID     : cardID,
-        linkList   : card[_kUpLinks] as List?,
+        linkList   : card[DjfCard.upLinks] as List?,
       );
     }
   }
@@ -272,12 +251,12 @@ class DataLoader {
       final linkID = await dbSource.tabCardLink.insertRow(
           jsonFileID  : jsonFileID,
           cardID      : cardID,
-          qualityName : link[_kQualityLevelName],
+          qualityName : link[DjfUpLink.qualityName],
       );
 
-      await _processCardLinkTagList( jsonFileID: jsonFileID, linkID: linkID, tagList: link[_kTags]   as List?);
-      await _processCardLinkTagList( jsonFileID: jsonFileID, linkID: linkID, tagList: link[_kCards]  as List?, prefix: _prefixCard);
-      await _processCardLinkTagList( jsonFileID: jsonFileID, linkID: linkID, tagList: link[_kGroups] as List?, prefix: _prefixGroup);
+      await _processCardLinkTagList( jsonFileID: jsonFileID, linkID: linkID, tagList: link[DjfUpLink.tags  ] as List?);
+      await _processCardLinkTagList( jsonFileID: jsonFileID, linkID: linkID, tagList: link[DjfUpLink.cards ] as List?, prefix: DjfUpLink.cardTagPrefix);
+      await _processCardLinkTagList( jsonFileID: jsonFileID, linkID: linkID, tagList: link[DjfUpLink.groups] as List?, prefix: DjfUpLink.groupTagPrefix);
     }
   }
 
@@ -308,14 +287,14 @@ class DataLoader {
     dbSource.tabCardTag.insertRow(
       jsonFileID     : jsonFileID,
       cardID         : cardID,
-      tag            : _prefixCard + cardKey,
+      tag            : DjfUpLink.cardTagPrefix + cardKey,
     );
 
     if (groupKey.isNotEmpty) {
       dbSource.tabCardTag.insertRow(
         jsonFileID     : jsonFileID,
         cardID         : cardID,
-        tag            : _prefixGroup + groupKey,
+        tag            : DjfUpLink.groupTagPrefix + groupKey,
       );
     }
 

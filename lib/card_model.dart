@@ -54,35 +54,35 @@ class CardPointer {
 }
 
 enum AnswerInputMode {
-  none,       // Способ ввода не определён
-  ddList,     // Выпадающий список
-  vList,      // Вертикальный список
-  hList,      // Горизонтальный список
-  input,      // Поле произвольного ввода
-  inputDigit, // Поле для ввода числа
-  widgetKeyboard, // виртуальная клавиатура: список кнопок на клавиатуре, кнопки могут содержать несколько символов, разделитель кнопок символ "\t" перевод строки "\n"
+  none,           // Input method not defined
+  ddList,         // Drop-down list
+  vList,          // vertical list
+  hList,          // Horizontal list
+  input,          // Arbitrary input field
+  inputDigit,     // Field for arbitrary numeric input
+  widgetKeyboard, // virtual keyboard: list of buttons on the keyboard, buttons can contain several characters, button separator symbol "\t" string translation "\n"
 }
 
 class CardStyle {
-  final int    id;                // целое,   идентификатор стиля в БД
-  final int    jsonFileID;        // целое,   идентификатор файла в БД
-  final String cardStyleKey;      // строка,  идентификатор стиля
-  final int    minCost;           // целое,   количество зарабатываемых минут в случае правильного ответа
-  final int    maxCost;           // целое,   количество зарабатываемых минут в случае правильного ответа
-  final int    minPenalty;        // целое,   количество штрафных минут в случае НЕ правильного ответа
-  final int    maxPenalty;        // целое,   количество штрафных минут в случае НЕ правильного ответа
-  final int    maxTryCount;       // целое,   количество попыток решения за один подход
-  final int    minDuration;       // целое,   секунды, время отводимое на решение, не обязательное
-  final int    maxDuration;       // целое,   секунды, время отводимое на решение, default 1
-  final int    lowDurationPercentCost;  // целое, нижнее значение стоимости в процентах от текущей заданной стоимости, стоимость падает пропорционально времени, default 100
-  final bool   dontShowAnswer;    // boolean,  default false, НЕ показать в случае не верного ответа
-  final List<String> answerVariantList;    // список вариантов ответов
-  final int    answerVariantCount;         // количество отображаемых вариантов ответов
-  final TextAlign answerVariantAlign;      // выравнивание текста при отображении варианта ввода
-  final bool   answerVariantListRandomize; // boolean, default false, выводить список в случайном порядке
-  final bool   answerVariantMultiSel;      // boolean, default false, множественный выбор из набора значений
-  final AnswerInputMode answerInputMode;   // строка,  фиксированый набор значений
-  final String? widgetKeyboard; // виртуальная клавиатура: список кнопок на клавиатуре, кнопки могут содержать несколько символов, разделитель кнопок символ "\t" перевод строки "\n"
+  final int id;                          // integer, style identifier in the database
+  final int jsonFileID;                  // integer, identifier of the file in the database
+  final String cardStyleKey;             // string, style identifier
+  final int minCost;                     // integer, the number of minutes earned in case the answer is correct
+  final int maxCost;                     // integer, the number of earned minutes in case of a correct answer
+  final int minPenalty;                  // integer, the number of penalty minutes in case of incorrect answer
+  final int maxPenalty;                  // integer, the number of penalty minutes in case of incorrect answer
+  final int maxTryCount;                 // integer, the number of attempts for one attempt
+  final int minDuration;                 // integer, the number of seconds, the time given for the solution, optional
+  final int maxDuration;                 // integer, seconds, time allowed for solving, default 1
+  final int lowDurationPercentCost;      // integer, the lower value of the cost as a percentage of the current set cost, the cost decreases proportionally to the time, default 100
+  final bool dontShowAnswer;             // boolean, default false, will NOT show if the answer is wrong
+  final List<String> answerVariantList;  // list of answer choices
+  final int answerVariantCount;          // the number of displayed answer variants
+  final TextAlign answerVariantAlign;    // the text alignment when displaying the answer choices
+  final bool answerVariantListRandomize; // boolean, default false, output the list in random order
+  final bool answerVariantMultiSel;      // boolean, default false, multiple selection from a set of values
+  final AnswerInputMode answerInputMode; // string, fixed value set
+  final String? widgetKeyboard;          // virtual keyboard: list of buttons on the keyboard, buttons can contain several characters, button separator symbol "\t" string translation "\n"
 
   const CardStyle({
     required this.id,
