@@ -16,11 +16,11 @@ class JsonFile{
 	static const String email   = "email";   // email address
 	static const String license = "license"; // license
 
-	static const String cardStyleList    = "cardStyleList";    // list of card styles
-        static const String qualityLevelList = "qualityLevelList"; // list of quality levels, used in card.upLinks
-	static const String templateList     = "templateList";     // list of templates to generate cards
-	static const String templatesSources = "templatesSources"; // the data for the templates
-	static const String cardLis          = "cardList";         // list of cards
+	static const String cardStyleList    = "cardStyleList";    // array of JsonCardStyle
+        static const String qualityLevelList = "qualityLevelList"; // array of JsonQualityLevel
+	static const String templateList     = "templateList";     // array of JsonCardTemplate
+	static const String templatesSources = "templatesSources"; // array of JsonTemplateSource
+	static const String cardLis          = "cardList";         // array of JsonCard
 }
 
 class JsonCardStyle { // cardStyleList element
@@ -66,9 +66,9 @@ class JsonCard { // element of JsonFile.cardList
 	static const String id       = "id";       // string, unique identifier of the card within the file
 	static const String title    = "title";    // title
 	static const String group    = "group";    // string, name of the group of cards
-        static const String tags     = "tags";     // [<tag1>, <tag2>,...] card tags,
-        static const String upLinks  = "upLinks";  // [<upLink>,...] links to the cards to be studied earlier (predecessors)
-	static const String bodyList = "bodyList"; // list of the card bodies
+        static const String tags     = "tags";     // array of card tags
+        static const String upLinks  = "upLinks";  // array of JsonUpLink, links to the cards to be studied earlier (predecessors)
+	static const String bodyList = "bodyList"; // array of JsonCardBody
 }
 
 class JsonUpLink { // element of JsonCard.upLinks 
@@ -78,4 +78,17 @@ class JsonUpLink { // element of JsonCard.upLinks
 	static const String groups      = "groups"; // array JsonCard.group
 }
 
+class JsonQuestionData { // question data
+	static const String text  = "text";  // optional, string, question text
+	static const String html  = "html";  // optional, string, html with question
+	static const String audio = "audio"; // optional, link to audio resource		
+	static const String video = "video"; // optional, link to video resource
+	static const String image = "image"; // optional, link to image
+}
 
+class JsonCardBody { // element of JsonCard.bodyList
+	static const String styleIdList  = "styleIdList";  // array of JsonCardStyle.id
+	static const String style        = "style";        // embedded structure JsonCardStyle
+	static const String questionData = "questionData"; // embedded structure JsonQuestionData
+	static const String answerList   = "answerList";   // array of answer values
+}
