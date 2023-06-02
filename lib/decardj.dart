@@ -43,6 +43,8 @@ class DjfCardStyle { // cardStyleList element
 	static const String answerCaseSensitive        = "answerCaseSensitive";        // TODO boolean, answer is case sensitive
 	static const String widgetKeyboard             = "widgetKeyboard";             // virtual keyboard: list of buttons on the keyboard, buttons can contain several characters, button delimiter symbol "\t" string translation "\n"
 	static const String introductoryCount          = "introductoryCount";          // TODO the number of impressions at the beginning of the study without penalty
+	static const String imageMaxHeight             = "imageMaxHeight";             // TODO Maximum image height as a percentage of the screen height
+	static const String notShowIfLearned           = "notShowIfLearned";           // TODO Do not show if the card is learned
 }
 
 class DjfAnswerInputMode {
@@ -110,4 +112,6 @@ class DjfCardBody { // element of DjfCard.bodyList
 	static const String style        = "style";        // embedded structure DjfCardStyle
 	static const String questionData = "questionData"; // embedded structure DjfQuestionData
 	static const String answerList   = "answerList";   // array of answer values
+	static const String audioOnRightAnswer = "audioOnRightAnswer"; // TODO array of path to audio file
+	static const String audioOnWrongAnswer = "audioOnWrongAnswer"; // TODO array of path to audio file
 }
