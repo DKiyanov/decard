@@ -4,9 +4,10 @@ class TextConst{
   static String txtTuningFileSourceList = 'Настройка источников для загрузки карточек';
   static String txtDelete         = 'Удалить';
   static String txtEdit           = 'Редактировать';
-  static String txtInvalidAnswer  = 'Овет не правильный';
+  static String txtWrongAnswer  = 'Овет не правильный';
   static String txtRightAnswer    = 'Овет правильный';
   static String txtRightAnswerIs  = 'Правильный ответ:';
+  static String txtAnswerIs       = 'Ответ:';
   static String txtSetNextCard    = 'Следующая';
   static String txtInitDirList    = 'Init dir list';
   static String txtScanDirList    = 'Scan dir list';
@@ -36,6 +37,8 @@ class TextConst{
   static String txtPickPassword   = 'Придумайте пароль';
   static String txtPasswordJustification = 'Пароль хранится локально и используется только для обеспечения контроля доступа к настройкам программы';
   static String txtOptions = 'Настройки';
+  static String txtDemo = 'Просмотр карточек';
+  static String txtTesting = 'Тестирование';
   static String txtStartTest = 'Запустить тест';
   static String txtMinEarnInput = 'Виличина минимального зароботка';
   static String txtMinEarnHelp = 'Минимальная величина зароботка которая может быть зачтена';

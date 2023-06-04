@@ -9,14 +9,16 @@ import 'package:path/path.dart' as path_util;
 import 'audio_widget.dart';
 import 'card_model.dart';
 import 'common.dart';
+import 'decardj.dart';
 
 final _random = Random();
 
 class CardWidget extends StatefulWidget {
   final CardData card;
   final VoidCallback onPressSelectNextCard;
+  final bool demoMode;
 
-  const CardWidget({required this.card, required this.onPressSelectNextCard, Key? key}) : super(key: key);
+  const CardWidget({required this.card, required this.onPressSelectNextCard, this.demoMode = false,  Key? key}) : super(key: key);
 
   @override
   State<CardWidget> createState() => _CardWidgetState();
@@ -81,9 +83,21 @@ class _CardWidgetState extends State<CardWidget> {
   }
 
   void _onMultiSelectAnswer() {
+    List<String> answerList;
+
+    if (widget.card.style.answerCaseSensitive) {
+      answerList = widget.card.body.answerList;
+    } else {
+      answerList = widget.card.body.answerList.map((str) => str.toLowerCase()).toList();
+    }
+
     int answerCount = 0;
     for (var value in _selValues) {
-      if (!widget.card.body.answerList.contains(value)) {
+      if (!widget.card.style.answerCaseSensitive) {
+        value = value.toLowerCase();
+      }
+
+      if (!answerList.contains(value)) {
         _onAnswer(false);
         return;
       }
@@ -101,7 +115,18 @@ class _CardWidgetState extends State<CardWidget> {
   void _onSelectAnswer(String answerValue) {
     _selValues.clear();
     _selValues.add(answerValue);
-    final tryResult = widget.card.body.answerList.contains(answerValue);
+
+    List<String> answerList;
+
+    if (widget.card.style.answerCaseSensitive) {
+      answerList = widget.card.body.answerList;
+    } else {
+      answerList = widget.card.body.answerList.map((str) => str.toLowerCase()).toList();
+      answerValue = answerValue.toLowerCase();
+    }
+
+    final tryResult = answerList.contains(answerValue);
+
     _onAnswer(tryResult);
   }
 
@@ -120,11 +145,11 @@ class _CardWidgetState extends State<CardWidget> {
     _tryCount ++;
 
     if (_tryCount < widget.card.tryCount) {
-      Fluttertoast.showToast(msg: TextConst.txtInvalidAnswer);
+      Fluttertoast.showToast(msg: TextConst.txtWrongAnswer);
       return;
     }
 
-    widget.card.setResult(false, - widget.card.penalty.toDouble());
+    widget.card.setResult(false, -widget.card.penalty.toDouble());
 
     setState(() {
       _result = false;
@@ -309,10 +334,11 @@ class _CardWidgetState extends State<CardWidget> {
 
     if (widget.card.body.questionData.image != null) {
       final urlType = getUrlType(widget.card.body.questionData.image!);
+      final maxHeight = MediaQuery.of(context).size.height * widget.card.style.imageMaxHeight / 100;
 
       if ( urlType == UrlType.httpUrl ) {
         widgetList.add(
-          Image.network(widget.card.body.questionData.image!)
+          LimitedBox(maxHeight: maxHeight, child: Image.network(widget.card.body.questionData.image!))
         );
       }
 
@@ -321,7 +347,7 @@ class _CardWidgetState extends State<CardWidget> {
         final imgFile = File(absPath);
         if (imgFile.existsSync()) {
           widgetList.add(
-              Image.file( imgFile )
+              LimitedBox(maxHeight: maxHeight, child: Image.file( imgFile ))
           );
         }
       }
@@ -418,7 +444,7 @@ class _CardWidgetState extends State<CardWidget> {
                 child: Padding(
                   padding: const EdgeInsets.all(4.0),
                   child: Text(
-                      TextConst.txtInvalidAnswer,
+                      TextConst.txtWrongAnswer,
                       textAlign: widget.card.style.answerVariantAlign
                   ),
                 )
@@ -431,7 +457,23 @@ class _CardWidgetState extends State<CardWidget> {
       }
     }
 
-    if (_result == null) {
+    if (widget.demoMode) {
+      widgetList.add(
+        Container(
+            decoration: const BoxDecoration(
+                borderRadius: BorderRadius.all(Radius.circular(15)),
+                color: Colors.lightGreenAccent
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(4.0),
+              child: Text( '${TextConst.txtAnswerIs} ${widget.card.body.answerList.join("; ")}' ),
+            )
+        )
+      );
+      //widgetList.add( Text( '${TextConst.txtAnswerIs} ${widget.card.body.answerList.join("; ")}' ) );
+    }
+
+    if (_result == null && !widget.demoMode) {
       _addAnswerVariants(widgetList);
     }
 
@@ -561,7 +603,7 @@ class _CardWidgetState extends State<CardWidget> {
                 itemBuilder: (context) {
                   return _answerVariantList.map<PopupMenuItem<String>>((value) => PopupMenuItem<String>(
                     value: value,
-                    child: Text(value),
+                    child: _valueWidget(value),
                   )).toList();
                 },
                 onSelected: (value){
@@ -612,13 +654,41 @@ class _CardWidgetState extends State<CardWidget> {
     if (answerInput != null) widgetList.add( answerInput );
   }
 
+  Widget _valueWidget(String str){
+    if (str.isEmpty) return Container();
+    if (str.indexOf(DjfCardStyle.buttonImagePrefix) == 0) {
+      final imagePath = str.substring(DjfCardStyle.buttonImagePrefix.length);
+      final absPath = path_util.normalize( path_util.join(widget.card.pacInfo.path, imagePath) );
+      final imgFile = File(absPath);
+      if (imgFile.existsSync()) {
+        var maxWidth = double.infinity;
+        var maxHeight = double.infinity;
+
+        if (widget.card.style.buttonImageWidth > 0) {
+          maxWidth = widget.card.style.buttonImageWidth.toDouble();
+        }
+
+        if (widget.card.style.buttonImageHeight > 0) {
+          maxHeight = widget.card.style.buttonImageHeight.toDouble();
+        }
+
+        return LimitedBox(
+          maxWidth  : maxWidth,
+          maxHeight : maxHeight,
+          child     : Image.file( imgFile )
+        );
+      }
+    }
+    return Text(str);
+  }
+
   Widget _getButton(String value, AlignmentGeometry alignment){
     if (widget.card.style.answerVariantMultiSel) {
       if ( _selValues.contains(value) ) {
 
         return ElevatedButton(
           style: ElevatedButton.styleFrom(alignment: alignment, backgroundColor: Colors.amberAccent),
-          child: Text(value),
+          child: _valueWidget(value),
           onPressed: () {
             setState(() {
               _selValues.remove(value);
@@ -630,7 +700,7 @@ class _CardWidgetState extends State<CardWidget> {
 
         return ElevatedButton(
           style: ButtonStyle(alignment: alignment),
-          child: Text(value),
+          child: _valueWidget(value),
           onPressed: () {
             setState(() {
               _selValues.add(value);
@@ -643,7 +713,7 @@ class _CardWidgetState extends State<CardWidget> {
 
     return ElevatedButton(
       style: ButtonStyle(alignment: alignment),
-      child: Text(value),
+      child: _valueWidget(value),
       onPressed: () => _onSelectAnswer(value),
     );
   }
@@ -720,7 +790,7 @@ class _CardWidgetState extends State<CardWidget> {
                       _widgetKeyboardText += key;
                     });
                   },
-                  child: Text(key.trim()) ),
+                  child: _valueWidget(key.trim()) ),
               )
               ).toList());
           }).toList()

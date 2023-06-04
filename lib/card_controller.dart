@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:collection/collection.dart';
+import 'package:decard/app_state.dart';
 
 import 'package:sqflite/sqflite.dart';
 
@@ -128,6 +129,8 @@ class CardController {
   }
 
   void _onCardResult(bool result, double earn){
+    if (appState.appMode == AppMode.demo) return;
+
     processCardController.registerResult(_cardHead!.jsonFileID, _cardHead!.cardID, result);
     onAddEarn.send(earn);
   }
@@ -194,9 +197,9 @@ class ProcessCardController {
   static const int hotDayCount        = 7;   // Количество дней для которых расчитывается стстистика
 
   static const int hotCardQualityTopLimit = 70; // карточки с меньшим качеством считаются активно изучаемыми
-  static const int maxCountHotCard = 20;           // Максимальное кол-во карточек в активном изучении
+  static const int maxCountHotCard = 20;        // Максимальное кол-во карточек в активном изучении
 
-  ///лимиты для определения активности группы
+  /// лимиты для определения активности группы
   static const int hotGroupMinQualityTopLimit = 60; // Минимальное качество по карточам входящим в группу
   static const int hotGroupAvgQualityTopLimit = 70; // Среднее качество по карточкам входящим в группу
 
@@ -212,7 +215,7 @@ class ProcessCardController {
 
   /// понижение качества при малом объёме статистики
   ///   если по новой карточке с самого начала будут очень хорошие результаты
-  ///   эти переметры не дадут рости качеству слшком быстро
+  ///   эти пареметры не дадут рости качеству слшком быстро
   static const int lowTryCount = 7; // минимальное кол-во тестов
   static const int lowDayCount = 3; // минимальное кол-во дней
 
@@ -316,7 +319,7 @@ class ProcessCardController {
      if (quality > xQuality) quality = xQuality;
    }
 
-   if (quality == maxQuality) quality = maxQuality - 1;
+   if (quality >= maxQuality) quality = maxQuality - 1;
 
     row[TabCardStat.kQuality] = quality;
 
@@ -422,7 +425,7 @@ class ProcessCardController {
         SELECT 1
           FROM ${TabCardStat.tabName} as sub2
          WHERE sub2.${TabCardStat.kJsonFileID}   = mainCard.${TabCardHead.kJsonFileID}
-           AND sub2.${TabCardStat.kCardGroupKey} = mainCard.${TabCardHead.kGroupKey}
+           AND sub2.${TabCardStat.kCardGroupKey} = mainCard.${TabCardHead.kGroup}
     )
     
     AND NOT EXISTS ( --у карточки нет линков с невыполненым условием
@@ -493,10 +496,12 @@ class ProcessCardController {
     int curNQuality = 0;
     int selIndex = 0;
     for (int i = 0; i < cardStatList.length; i++){
-      curNQuality += (maxQuality - cardStatList[i].quality);
-      if (curNQuality > selNQuality) {
-        selIndex = i;
-        break;
+      if (cardStatList[i].quality < maxQuality) {
+        curNQuality += (maxQuality - cardStatList[i].quality);
+        if (curNQuality > selNQuality) {
+          selIndex = i;
+          break;
+        }
       }
     }
 
@@ -509,7 +514,7 @@ class ProcessCardController {
 
     final jsonFileID    = cardHead![TabCardHead.kJsonFileID] as int;
     final cardKey       = cardHead[TabCardHead.kCardKey]     as String;
-    final cardGroupKey  = cardHead[TabCardHead.kGroupKey]    as String;
+    final cardGroupKey  = cardHead[TabCardHead.kGroup]    as String;
 
     final id = await tabCardStat.insertRow(jsonFileID: jsonFileID, cardID: cardID, cardKey: cardKey, cardGroupKey: cardGroupKey, quality: maxQuality, date: _curDay);
 

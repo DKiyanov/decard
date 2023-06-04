@@ -3,6 +3,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:simple_events/simple_events.dart';
 
 import 'app_state.dart';
+import 'card_navigator.dart';
 import 'card_widget.dart';
 import 'common.dart';
 import 'db.dart';
@@ -52,6 +53,14 @@ class _DeCardState extends State<DeCard> {
                     TextConst.txtLastDownloadError
                   ],
 
+                  if (appState.appMode == AppMode.testing) ...[
+                    TextConst.txtDemo,
+                  ],
+
+                  if (appState.appMode == AppMode.demo) ...[
+                    TextConst.txtTesting,
+                  ],
+
                   // TextConst.txtStartTest,
 
                   // TextConst.txtInitDirList,
@@ -91,12 +100,23 @@ class _DeCardState extends State<DeCard> {
                 if (value == TextConst.txtStartTest) {
                   appState.selfTest();
                 }
+
+                if (value == TextConst.txtDemo) {
+                  setState(() {
+                    appState.appMode = AppMode.demo;
+                  });
+                }
+
+                if (value == TextConst.txtTesting) {
+                  appState.appMode = AppMode.testing;
+                  _startFirstTest();
+                }
               },
             ),
           ],
         ),
 
-        body: _cardWidget( )
+        body: _body( )
     );
   }
 
@@ -173,16 +193,18 @@ class _DeCardState extends State<DeCard> {
     );
   }
 
-  Widget _cardWidget( ) {
-    return EventReceiverWidget(
-      builder: (_) {
-        return __cardWidget();
-      },
-      events: [appState.cardController.onChange],
-    );
+  Widget _cardNavigator() {
+    return const CardNavigator();
   }
 
-  Widget __cardWidget() {
+  Widget _body( ) {
+    if (appState.appMode == AppMode.demo) {
+      return Column(children: [
+        _cardNavigator(),
+        Expanded(child: _cardWidget()),
+      ]);
+    }
+
     if (appState.cardController.card == null) {
       return Center(
         child: ElevatedButton(
@@ -192,9 +214,23 @@ class _DeCardState extends State<DeCard> {
       );
     }
 
-    return CardWidget(
-      card                  : appState.cardController.card!,
-      onPressSelectNextCard : _selectNextCard,
+    if (appState.appMode == AppMode.testing) return _cardWidget();
+
+    return Container();
+  }
+
+  Widget _cardWidget() {
+    return EventReceiverWidget(
+      builder: (_) {
+        if (appState.cardController.card == null) return Container();
+
+        return CardWidget(
+          card                  : appState.cardController.card!,
+          onPressSelectNextCard : _selectNextCard,
+          demoMode              : appState.appMode == AppMode.demo,
+        );
+      },
+      events: [appState.cardController.onChange],
     );
   }
 
@@ -208,6 +244,6 @@ class _DeCardState extends State<DeCard> {
     //   return;
     // }
 
-    _selectNextCard();
+    _selectNextCard().then((value) => setState(() {}));
   }
 }

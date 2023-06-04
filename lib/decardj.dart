@@ -37,14 +37,16 @@ class DjfCardStyle { // cardStyleList element
 	static const String dontShowAnswer             = "dontShowAnswer";             // boolean, default false, do NOT show in case of a wrong answer
 	static const String answerVariantList          = "answerVariantList";          // list of answer choices
 	static const String answerVariantCount         = "answerVariantCount";         // Number of answer choices displayed
-	static const String answerVariantListRandomize = "AnswerVariantListRandomize"; // boolean, default false, randomize the list
+	static const String answerVariantListRandomize = "answerVariantListRandomize"; // answer text align, values string left, right, center
+	static const String answerVariantAlign         = "answerVariantAlign";         // boolean, default false, randomize the list
 	static const String answerVariantMultiSel      = "answerVariantMultiSel";      // boolean, multiple answers can/should be selected (in the interface, selectable buttons + check result button "Done")
 	static const String answerInputMode            = "answerInputMode";            // string, fixed value set, see cardStyle.answerInputMode enumeration below
-	static const String answerCaseSensitive        = "answerCaseSensitive";        // TODO boolean, answer is case sensitive
+	static const String answerCaseSensitive        = "answerCaseSensitive";        // boolean, answer is case sensitive
 	static const String widgetKeyboard             = "widgetKeyboard";             // virtual keyboard: list of buttons on the keyboard, buttons can contain several characters, button delimiter symbol "\t" string translation "\n"
-	static const String introductoryCount          = "introductoryCount";          // TODO the number of impressions at the beginning of the study without penalty
-	static const String imageMaxHeight             = "imageMaxHeight";             // TODO Maximum image height as a percentage of the screen height
-	static const String notShowIfLearned           = "notShowIfLearned";           // TODO Do not show if the card is learned
+	static const String imageMaxHeight             = "imageMaxHeight";             // Maximum image height as a percentage of the screen height
+	static const String buttonImageWidth           = "buttonImageWidth";           // Maximum button image width  as a percentage of the screen width
+	static const String buttonImageHeight          = "buttonImageHeight";          // Maximum button image height as a percentage of the screen height
+	static const String buttonImagePrefix          = "img=";                       // Prefix for button image: img=<file path>
 }
 
 class DjfAnswerInputMode {
@@ -86,6 +88,8 @@ class DjfCard { // element of DjfFile.cardList
 	static const String tags     = "tags";     // array of card tags
 	static const String upLinks  = "upLinks";  // array of DjfUpLink, links to the cards to be studied earlier (predecessors)
 	static const String bodyList = "bodyList"; // array of DjfCardBody
+	static const String introductoryCount = "introductoryCount";          // TODO the number of impressions at the beginning of the study without penalty
+	static const String notShowIfLearned  = "notShowIfLearned";           // TODO Do not show if the card is learned
 }
 
 class DjfUpLink { // element of DjfCard.upLinks 
@@ -100,8 +104,8 @@ class DjfUpLink { // element of DjfCard.upLinks
 
 class DjfQuestionData { // question data
 	static const String text     = "text";     // optional, string, question text
-	static const String html     = "html";     // optional, string, html with question
-	static const String markdown = "markdown"; // TODO optional, string, markdown with question
+	static const String html     = "html";     // optional, link to html file
+	static const String markdown = "markdown"; // TODO optional, link to markdown file
 	static const String audio    = "audio";    // optional, link to audio resource
 	static const String video    = "video";    // optional, link to video resource
 	static const String image    = "image";    // optional, link to image

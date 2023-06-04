@@ -285,7 +285,7 @@ class TabCardHead {
   static const String kJsonFileID    = TabJsonFile.kJsonFileID;
   static const String kCardKey       = 'cardKey';
   static const String kTitle         = 'title';
-  static const String kGroupKey      = 'groupKey'; // группировка карточек
+  static const String kGroup      = 'groupKey'; // группировка карточек
   static const String kBodyCount     = 'bodyCount';
 
   static const String createQuery = "CREATE TABLE $tabName ("
@@ -293,7 +293,7 @@ class TabCardHead {
       "$kJsonFileID  INTEGER,"
       "$kCardKey     TEXT,"  // идентификатор карточки из json файла
       "$kTitle       TEXT,"
-      "$kGroupKey    TEXT,"
+      "$kGroup    TEXT,"
       "$kBodyCount   INTEGER"
       ")";
 
@@ -315,7 +315,7 @@ class TabCardHead {
       kJsonFileID : jsonFileID,
       kCardKey    : cardKey,
       kTitle      : title,
-      kGroupKey   : cardGroupKey,
+      kGroup   : cardGroupKey,
       kBodyCount  : bodyCount,
     };
 
@@ -343,7 +343,12 @@ class TabCardHead {
   }
 
   Future<int> getGroupCardCount({ required int jsonFileID, required cardGroupKey}) async {
-    return Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM $tabName WHERE $kJsonFileID = ? AND $kGroupKey = ?', [jsonFileID, cardGroupKey]))??0;
+    return Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM $tabName WHERE $kJsonFileID = ? AND $kGroup = ?', [jsonFileID, cardGroupKey]))??0;
+  }
+
+  Future<List<Map<String, Object?>>> getAllRows() async {
+    final rows = await db.query(tabName);
+    return rows;
   }
 }
 

@@ -43,7 +43,7 @@ class _StartPageState extends State<StartPage> {
     if (appState.usingMode == UsingMode.testing) {
       return const DeCard();
     }
-    if (appState.usingMode == UsingMode.editCard) {
+    if (appState.usingMode == UsingMode.manager) {
       return const DbFileList();
     }
     return Container();

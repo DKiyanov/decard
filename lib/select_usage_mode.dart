@@ -53,10 +53,10 @@ class _UsingModeSelectorState extends State<UsingModeSelector> {
 
                     ChoiceChip(
                       label: Text(TextConst.txtUsingModeCardEdit),
-                      selected: _usingMode == UsingMode.editCard,
+                      selected: _usingMode == UsingMode.manager,
                       onSelected: (value){
                         setState(() {
-                          _usingMode = UsingMode.editCard;
+                          _usingMode = UsingMode.manager;
                         });
                       },
                       selectedColor: Colors.lightGreen,
@@ -80,7 +80,7 @@ class _UsingModeSelectorState extends State<UsingModeSelector> {
       });
     }
 
-    if (_usingMode == UsingMode.editCard){
+    if (_usingMode == UsingMode.manager){
       appState.setUsingMode(_usingMode!);
       DbFileList.navigatorPushReplacement(context);
     }

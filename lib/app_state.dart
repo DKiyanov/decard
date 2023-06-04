@@ -26,7 +26,12 @@ import 'net_file_source_scan.dart';
 
 enum UsingMode {
   testing,
-  editCard
+  manager
+}
+
+enum AppMode {
+  testing,
+  demo,
 }
 
 final appState = AppState();
@@ -116,6 +121,10 @@ class AppState {
       scanFileSourceList(); // без await - оно не должно тормозить запуск программы
     }
     Timer.periodic(const Duration(hours: 1), (_) => scanFileSourceList());
+
+    if (usingMode == UsingMode.testing) {
+      appMode = AppMode.testing;
+    }
   }
 
   Future<void> _loadOptions() async {
@@ -228,6 +237,8 @@ class AppState {
   bool _scanningOnProcess = false;
   bool get scanningOnProcess => _scanningOnProcess;
   final scanErrList = <String>[];
+
+  late AppMode appMode;
 
   Future<void> scanFileSourceList() async {
     if (_scanningOnProcess) return;

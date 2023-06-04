@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'db.dart';
+import 'decardj.dart';
 
 typedef CardResultCallback = void Function(bool result, double earned);
 
@@ -82,7 +83,11 @@ class CardStyle {
   final bool answerVariantListRandomize; // boolean, default false, output the list in random order
   final bool answerVariantMultiSel;      // boolean, default false, multiple selection from a set of values
   final AnswerInputMode answerInputMode; // string, fixed value set
+  final bool answerCaseSensitive;        // boolean, answer is case sensitive
   final String? widgetKeyboard;          // virtual keyboard: list of buttons on the keyboard, buttons can contain several characters, button separator symbol "\t" string translation "\n"
+  final int imageMaxHeight;              // maximum image height as a percentage of the screen height
+  final int buttonImageWidth;            // Maximum button image width  as a percentage of the screen width
+  final int buttonImageHeight;           // Maximum button image height as a percentage of the screen height
 
   const CardStyle({
     required this.id,
@@ -103,41 +108,50 @@ class CardStyle {
     this.answerVariantListRandomize = false,
     this.answerVariantMultiSel = false,
     this.answerInputMode = AnswerInputMode.vList,
+    this.answerCaseSensitive = false,
     this.widgetKeyboard,
+    this.imageMaxHeight = 50,
+    this.buttonImageWidth = 0,
+    this.buttonImageHeight = 0,
   });
 
   factory CardStyle.fromMap(Map<String, dynamic> json){
-    final String answerInputModeStr = json["answerInputMode"];
-    final String textAlignStr       = json["answerVariantAlign"]??TextAlign.center.name;
+    final String answerInputModeStr = json[DjfCardStyle.answerInputMode];
+    final String textAlignStr       = json[DjfCardStyle.answerVariantAlign]??TextAlign.center.name;
 
     return CardStyle(
       id                         : json[TabCardStyle.kID],
       jsonFileID                 : json[TabCardStyle.kJsonFileID],
       cardStyleKey               : json[TabCardStyle.kCardStyleKey],
-      minCost                    : json['minCost']??0,
-      maxCost                    : json['maxCost'],
-      minPenalty                 : json['minPenalty']??0,
-      maxPenalty                 : json['maxPenalty'],
-      maxTryCount                : json['maxTryCount']??1,
-      minDuration                : json['minDuration']??0,
-      maxDuration                : json['maxDuration']??0,
-      lowDurationPercentCost     : json['lowDurationPercentCost']??100,
-      dontShowAnswer             : json['dontShowAnswer']??false,
-      answerVariantList          : json["answerVariantList"] != null ? List<String>.from(json["answerVariantList"].map((x) => x)) : [],
-      answerVariantCount         : json['answerVariantCount']??-1,
+      minCost                    : json[DjfCardStyle.minCost]??0,
+      maxCost                    : json[DjfCardStyle.maxCost],
+      minPenalty                 : json[DjfCardStyle.minPenalty]??0,
+      maxPenalty                 : json[DjfCardStyle.maxPenalty],
+      maxTryCount                : json[DjfCardStyle.maxTryCount]??1,
+      minDuration                : json[DjfCardStyle.minDuration]??0,
+      maxDuration                : json[DjfCardStyle.maxDuration]??0,
+      lowDurationPercentCost     : json[DjfCardStyle.lowDurationPercentCost]??100,
+      dontShowAnswer             : json[DjfCardStyle.dontShowAnswer]??false,
+      answerVariantList          : json[DjfCardStyle.answerVariantList] != null ? List<String>.from(json[DjfCardStyle.answerVariantList].map((x) => x)) : [],
+      answerVariantCount         : json[DjfCardStyle.answerVariantCount]??-1,
       answerVariantAlign         : TextAlign.values.firstWhere((x) => x.name == textAlignStr),
-      answerVariantListRandomize : json['answerVariantListRandomize']??false,
-      answerVariantMultiSel      : json['answerVariantMultiSel']??false,
+      answerVariantListRandomize : json[DjfCardStyle.answerVariantListRandomize]??false,
+      answerVariantMultiSel      : json[DjfCardStyle.answerVariantMultiSel]??false,
       answerInputMode            : AnswerInputMode.values.firstWhere((x) => x.name == answerInputModeStr),
-      widgetKeyboard             : json['widgetKeyboard'],
+      answerCaseSensitive        : json[DjfCardStyle.answerCaseSensitive]??false,
+      widgetKeyboard             : json[DjfCardStyle.widgetKeyboard],
+      imageMaxHeight             : json[DjfCardStyle.imageMaxHeight]??50,
+      buttonImageWidth           : json[DjfCardStyle.buttonImageWidth]??0,
+      buttonImageHeight          : json[DjfCardStyle.buttonImageHeight]??0,
     );
   }
 }
 
 class CardHead {
-  final int    cardID;      // целое,   идентификатор карточки в БД
-  final int    jsonFileID;  // целое,   идентификатор файла в БД
-  final String cardKey;
+  final int    cardID;      // целое, идентификатор карточки в БД
+  final int    jsonFileID;  // целое, идентификатор файла в БД
+  final String cardKey;     // строка, идентификатор карточки в файле
+  final String group;
   final String title;
   final int    bodyCount;
 
@@ -145,6 +159,7 @@ class CardHead {
     required this.cardID,
     required this.jsonFileID,
     required this.cardKey,
+    required this.group,
     required this.title,
     required this.bodyCount,
   });
@@ -154,6 +169,7 @@ class CardHead {
       cardID     : json[TabCardHead.kCardID],
       jsonFileID : json[TabCardHead.kJsonFileID],
       cardKey    : json[TabCardHead.kCardKey],
+      group      : json[TabCardHead.kGroup],
       title      : json[TabCardHead.kTitle],
       bodyCount  : json[TabCardHead.kBodyCount],
     );
@@ -306,6 +322,7 @@ class CardStat {
 }
 
 class PacInfo {
+  final int    jsonFileID;
   final String path;
   final String filename;
   final String title;
@@ -317,6 +334,7 @@ class PacInfo {
   final String license;
 
   PacInfo({
+    required this.jsonFileID,
     required this.path,
     required this.filename,
     required this.title,
@@ -330,15 +348,16 @@ class PacInfo {
 
   factory PacInfo.fromMap(Map<String, dynamic> json){
     return PacInfo(
-      path     : json[TabJsonFile.kPath],
-      filename : json[TabJsonFile.kFilename],
-      title    : json[TabJsonFile.kTitle],
-      guid     : json[TabJsonFile.kGuid],
-      version  : json[TabJsonFile.kVersion],
-      author   : json[TabJsonFile.kAuthor],
-      site     : json[TabJsonFile.kSite],
-      email    : json[TabJsonFile.kEmail],
-      license  : json[TabJsonFile.kLicense],
+      jsonFileID : json[TabJsonFile.kJsonFileID],
+      path       : json[TabJsonFile.kPath],
+      filename   : json[TabJsonFile.kFilename],
+      title      : json[TabJsonFile.kTitle],
+      guid       : json[TabJsonFile.kGuid],
+      version    : json[TabJsonFile.kVersion],
+      author     : json[TabJsonFile.kAuthor],
+      site       : json[TabJsonFile.kSite],
+      email      : json[TabJsonFile.kEmail],
+      license    : json[TabJsonFile.kLicense],
     );
   }
 }
