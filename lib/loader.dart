@@ -26,21 +26,17 @@ class DataLoader {
 
   int _lastSourceFileID = 0;
 
-
-  static const String _subDirPrefix    = 'j'; // прификс для имени подкаталога
-
-//  static const String _prefixCard      = 'id@';
-//  static const String _prefixGroup     = 'grp@';
+  static const String _subDirPrefix    = 'j'; // subdirectory name prefix
 
   final DbSource dbSource;
 
   DataLoader(this.dbSource);
   
 
-  /// Сканирует список каталогов и отбирает файлы с расширениями: '.decardz', '.decardj'
-  /// файлы '.decardz' распаковываются в подкаталоги, префикс для подкаталогов [_subDirPrefix]
-  /// данные '.decardj' сохраняются в БД
-  /// выполняется контроль версий по сравнению с тем что было загружено ранее в БД
+  /// Scans the list of directories and selects files with extensions: '.decardz', '.decardj'
+  /// The '.decardz' files are unpacked into subdirectories, prefix for subdirectories [_subDirPrefix]
+  /// The '.decardj' data is stored in the database
+  /// version control is performed compared to what was previously loaded into the database
   Future<void> refreshDB({ required List<String> dirForScanList, required String selfDir }) async {
     _selfDir = selfDir;
     errorList.clear();
@@ -207,8 +203,8 @@ class DataLoader {
     for (Map<String, dynamic> card in cardList) {
       final String cardKey = card[DjfCard.id];
 
-      if (cardKey.isEmpty) continue; // карточка обязательно должна иметь уникальный в рамках файла идентификатор
-      if (cardKeyList.contains(cardKey)) continue; // идентификаторы карточки должны быть уникальными
+      if (cardKey.isEmpty) continue; // the card must have a unique identifier within the file
+      if (cardKeyList.contains(cardKey)) continue; // card identifiers must be unique
 
       cardKeyList.add(cardKey);
 
