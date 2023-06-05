@@ -1,28 +1,28 @@
 class DrfOptions {
-  static const String hotDayCount = "hotDayCount";   // Количество дней для которых расчитывается стстистика
+  static const String hotDayCount = "hotDayCount";   // Number of days for which the stastistics are calculated
 
-  static const String hotCardQualityTopLimit = "hotCardQualityTopLimit"; // карточки с меньшим качеством считаются активно изучаемыми
-  static const String maxCountHotCard = "maxCountHotCard";        // Максимальное кол-во карточек в активном изучении
+  static const String hotCardQualityTopLimit = "hotCardQualityTopLimit"; // cards with lower quality are considered to be actively studied
+  static const String maxCountHotCard = "maxCountHotCard";        // Maximum number of cards in active study
 
-  /// лимиты для определения активности группы
-  static const String hotGroupMinQualityTopLimit = "hotGroupMinQualityTopLimit"; // Минимальное качество по карточам входящим в группу
-  static const String hotGroupAvgQualityTopLimit = "hotGroupAvgQualityTopLimit"; // Среднее качество по карточкам входящим в группу
+  /// limits to determine the activity of the group
+  static const String hotGroupMinQualityTopLimit = "hotGroupMinQualityTopLimit"; // Minimum quality for the cards included in the group
+  static const String hotGroupAvgQualityTopLimit = "hotGroupAvgQualityTopLimit"; // Average quality of the cards included in the group
 
-  /// минимальое кол-во активно изучаемых групп,
-  /// если кол-во меньше лимита - система пытается выбрать карточку из новой группы
+  /// the minimum number of active study groups,
+  /// If the quantity is less than the limit - the system tries to select a card from the new group
   static const String minCountHotQualityGroup = "minCountHotQualityGroup";
 
-  static const String lowGroupAvgQualityTopLimit = "lowGroupAvgQualityTopLimit"; // Среднее качество по карточкам входящим в группу
+  static const String lowGroupAvgQualityTopLimit = "lowGroupAvgQualityTopLimit"; // 
 
-  /// мксимальное кол-во групп в начальной стадии изучения,
-  /// если кол-во роавно лимиту - система выбирает карточки из уже изучаемых групп
+  /// maximal number of groups in the beginer stage of the study,
+  /// If the number is equal to the limit - the system selects cards from the groups already being studied
   static const String maxCountLowQualityGroup = "maxCountLowQualityGroup";
 
-  /// понижение качества при малом объёме статистики
-  ///   если по новой карточке с самого начала будут очень хорошие результаты
-  ///   эти пареметры не дадут рости качеству слшком быстро
-  static const String lowTryCount = "lowTryCount"; // минимальное кол-во тестов
-  static const String lowDayCount = "lowDayCount"; // минимальное кол-во дней
+  /// Decrease the quality when the amount of statistics is small
+  ///   if the new card has very good results from the beginning
+  ///   these parameters will not let the quality grow too fast
+  static const String lowTryCount = "lowTryCount"; // minimum number of tests
+  static const String lowDayCount = "lowDayCount"; // Minimum number of days
 }
 
 class DrfSet {
@@ -36,30 +36,30 @@ class DrfSet {
 }
 
 class RegOptions {
-  final int hotDayCount;   // Количество дней для которых расчитывается стстистика
+  final int hotDayCount;   // Number of days for which the stastistics are calculated
 
-  final int hotCardQualityTopLimit; // карточки с меньшим качеством считаются активно изучаемыми
-  final int maxCountHotCard;        // Максимальное кол-во карточек в активном изучении
+  final int hotCardQualityTopLimit; // cards with lower quality are considered to be actively studied
+  final int maxCountHotCard;        // Maximum number of cards in active study
 
-  /// лимиты для определения активности группы
-  final int hotGroupMinQualityTopLimit; // Минимальное качество по карточам входящим в группу
-  final int hotGroupAvgQualityTopLimit; // Среднее качество по карточкам входящим в группу
-
-  /// минимальое кол-во активно изучаемых групп,
-  /// если кол-во меньше лимита - система пытается выбрать карточку из новой группы
+  /// limits to determine the activity of the group
+  final int hotGroupMinQualityTopLimit; // Minimum quality for the cards included in the group
+  final int hotGroupAvgQualityTopLimit; // Average quality of the cards included in the group
+  
+  /// the minimum number of active study groups,
+  /// If the quantity is less than the limit - the system tries to select a card from the new group
   final int minCountHotQualityGroup;
 
-  final int lowGroupAvgQualityTopLimit; // Среднее качество по карточкам входящим в группу
+  final int lowGroupAvgQualityTopLimit; // the upper limit of average quality for beginer-quality groups
 
-  /// мксимальное кол-во групп в начальной стадии изучения,
-  /// если кол-во роавно лимиту - система выбирает карточки из уже изучаемых групп
+  /// maximal number of beginer-quality groups,
+  /// If the number is equal to the limit - the system selects cards from the groups already being studied
   final int maxCountLowQualityGroup;
 
-  /// понижение качества при малом объёме статистики
-  ///   если по новой карточке с самого начала будут очень хорошие результаты
-  ///   эти пареметры не дадут рости качеству слшком быстро
-  final int lowTryCount; // минимальное кол-во тестов
-  final int lowDayCount; // минимальное кол-во дней
+  /// Decrease the quality when the amount of statistics is small
+  ///   if the new card has very good results from the beginning
+  ///   these parameters will not let the quality grow too fast
+  final int lowTryCount; // minimum number of tests
+  final int lowDayCount; // minimum number of days
 
   RegOptions({
     this.hotDayCount                = 7,
@@ -143,4 +143,10 @@ class Regulator {
     );
   }
 
+  factory Regulator.fromFile(String filePath) aync {
+    final jsonFile = File(filePath);
+    final fileData = await jsonFile.readAsString();
+    final json = jsonDecode(fileData); 
+    return Regulator.fromMap(json);
+  }
 }
