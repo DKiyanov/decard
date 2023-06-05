@@ -90,6 +90,8 @@ class AppState {
   late CardController cardController;
 
   late DataLoader _dataLoader;
+  
+  late Regulator regulator;
 
   factory AppState() {
     return _instance;
@@ -115,10 +117,11 @@ class AppState {
       addEarn(earn!);
     });
 
+    regulator = Regulator.fromFile('$_appDir/regulator.json');
     _dataLoader = DataLoader(dbSource);
 
     if (await checkStoragePermission()) {
-      scanFileSourceList(); // без await - оно не должно тормозить запуск программы
+      scanFileSourceList(); // without await - it should not slow down the launch of the program
     }
     Timer.periodic(const Duration(hours: 1), (_) => scanFileSourceList());
 
@@ -393,11 +396,11 @@ class AppState {
     prefs.setInt(_keyLastUploadStatDT, _lastUploadStatDT);
   }
 
-  /// тестирование и отладка алгоритма выбора карточек
+  /// testing and debugging the card selection algorithm
   Future<void> selfTest() async {
     const int daysCount = 100;
     const int maxCountTestPerDay = 100;
-    const int speed = 20; // колво показов для отличного запминания
+    const int speed = 20; // the number of shows for great memorization
 
     DateTime curDate = DateTime.now();
 
