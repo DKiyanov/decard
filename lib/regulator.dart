@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'dart:convert';
+
 class DrfOptions {
   static const String hotDayCount = "hotDayCount";   // Number of days for which the stastistics are calculated
 
@@ -23,6 +26,9 @@ class DrfOptions {
   ///   these parameters will not let the quality grow too fast
   static const String lowTryCount = "lowTryCount"; // minimum number of tests
   static const String lowDayCount = "lowDayCount"; // Minimum number of days
+
+  /// Maximum available quality with a negative last result
+  static const String negativeLastResultMaxQualityLimit = "negativeLastResultMaxQualityLimit";
 }
 
 class DrfSet {
@@ -61,6 +67,9 @@ class RegOptions {
   final int lowTryCount; // minimum number of tests
   final int lowDayCount; // minimum number of days
 
+  /// Maximum available quality with a negative last result
+  final int negativeLastResultMaxQualityLimit;
+
   RegOptions({
     this.hotDayCount                = 7,
     this.hotCardQualityTopLimit     = 70,
@@ -72,6 +81,7 @@ class RegOptions {
     this.maxCountLowQualityGroup    = 2,
     this.lowTryCount                = 7,
     this.lowDayCount                = 4,
+    this.negativeLastResultMaxQualityLimit = 50,
   });
 
   factory RegOptions.fromMap(Map<String, dynamic> json){
@@ -86,6 +96,7 @@ class RegOptions {
         maxCountLowQualityGroup     : json[DrfOptions.maxCountLowQualityGroup   ],
         lowTryCount                 : json[DrfOptions.lowTryCount               ],
         lowDayCount                 : json[DrfOptions.lowDayCount               ],
+        negativeLastResultMaxQualityLimit : json[DrfOptions.negativeLastResultMaxQualityLimit],
     );
   }
 }
@@ -143,7 +154,7 @@ class Regulator {
     );
   }
 
-  factory Regulator.fromFile(String filePath) aync {
+  static Future<Regulator> fromFile(String filePath) async {
     final jsonFile = File(filePath);
     final fileData = await jsonFile.readAsString();
     final json = jsonDecode(fileData); 

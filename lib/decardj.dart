@@ -106,7 +106,7 @@ class DjfUpLink { // element of DjfCard.upLinks
 	static const String groupTagPrefix = "grp@";   // prefix for make tag from card.group
 }
 
-class DjfQuestionData { // structiure of DjfCardBody.questionData
+class DjfQuestionData { // structure of DjfCardBody.questionData
 	static const String text     = "text";     // optional, string, question text
 	static const String html     = "html";     // TODO optional, link to html file, file can be a template
 	static const String markdown = "markdown"; // TODO optional, link to markdown file, file can be a template

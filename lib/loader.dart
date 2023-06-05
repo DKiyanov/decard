@@ -28,17 +28,19 @@ class DataLoader {
 
   static const String _subDirPrefix    = 'j'; // subdirectory name prefix
 
-  final DbSource dbSource;
+  DbSource? _dbSource;
+  DbSource get dbSource => _dbSource!;
 
-  DataLoader(this.dbSource);
+  DataLoader();
   
 
   /// Scans the list of directories and selects files with extensions: '.decardz', '.decardj'
   /// The '.decardz' files are unpacked into subdirectories, prefix for subdirectories [_subDirPrefix]
   /// The '.decardj' data is stored in the database
   /// version control is performed compared to what was previously loaded into the database
-  Future<void> refreshDB({ required List<String> dirForScanList, required String selfDir }) async {
+  Future<void> refreshDB({ required List<String> dirForScanList, required String selfDir, required DbSource dbSource}) async {
     _selfDir = selfDir;
+//    _dbSource = dbSource;
     errorList.clear();
 
     for (var dir in dirForScanList) {

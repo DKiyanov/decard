@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:collection/collection.dart';
 import 'package:decard/app_state.dart';
+import 'package:decard/regulator.dart';
 
 import 'package:sqflite/sqflite.dart';
 
@@ -40,7 +41,7 @@ class CardController {
   final onChange = SimpleEvent();
   final onAddEarn = SimpleEvent<double>();
 
-  /// Устанавливает данные текущей карточки
+  /// Sets the current card data
   Future<void> setCard(int jsonFileID, int cardID, {int? bodyNum, CardSetBody setBody = CardSetBody.random}) async {
     _pacInfo   = null;
     _cardHead  = null;
@@ -80,7 +81,7 @@ class CardController {
     onChange.send();
   }
 
-  /// Устанавливает заданное тело в текущей карточке
+  /// Sets the specified body in the current card
   Future<void> setBodyNum(int bodyNum) async {
     await _setBodyNum(bodyNum);
     _card!.body  = _cardBody!;
@@ -113,7 +114,7 @@ class CardController {
   Future<bool> selectNextCard() async {
     CardPointer? newCard;
 
-    for (int i = 0; i < 10; i++) { // чтоб повторно не выдавалась последняя выданная карточка
+    for (int i = 0; i < 10; i++) { // so that the last issued card is not reissued
       newCard = await processCardController.getCardForTest();
       if (newCard == null) return false;
 
@@ -142,10 +143,12 @@ class ProcessCardStat {
   final int    cardID;
   final String cardGroupKey;
 
-  int quality;
+  bool lastResult;
+  int  quality;
+
   late String groupKey;
 
-  ProcessCardStat({ required this.statID, required this.jsonFileID, required this.cardID, required this.cardGroupKey, required this.quality }){
+  ProcessCardStat({ required this.statID, required this.jsonFileID, required this.cardID, required this.cardGroupKey, required this.quality, required this.lastResult }){
     if (cardGroupKey.isEmpty) {
       groupKey = '@$cardID';
     } else {
@@ -160,13 +163,14 @@ class ProcessCardStat {
       cardID       : json[TabCardStat.kCardID],
       cardGroupKey : json[TabCardStat.kCardGroupKey],
       quality      : json[TabCardStat.kQuality],
+      lastResult   : json[TabCardStat.kLastResult],
     );
   }
 }
 
 class _CardGroup {
   final String groupKey;
-  final int cardCount; // количесво карточек в групе в файле
+  final int cardCount; // number of cards in the group per file
 
   int lowQuality   = 0;
   int totalQuality = 0;
@@ -187,39 +191,18 @@ class _CardGroup {
   }
 }
 
-/// Обеспечивает анализ статистики для выбора карточки
+/// Provides analysis of statistics for card selection
 class ProcessCardController {
-  /// quality = 99 - картичка полностью изучена;
-  /// quality >= 0 - изучение начато
-  /// quality = -1 - изучение не начато
+  /// quality >= 99 - the card is completely studied;
+  /// quality >= 0 - study started
+  /// quality = -1 - study not started
 
-  static const int maxQuality         = 100; // Максимальное качество изучения
-  static const int hotDayCount        = 7;   // Количество дней для которых расчитывается стстистика
-
-  static const int hotCardQualityTopLimit = 70; // карточки с меньшим качеством считаются активно изучаемыми
-  static const int maxCountHotCard = 20;        // Максимальное кол-во карточек в активном изучении
-
-  /// лимиты для определения активности группы
-  static const int hotGroupMinQualityTopLimit = 60; // Минимальное качество по карточам входящим в группу
-  static const int hotGroupAvgQualityTopLimit = 70; // Среднее качество по карточкам входящим в группу
-
-  /// минимальое кол-во активно изучаемых групп,
-  /// если кол-во меньше лимита - система пытается выбрать карточку из новой группы
-  static const int minCountHotQualityGroup = 15;
-
-  static const int lowGroupAvgQualityTopLimit = 10; // Среднее качество по карточкам входящим в группу
-
-  /// мксимальное кол-во групп в начальной стадии изучения,
-  /// если кол-во роавно лимиту - система выбирает карточки из уже изучаемых групп
-  static const int maxCountLowQualityGroup = 2;
-
-  /// понижение качества при малом объёме статистики
-  ///   если по новой карточке с самого начала будут очень хорошие результаты
-  ///   эти пареметры не дадут рости качеству слшком быстро
-  static const int lowTryCount = 7; // минимальное кол-во тестов
-  static const int lowDayCount = 3; // минимальное кол-во дней
+  static const int maxQuality         = 100; // Maximum learning quality
 
   final Database db;
+
+  final Regulator regulator;
+  late RegOptions _options;
 
   final cardStatList = <ProcessCardStat>[];
   final groupList    = <_CardGroup>[];
@@ -227,9 +210,9 @@ class ProcessCardController {
   final TabCardStat tabCardStat;
   final TabCardHead tabCardHead;
 
-  ProcessCardController(this.db, this.tabCardStat, this.tabCardHead);
+  ProcessCardController(this.db, this.regulator, this.tabCardStat, this.tabCardHead);
 
-  /// для тестирования и отладки
+  /// for testing and debugging
   int _testDate = 0;
   void setTestDate(DateTime date){
     _testDate = dateToInt(date);
@@ -240,22 +223,23 @@ class ProcessCardController {
     return dateToInt(DateTime.now());
   }
 
-  /// инциализация/подготовка
+  /// initialization/preparation
   Future<void> init() async {
+    _options = regulator.options;
     await _loadCardStat();
   }
 
-  /// Загрузка статистики из БД
+  /// Loading statistics from the database
   Future<void> _loadCardStat() async {
     final rows = await db.query(TabCardStat.tabName,
-      columns   : [TabCardStat.kID, TabCardStat.kJsonFileID, TabCardStat.kCardID, TabCardStat.kCardGroupKey, TabCardStat.kQuality],
+      columns   : [TabCardStat.kID, TabCardStat.kJsonFileID, TabCardStat.kCardID, TabCardStat.kCardGroupKey, TabCardStat.kQuality, TabCardStat.kLastResult],
       orderBy   : TabCardStat.kID,
     );
 
     cardStatList.clear();
     cardStatList.addAll(rows.map((row) => ProcessCardStat.fromMap(row)));
 
-    // Инициализируем список групп
+    // Initialize the list of groups
     for (var stat in cardStatList) {
       await _prepareGroup(stat);
     }
@@ -277,7 +261,7 @@ class ProcessCardController {
     return newGroup;
   }
 
-  /// Регистрация результата тестирования по карточке
+  /// Registration of the test result on the card
   Future<ProcessCardStat> registerResult(int jsonFileID, int cardID, bool resultOk) async {
     final rows = await db.query(TabCardStat.tabName,
       where     : '${TabCardStat.kJsonFileID} = ? and ${TabCardStat.kCardID} = ?',
@@ -303,7 +287,7 @@ class ProcessCardController {
 
     dayResult.addResult(resultOk);
 
-    while (dayResultList.length > hotDayCount) {
+    while (dayResultList.length > _options.hotDayCount) {
       dayResultList.removeAt(0);
     }
 
@@ -314,8 +298,8 @@ class ProcessCardController {
 
    var quality = f ~/ dayResultList.length;
 
-   if (dayResult.countTotal <= lowTryCount || dayResultList.length <= lowDayCount) {
-     final xQuality = (maxQuality * dayResult.countTotal * dayResultList.length) ~/ (lowTryCount * lowDayCount);
+   if (dayResult.countTotal <= _options.lowTryCount || dayResultList.length <= _options.lowDayCount) {
+     final xQuality = (maxQuality * dayResult.countTotal * dayResultList.length) ~/ (_options.lowTryCount * _options.lowDayCount);
      if (quality > xQuality) quality = xQuality;
    }
 
@@ -327,6 +311,8 @@ class ProcessCardController {
 
     row[TabCardStat.kQualityFromDate] = dayResultList[0].day;
 
+    row[TabCardStat.kLastResult] = resultOk;
+
     final rowID = row[TabCardStat.kID] as int;
     row.remove(TabCardStat.kID);
 
@@ -336,7 +322,8 @@ class ProcessCardController {
     );
 
     final cardStat = cardStatList.firstWhere((cardStat) => cardStat.statID == rowID);
-    cardStat.quality = quality;
+    cardStat.quality    = quality;
+    cardStat.lastResult = resultOk;
 
     return cardStat;
   }
@@ -353,18 +340,18 @@ class ProcessCardController {
     }
   }
 
-  /// Выбирает карточку для тестирования
+  /// Selects a card to test
   Future<CardPointer?> getCardForTest() async {
 
     int countHotCard = 0;
     for (var stat in cardStatList) {
-      if (stat.quality <= hotCardQualityTopLimit) {
+      if (stat.quality <= _options.hotCardQualityTopLimit) {
         countHotCard ++;
       }
     }
 
-    if (countHotCard >= maxCountHotCard) {
-      // Выбираем карточку стерди уже изучаемых
+    if (countHotCard >= _options.maxCountHotCard) {
+      // Choose a card among those already studied
       final cardPointer = _selectStudiedCard();
       return cardPointer;
     }
@@ -375,31 +362,31 @@ class ProcessCardController {
     int countLowGroup = 0;
     for (var group in groupList) {
       if ( group.statCount < group.cardCount
-      ||   group.lowQuality <= hotGroupMinQualityTopLimit
-      ||   ((group.totalQuality / group.statCount) <= hotGroupAvgQualityTopLimit )
+      ||   group.lowQuality <= _options.hotGroupMinQualityTopLimit
+      ||   ((group.totalQuality / group.statCount) <= _options.hotGroupAvgQualityTopLimit )
       ){
         countHotGroup ++;
       }
 
-      if ((group.totalQuality / group.statCount) <= lowGroupAvgQualityTopLimit) {
+      if ((group.totalQuality / group.statCount) <= _options.lowGroupAvgQualityTopLimit) {
         countLowGroup ++;
       }
     }
 
-    if (countHotGroup < minCountHotQualityGroup && countLowGroup < maxCountLowQualityGroup ) {
-      // Выбираем новую группу, а в группе выбираем первую карточку
+    if (countHotGroup < _options.minCountHotQualityGroup && countLowGroup < _options.maxCountLowQualityGroup ) {
+      // Select a new group, and select the first card in the group
       final cardPointer = await _selectNewCard( false );
       if (cardPointer != null) return cardPointer;
     }
 
     {
-      // Пытаемся выбрать новую картоку среди уже изучаемых групп
+      // Trying to select a new card from among the groups already being studied
       final cardPointer = await _selectNewCard( true );
       if (cardPointer != null) return cardPointer;
     }
 
     {
-      // Выбираем карточку стерди уже изучаемых
+      // Choose a card from among those already being studied
       final cardPointer = _selectStudiedCard();
       return cardPointer;
     }
@@ -414,21 +401,21 @@ class ProcessCardController {
       min( mainCard.${TabCardHead.kCardID} ) AS ${TabCardHead.kCardID}
     FROM ${TabCardHead.tabName} as mainCard
     
-    WHERE NOT EXISTS ( --отбираем карточки которые ещё не изучались
+    WHERE NOT EXISTS ( --selecting cards that have not yet been studied
         SELECT 1
           FROM ${TabCardStat.tabName} as sub1
          WHERE sub1.${TabCardStat.kJsonFileID} = mainCard.${TabCardHead.kJsonFileID}
            AND sub1.${TabCardStat.kCardID}     = mainCard.${TabCardHead.kCardID}
     )
     
-    AND $isStudied EXISTS ( --отбираем группы которые ещё не изучались/изучались
+    AND $isStudied EXISTS ( --select groups that have not yet been studied/studied
         SELECT 1
           FROM ${TabCardStat.tabName} as sub2
          WHERE sub2.${TabCardStat.kJsonFileID}   = mainCard.${TabCardHead.kJsonFileID}
            AND sub2.${TabCardStat.kCardGroupKey} = mainCard.${TabCardHead.kGroup}
     )
     
-    AND NOT EXISTS ( --у карточки нет линков с невыполненым условием
+    AND NOT EXISTS ( --the card has no links with an unfulfilled condition
         SELECT 1
           FROM ${TabCardLink.tabName}     as link
           JOIN ${TabQualityLevel.tabName} as qLevel
@@ -456,7 +443,7 @@ class ProcessCardController {
                            AND tag.${TabCardTag.kJsonFileID}         = link.${TabCardHead.kJsonFileID}
                          WHERE linkTag.${TabCardLinkTag.kJsonFileID} = link.${TabCardHead.kJsonFileID}
                            AND linkTag.${TabCardLinkTag.kLinkID}     = link.${TabCardLink.kLinkID}
-                           AND tag.${TabCardTag.kCardID}             < mainCard.${TabCardHead.kCardID} -- Отбираются карточки которые в файле расположены выше
+                           AND tag.${TabCardTag.kCardID}             < mainCard.${TabCardHead.kCardID} --The cards that are higher in the file are selected
     
                     )
     
@@ -481,14 +468,20 @@ class ProcessCardController {
     return CardPointer(jsonFileID, cardID);
   }
 
-  /// Выбирает карточку для тестирования
+  int _actQuality(ProcessCardStat stat) {
+    if (stat.lastResult) return stat.quality;
+    if (stat.quality < _options.negativeLastResultMaxQualityLimit) return stat.quality;
+    return _options.negativeLastResultMaxQualityLimit;
+  }
+
+  /// Selects a card for testing
   CardPointer? _selectStudiedCard() {
     if (cardStatList.isEmpty) return null;
 
     int totalNQuality = 0;
 
     for (var stat in cardStatList) {
-      totalNQuality += (maxQuality - stat.quality);
+      totalNQuality += (maxQuality - _actQuality(stat));
     }
 
     final selNQuality = _random.nextInt(totalNQuality + 1);
@@ -496,8 +489,10 @@ class ProcessCardController {
     int curNQuality = 0;
     int selIndex = 0;
     for (int i = 0; i < cardStatList.length; i++){
-      if (cardStatList[i].quality < maxQuality) {
-        curNQuality += (maxQuality - cardStatList[i].quality);
+      final stat = cardStatList[i];
+
+      if (_actQuality(stat) < maxQuality) {
+        curNQuality += (maxQuality - _actQuality(stat));
         if (curNQuality > selNQuality) {
           selIndex = i;
           break;
@@ -514,11 +509,11 @@ class ProcessCardController {
 
     final jsonFileID    = cardHead![TabCardHead.kJsonFileID] as int;
     final cardKey       = cardHead[TabCardHead.kCardKey]     as String;
-    final cardGroupKey  = cardHead[TabCardHead.kGroup]    as String;
+    final cardGroupKey  = cardHead[TabCardHead.kGroup]       as String;
 
-    final id = await tabCardStat.insertRow(jsonFileID: jsonFileID, cardID: cardID, cardKey: cardKey, cardGroupKey: cardGroupKey, quality: maxQuality, date: _curDay);
+    final id = await tabCardStat.insertRow(jsonFileID: jsonFileID, cardID: cardID, cardKey: cardKey, cardGroupKey: cardGroupKey, quality: 0, lastResult: false, date: _curDay);
 
-    final cardStat = ProcessCardStat(statID: id, jsonFileID: jsonFileID, cardID: cardID, cardGroupKey: cardGroupKey, quality: maxQuality);
+    final cardStat = ProcessCardStat(statID: id, jsonFileID: jsonFileID, cardID: cardID, cardGroupKey: cardGroupKey, quality: 0, lastResult: false);
 
     cardStatList.add(cardStat);
 

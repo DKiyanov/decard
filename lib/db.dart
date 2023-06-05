@@ -559,6 +559,7 @@ class TabCardStat {
   static const String kQualityFromDate = 'qualityFromDate';
   static const String kStartDate       = 'startDate';
   static const String kLastTestDate    = 'lastTestDate';
+  static const String kLastResult      = 'lastResult';
   static const String kTestsCount      = 'testsCount';
   static const String kJson            = 'json';
 
@@ -572,6 +573,7 @@ class TabCardStat {
       "$kQualityFromDate INTEGER," // первая дата учтённая при расчёте quality
       "$kStartDate       INTEGER," // дата начала изучения
       "$kLastTestDate    INTEGER," // дата последнего изучения
+      "$kLastResult      INTEGER," // boolean, последний результат
       "$kTestsCount      INTEGER," // количество предъявления
       "$kJson            TEXT"     // данные статистики карточки хранятся как json, когда понадобится распаковываются используются для расчёта quality и обновляются
       ")";
@@ -630,6 +632,7 @@ class TabCardStat {
     required String cardKey,
     required String cardGroupKey,
     required int    quality,
+    required bool   lastResult,
     required int    date,
   }) async {
     Map<String, Object> row = {
@@ -638,6 +641,7 @@ class TabCardStat {
       kCardKey         : cardKey,
       kCardGroupKey    : cardGroupKey,
       kQuality         : quality,
+      kLastResult      : lastResult,
       kQualityFromDate : date,
       kStartDate       : date,
       kTestsCount      : 0,
