@@ -7,7 +7,7 @@
 
 ///The json file has the following format:
 
-class DjfFile{
+class DjfFile{ // top json file structure
 	static const String formatVersion    = "formatVersion";    // TODO format version
 	static const String title            = "title";            // the name of the file content
 	static const String guid             = "GUID";             // it is used to search for the same files
@@ -24,7 +24,7 @@ class DjfFile{
 	static const String cardList         = "cardList";         // array of DjfCard
 }
 
-class DjfCardStyle { // cardStyleList element
+class DjfCardStyle { // DjfFile.cardStyleList element
 	static const String id                         = "id";                         // string, style ID, unique within the file, used to reference the style from the card body
 	static const String maxCost                    = "maxCost";                    // integer, the number of minutes earned if the answer is correct
 	static const String minCost                    = "minCost";                    // integer, the number of minutes earned in the case of a correct answer
@@ -35,6 +35,7 @@ class DjfCardStyle { // cardStyleList element
 	static const String minDuration                = "minDuration";                // integer, seconds, time allotted to solve, optional
 	static const String lowDurationPercentCost     = "lowDurationPercentCost";     // integer, the lower value of the cost as a percentage of the current set cost, default 100
 	static const String dontShowAnswer             = "dontShowAnswer";             // boolean, default false, do NOT show in case of a wrong answer
+	static const String dontShowAnswerOnDemo       = "dontShowAnswerOnDemo";       // TODO boolean, default false, do NOT show in demo mode
 	static const String answerVariantList          = "answerVariantList";          // list of answer choices
 	static const String answerVariantCount         = "answerVariantCount";         // Number of answer choices displayed
 	static const String answerVariantListRandomize = "answerVariantListRandomize"; // answer text align, values string left, right, center
@@ -46,10 +47,11 @@ class DjfCardStyle { // cardStyleList element
 	static const String imageMaxHeight             = "imageMaxHeight";             // Maximum image height as a percentage of the screen height
 	static const String buttonImageWidth           = "buttonImageWidth";           // Maximum button image width  as a percentage of the screen width
 	static const String buttonImageHeight          = "buttonImageHeight";          // Maximum button image height as a percentage of the screen height
+	
 	static const String buttonImagePrefix          = "img=";                       // Prefix for button image: img=<file path>
 }
 
-class DjfAnswerInputMode {
+class DjfAnswerInputMode { // values for DjfCardStyle.answerInputMode
 	static const String none           = "none";           // input method is not defined
 	static const String ddList         = "ddList";         // Drop down list
 	static const String vList          = "vList";          // vertical list
@@ -59,24 +61,26 @@ class DjfAnswerInputMode {
 	static const String widgetKeyboard = "widgetKeyboard"; // virtual keyboard: list of buttons on the keyboard, buttons can contain several characters, button separator symbol "\t" string translation "\n"
 }
 
-class DjfQualityLevel {
+class DjfQualityLevel { // element of DjfCardStyle.qualityLevelList
 	static const String qualityName = "qlName";     // the name of the quality level
 	static const String minQuality  = "minQuality"; // minimum quality
 	static const String avgQuality  = "avgQuality"; // medium quality
 }
 
-class DjfCardTemplate {
+class DjfCardTemplate { // element of DjfCardStyle.templateList
 	static const String templateName = "tName"; // template name
 	
 	// one or more card templates
 	// The card template is written exactly the same way as a normal card
-	// only these fields may contain characters <@field name source@> these characters are replaced with the corresponding value from source
+	// only these fields may contain characters <@field name source@> these characters are replaced with the corresponding value from DjfTemplateSource
 	static const String cardTemplateList = "cardTemplateList"; 
 }
 
-class DjfTemplateSource {
+class DjfTemplateSource { // element of DjfCardStyle.templatesSources
 	static const String templateName = DjfCardTemplate.templateName; // template name
 
+	// contains other fields for substitution in the template, at the discretion of the user
+	
 	static const String paramBegin = "<@";
 	static const String paramEnd   = "@>";
 }
@@ -102,12 +106,12 @@ class DjfUpLink { // element of DjfCard.upLinks
 	static const String groupTagPrefix = "grp@";   // prefix for make tag from card.group
 }
 
-class DjfQuestionData { // question data
+class DjfQuestionData { // structiure of DjfCardBody.questionData
 	static const String text     = "text";     // optional, string, question text
-	static const String html     = "html";     // optional, link to html file
-	static const String markdown = "markdown"; // TODO optional, link to markdown file
+	static const String html     = "html";     // TODO optional, link to html file, file can be a template
+	static const String markdown = "markdown"; // TODO optional, link to markdown file, file can be a template
 	static const String audio    = "audio";    // optional, link to audio resource
-	static const String video    = "video";    // optional, link to video resource
+	static const String video    = "video";    // TODO optional, link to video resource
 	static const String image    = "image";    // optional, link to image
 }
 
@@ -116,6 +120,6 @@ class DjfCardBody { // element of DjfCard.bodyList
 	static const String style        = "style";        // embedded structure DjfCardStyle
 	static const String questionData = "questionData"; // embedded structure DjfQuestionData
 	static const String answerList   = "answerList";   // array of answer values
-	static const String audioOnRightAnswer = "audioOnRightAnswer"; // TODO array of path to audio file
-	static const String audioOnWrongAnswer = "audioOnWrongAnswer"; // TODO array of path to audio file
+	static const String audioOnRightAnswer = "audioOnRightAnswer"; // TODO optional, link to audio resource
+	static const String audioOnWrongAnswer = "audioOnWrongAnswer"; // TODO optional, link to audio resource
 }
