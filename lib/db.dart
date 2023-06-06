@@ -6,7 +6,6 @@ import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
-
 class DbSource {
   final Database db;
   late TabSourceFile   tabSourceFile;
@@ -34,7 +33,7 @@ class DbSource {
   }
 }
 
-/// исходные файлы
+/// Source files
 class TabSourceFile {
   static const String tabName         = 'SourceFile';
 
@@ -82,7 +81,7 @@ class TabSourceFile {
 
 }
 
-/// загруженные json файлы
+/// Loaded json files
 class TabJsonFile {
   static const String tabName       = 'JsonFile';
 
@@ -90,13 +89,13 @@ class TabJsonFile {
   static const String kSourceFileID = 'sourceFileID';
   static const String kPath         = 'path';
   static const String kFilename     = 'filename';
-  static const String kTitle        = 'title';
-  static const String kGuid         = 'GUID';
-  static const String kVersion      = 'version';
-  static const String kAuthor       = 'author';
-  static const String kSite         = 'site';
-  static const String kEmail        = 'email';
-  static const String kLicense      = 'license';
+  static const String kTitle        = DjfFile.title;
+  static const String kGuid         = DjfFile.guid;
+  static const String kVersion      = DjfFile.version;
+  static const String kAuthor       = DjfFile.author;
+  static const String kSite         = DjfFile.site;
+  static const String kEmail        = DjfFile.email;
+  static const String kLicense      = DjfFile.license;
 
   static const String createQuery = "CREATE TABLE $tabName ("
       "$kJsonFileID   INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -129,7 +128,7 @@ class TabJsonFile {
   String? get email        => _row[kEmail        ] as String?;
   String? get license      => _row[kLicense      ] as String?;
 
-  /// возвращает запись файла к указанному guid
+  /// returns the file record to the specified guid
   Future<bool> getRowByGuid(String guid) async {
     final List<Map<String, Object?>> rows = await db.query(tabName,
       where     : '$kGuid = ?',
@@ -196,14 +195,14 @@ class TabCardStyle {
 
   static const String kID            = 'id';
   static const String kJsonFileID    = TabJsonFile.kJsonFileID;
-  static const String kCardStyleKey  = 'cardStyleKey';
-  static const String kJson          = 'json';
+  static const String kCardStyleKey  = 'cardStyleKey';  // map from DjfCardStyle.id
+  static const String kJson          = 'json';          // style data are stored as json, when needed they are unpacked
 
   static const String createQuery = "CREATE TABLE $tabName ("
       "$kID           INTEGER PRIMARY KEY AUTOINCREMENT,"
       "$kJsonFileID   INTEGER,"
       "$kCardStyleKey TEXT,"
-      "$kJson         TEXT" // данные стиля хранятся как json, когда понадобится распаковываются
+      "$kJson         TEXT" 
       ")";
 
   final Database db;
@@ -247,9 +246,9 @@ class TabQualityLevel {
 
   static const String kID            = 'id';
   static const String kJsonFileID    = TabJsonFile.kJsonFileID;
-  static const String kQualityName   = 'qualityName';
-  static const String kMinQuality    = 'minQuality';
-  static const String kAvgQuality    = 'avgQuality';
+  static const String kQualityName   = 'qualityName'; // map from DjfQualityLevel.qualityName
+  static const String kMinQuality    = DjfQualityLevel.minQuality;
+  static const String kAvgQuality    = DjfQualityLevel.avgQuality;
 
   static const String createQuery = "CREATE TABLE $tabName ("
       "$kID           INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -283,17 +282,17 @@ class TabCardHead {
 
   static const String kCardID        = 'cardID';
   static const String kJsonFileID    = TabJsonFile.kJsonFileID;
-  static const String kCardKey       = 'cardKey';
-  static const String kTitle         = 'title';
-  static const String kGroup      = 'groupKey'; // группировка карточек
-  static const String kBodyCount     = 'bodyCount';
+  static const String kCardKey       = 'cardKey'; // map from DjfCard.id
+  static const String kTitle         = DjfCard.title;
+  static const String kGroup         = DjfCard.group;
+  static const String kBodyCount     = 'bodyCount'; // number of records in the DjfCard.bodyList
 
   static const String createQuery = "CREATE TABLE $tabName ("
       "$kCardID      INTEGER PRIMARY KEY AUTOINCREMENT,"
       "$kJsonFileID  INTEGER,"
-      "$kCardKey     TEXT,"  // идентификатор карточки из json файла
+      "$kCardKey     TEXT,"  // Card identifier from a json file
       "$kTitle       TEXT,"
-      "$kGroup    TEXT,"
+      "$kGroup       TEXT,"
       "$kBodyCount   INTEGER"
       ")";
 
@@ -467,15 +466,15 @@ class TabCardBody{
   static const String kID         = 'id';
   static const String kJsonFileID = TabJsonFile.kJsonFileID;
   static const String kCardID     = TabCardHead.kCardID;
-  static const String kBodyNum    = 'bodyNum';
-  static const String kJson       = 'json';
+  static const String kBodyNum    = 'bodyNum'; // the card can have many bodies, the body number is stored here
+  static const String kJson       = 'json';    // card body data are stored as json, when needed they are unpacked
 
   static const String createQuery = "CREATE TABLE $tabName ("
       "$kID         INTEGER PRIMARY KEY AUTOINCREMENT,"
       "$kJsonFileID INTEGER,"
-      "$kCardID     INTEGER," // идентификатор карточки из json файла
-      "$kBodyNum    INTEGER," // у карточки может быть много тел, здесь хранится номер тела
-      "$kJson       TEXT"     // данные тела карточки хранятся как json, когда понадобится распаковываются
+      "$kCardID     INTEGER," 
+      "$kBodyNum    INTEGER," 
+      "$kJson       TEXT"     
       ")";
 
   final Database db;
@@ -546,42 +545,41 @@ class DayResult {
   };
 }
 
-
 class TabCardStat {
   static const String tabName          = 'CardStat';
 
   static const String kID              = 'id';
   static const String kJsonFileID      = TabJsonFile.kJsonFileID;
   static const String kCardID          = TabCardHead.kCardID;
-  static const String kCardKey         = 'cardKey';
+  static const String kCardKey         = 'cardKey';         // Card identifier from a json file
   static const String kCardGroupKey    = 'cardGroupKey';
-  static const String kQuality         = 'quality';
-  static const String kQualityFromDate = 'qualityFromDate';
-  static const String kStartDate       = 'startDate';
+  static const String kQuality         = 'quality';         // quality of study, 100 - the card is completely studied; 0 - minimal degree of study.
+  static const String kQualityFromDate = 'qualityFromDate'; // the first date taken into account when calculating quality
+  static const String kStartDate       = 'startDate';       // starting date of study
   static const String kLastTestDate    = 'lastTestDate';
-  static const String kLastResult      = 'lastResult';
+  static const String kLastResult      = 'lastResult';      // boolean
   static const String kTestsCount      = 'testsCount';
-  static const String kJson            = 'json';
+  static const String kJson            = 'json';            // card statistics data are stored as json, when needed they are unpacked and used to calculate quality and updated
 
   static const String createQuery = "CREATE TABLE $tabName ("
       "$kID              INTEGER PRIMARY KEY AUTOINCREMENT,"
       "$kJsonFileID      INTEGER,"
       "$kCardID          INTEGER,"
-      "$kCardKey         TEXT,"    // идентификатор карточки из json файла
-      "$kCardGroupKey    TEXT,"    // Группировка карточек
-      "$kQuality         INTEGER," // качество изучения, 1 - картичка полностью изучена; 100 - минимальная степень изученности.
-      "$kQualityFromDate INTEGER," // первая дата учтённая при расчёте quality
-      "$kStartDate       INTEGER," // дата начала изучения
-      "$kLastTestDate    INTEGER," // дата последнего изучения
-      "$kLastResult      INTEGER," // boolean, последний результат
-      "$kTestsCount      INTEGER," // количество предъявления
-      "$kJson            TEXT"     // данные статистики карточки хранятся как json, когда понадобится распаковываются используются для расчёта quality и обновляются
+      "$kCardKey         TEXT,"    
+      "$kCardGroupKey    TEXT,"    
+      "$kQuality         INTEGER," 
+      "$kQualityFromDate INTEGER," 
+      "$kStartDate       INTEGER," 
+      "$kLastTestDate    INTEGER," 
+      "$kLastResult      INTEGER," 
+      "$kTestsCount      INTEGER," 
+      "$kJson            TEXT"     
       ")";
 
   final Database db;
   TabCardStat(this.db);
 
-  /// удаляет карточки которых нет в списке
+  /// removes cards that are not on the list
   Future<void> removeOldCard(int jsonFileID, List<String> cardKeyList) async {
     final rows = await db.query(tabName,
       columns   : [kCardKey],
@@ -652,33 +650,24 @@ class TabCardStat {
     return id;
   }
 
-  /// Удаляет все записи в таблице, нужно для тестовых нужд
+  /// Deletes all records in the table, needed for test purposes
   Future<void> clear() async {
     db.delete(tabName);
   }
 }
 
 class DBProvider {
-  DBProvider._();
+  final String dbPath;
+  
+  DBProvider(this.dbPath);
 
-  static final DBProvider db = DBProvider._();
+  late database;
 
-  Database? _database;
-
-  Future<Database?> get database async {
-    if (_database != null) return _database;
-    _database = await _initDB();
-    return _database;
-  }
-
-   Future<Database> _initDB() async {
-    Directory documentsDirectory = await getApplicationDocumentsDirectory();
-    String path = join(documentsDirectory.path, "decard.db");
-    print('DB path: $path');
-    return await openDatabase(path, version: 1, onOpen: (db) {},
-        onCreate: (Database db, int version) async {
+  Future<void> init() async {
+    database = await openDatabase(path, version: 1, onOpen: (db) {},
+      onCreate: (Database db, int version) async {
           await _createTables(db);
-        });
+    });
   }
 
   _createTables(Database db) async {
@@ -695,7 +684,6 @@ class DBProvider {
   }
 
   deleteDB( ) async {
-    if (_database == null) return;
-    deleteDatabase(_database!.path);
+    deleteDatabase(database.path);
   }
 }
