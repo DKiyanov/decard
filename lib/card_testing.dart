@@ -90,12 +90,12 @@ class _DeCardState extends State<DeCard> {
                 if (value == TextConst.txtInitDirList){
                   appState.initFileSourceList();
                 }
-                if (value == TextConst.txtDeleteDB){
-                  _deleteDB();
-                }
-                if (value == TextConst.txtClearDB){
-                  _clearDB();
-                }
+                // if (value == TextConst.txtDeleteDB){
+                //   _deleteDB();
+                // }
+                // if (value == TextConst.txtClearDB){
+                //   _clearDB();
+                // }
 
                 if (value == TextConst.txtStartTest) {
                   appState.selfTest();
@@ -120,20 +120,20 @@ class _DeCardState extends State<DeCard> {
     );
   }
 
-  Future<void> _deleteDB() async {
-    await DBProvider.db.deleteDB();
-  }
-
-  Future<void> _clearDB() async {
-    final db = await DBProvider.db.database;
-    await db!.delete(TabSourceFile.tabName);
-    await db.delete(TabJsonFile.tabName);
-    await db.delete(TabCardStyle.tabName);
-    await db.delete(TabCardHead.tabName);
-    await db.delete(TabCardBody.tabName);
-    await db.delete(TabCardTag.tabName);
-    await db.delete(TabCardStat.tabName);
-  }
+  // Future<void> _deleteDB() async {
+  //   await DecardDB.db.deleteDB();
+  // }
+  //
+  // Future<void> _clearDB() async {
+  //   final db = await DecardDB.db.database;
+  //   await db!.delete(TabSourceFile.tabName);
+  //   await db.delete(TabJsonFile.tabName);
+  //   await db.delete(TabCardStyle.tabName);
+  //   await db.delete(TabCardHead.tabName);
+  //   await db.delete(TabCardBody.tabName);
+  //   await db.delete(TabCardTag.tabName);
+  //   await db.delete(TabCardStat.tabName);
+  // }
 
   Future<void> _selectNextCard() async {
     final ok = await appState.cardController.selectNextCard();

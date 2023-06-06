@@ -156,6 +156,11 @@ class Regulator {
 
   static Future<Regulator> fromFile(String filePath) async {
     final jsonFile = File(filePath);
+
+    if (! await jsonFile.exists()) {
+      return Regulator(options: RegOptions(), setList: []);
+    }
+
     final fileData = await jsonFile.readAsString();
     final json = jsonDecode(fileData); 
     return Regulator.fromMap(json);

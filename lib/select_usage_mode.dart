@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'app_state.dart';
 import 'common.dart';
-import 'db_file_list.dart';
 import 'options_editor.dart';
 
 class UsingModeSelector extends StatefulWidget {
@@ -82,7 +81,7 @@ class _UsingModeSelectorState extends State<UsingModeSelector> {
 
     if (_usingMode == UsingMode.manager){
       appState.setUsingMode(_usingMode!);
-      DbFileList.navigatorPushReplacement(context);
+      // TODO navigate to child list
     }
   }
 }

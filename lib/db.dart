@@ -2,36 +2,9 @@ import 'dart:convert';
 import 'dart:core';
 import 'dart:io';
 
-import 'package:path/path.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
-class DbSource {
-  final Database db;
-  late TabSourceFile   tabSourceFile;
-  late TabJsonFile     tabJsonFile;
-  late TabCardHead     tabCardHead;
-  late TabCardTag      tabCardTag;
-  late TabCardLink     tabCardLink;
-  late TabCardLinkTag  tabCardLinkTag;
-  late TabCardBody     tabCardBody;
-  late TabCardStyle    tabCardStyle;
-  late TabQualityLevel tabQualityLevel;
-  late TabCardStat     tabCardStat;
-
-  DbSource(this.db){
-    tabSourceFile   = TabSourceFile(db);
-    tabJsonFile     = TabJsonFile(db);
-    tabCardHead     = TabCardHead(db);
-    tabCardTag      = TabCardTag(db);
-    tabCardLink     = TabCardLink(db);
-    tabCardLinkTag  = TabCardLinkTag(db);
-    tabCardBody     = TabCardBody(db);
-    tabCardStyle    = TabCardStyle(db);
-    tabQualityLevel = TabQualityLevel(db);
-    tabCardStat     = TabCardStat(db);
-  }
-}
+import 'decardj.dart';
 
 /// Source files
 class TabSourceFile {
@@ -656,18 +629,48 @@ class TabCardStat {
   }
 }
 
-class DBProvider {
+class DbSource {
+  final Database db;
+  late TabSourceFile   tabSourceFile;
+  late TabJsonFile     tabJsonFile;
+  late TabCardHead     tabCardHead;
+  late TabCardTag      tabCardTag;
+  late TabCardLink     tabCardLink;
+  late TabCardLinkTag  tabCardLinkTag;
+  late TabCardBody     tabCardBody;
+  late TabCardStyle    tabCardStyle;
+  late TabQualityLevel tabQualityLevel;
+  late TabCardStat     tabCardStat;
+
+  DbSource(this.db){
+    tabSourceFile   = TabSourceFile(db);
+    tabJsonFile     = TabJsonFile(db);
+    tabCardHead     = TabCardHead(db);
+    tabCardTag      = TabCardTag(db);
+    tabCardLink     = TabCardLink(db);
+    tabCardLinkTag  = TabCardLinkTag(db);
+    tabCardBody     = TabCardBody(db);
+    tabCardStyle    = TabCardStyle(db);
+    tabQualityLevel = TabQualityLevel(db);
+    tabCardStat     = TabCardStat(db);
+  }
+}
+
+class DecardDB {
   final String dbPath;
   
-  DBProvider(this.dbPath);
+  DecardDB(this.dbPath);
 
-  late database;
+  late Database database;
+  late DbSource source;
 
   Future<void> init() async {
-    database = await openDatabase(path, version: 1, onOpen: (db) {},
+    database = await openDatabase(dbPath, version: 1, onOpen: (db) {},
       onCreate: (Database db, int version) async {
           await _createTables(db);
     });
+
+    source = DbSource(database);
   }
 
   _createTables(Database db) async {

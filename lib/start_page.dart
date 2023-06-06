@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'app_state.dart';
 import 'card_testing.dart';
 import 'common.dart';
-import 'db_file_list.dart';
 
 class StartPage extends StatefulWidget {
   const StartPage({Key? key}) : super(key: key);
@@ -44,7 +43,7 @@ class _StartPageState extends State<StartPage> {
       return const DeCard();
     }
     if (appState.usingMode == UsingMode.manager) {
-      return const DbFileList();
+      // TODO return child list
     }
     return Container();
   }

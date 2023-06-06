@@ -40,7 +40,7 @@ class DataLoader {
   /// version control is performed compared to what was previously loaded into the database
   Future<void> refreshDB({ required List<String> dirForScanList, required String selfDir, required DbSource dbSource}) async {
     _selfDir = selfDir;
-//    _dbSource = dbSource;
+    _dbSource = dbSource;
     errorList.clear();
 
     for (var dir in dirForScanList) {
