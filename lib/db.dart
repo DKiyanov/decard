@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:core';
 import 'dart:io';
 
+import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
 import 'decardj.dart';
@@ -665,7 +666,8 @@ class DecardDB {
   late DbSource source;
 
   Future<void> init() async {
-    database = await openDatabase(dbPath, version: 1, onOpen: (db) {},
+    String path = join(dbPath, "decard.db");
+    database = await openDatabase(path, version: 1, onOpen: (db) {},
       onCreate: (Database db, int version) async {
           await _createTables(db);
     });
