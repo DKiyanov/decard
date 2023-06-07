@@ -136,19 +136,19 @@ class _DeCardState extends State<DeCard> {
   // }
 
   Future<void> _selectNextCard() async {
-    final ok = await appState.cardController.selectNextCard();
+    final ok = await appState.curChild.cardController.selectNextCard();
     if (!ok) {
       Fluttertoast.showToast(msg: TextConst.txtNoCards);
     } else {
-      appState.prefs.setInt(keyCardFileID , appState.cardController.card!.head.jsonFileID);
-      appState.prefs.setInt(keyCardID     , appState.cardController.card!.head.cardID);
-      appState.prefs.setInt(keyCardBodyNum, appState.cardController.card!.body.bodyNum);
+      appState.prefs.setInt(keyCardFileID , appState.curChild.cardController.card!.head.jsonFileID);
+      appState.prefs.setInt(keyCardID     , appState.curChild.cardController.card!.head.cardID);
+      appState.prefs.setInt(keyCardBodyNum, appState.curChild.cardController.card!.body.bodyNum);
     }
   }
 
   Future<void> _setTestCard(int jsonFileID, int cardID, int bodyNum) async {
     try {
-      await appState.cardController.setCard(jsonFileID, cardID, bodyNum: bodyNum);
+      await appState.curChild.cardController.setCard(jsonFileID, cardID, bodyNum: bodyNum);
     } catch (e) {
       _selectNextCard();
     }
@@ -205,7 +205,7 @@ class _DeCardState extends State<DeCard> {
       ]);
     }
 
-    if (appState.cardController.card == null) {
+    if (appState.curChild.cardController.card == null) {
       return Center(
         child: ElevatedButton(
             onPressed : _startFirstTest,
@@ -222,15 +222,15 @@ class _DeCardState extends State<DeCard> {
   Widget _cardWidget() {
     return EventReceiverWidget(
       builder: (_) {
-        if (appState.cardController.card == null) return Container();
+        if (appState.curChild.cardController.card == null) return Container();
 
         return CardWidget(
-          card                  : appState.cardController.card!,
+          card                  : appState.curChild.cardController.card!,
           onPressSelectNextCard : _selectNextCard,
           demoMode              : appState.appMode == AppMode.demo,
         );
       },
-      events: [appState.cardController.onChange],
+      events: [appState.curChild.cardController.onChange],
     );
   }
 

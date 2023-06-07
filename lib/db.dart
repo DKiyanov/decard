@@ -258,7 +258,7 @@ class TabCardHead {
   static const String kJsonFileID    = TabJsonFile.kJsonFileID;
   static const String kCardKey       = 'cardKey'; // map from DjfCard.id
   static const String kTitle         = DjfCard.title;
-  static const String kGroup         = DjfCard.group;
+  static const String kGroup         = 'groupKey'; // map from DjfCard.group;
   static const String kBodyCount     = 'bodyCount'; // number of records in the DjfCard.bodyList
 
   static const String createQuery = "CREATE TABLE $tabName ("

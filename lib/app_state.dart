@@ -16,6 +16,7 @@ import 'package:simple_events/simple_events.dart';
 import 'package:sqflite/sqflite.dart';
 
 import 'card_model.dart';
+import 'child.dart';
 import 'db.dart';
 import 'card_controller.dart';
 import 'common.dart';
@@ -83,17 +84,9 @@ class AppState {
   double _earned = 0;
   double get earned => _earned;
 
-  late DecardDB decardDB;
-  late Database db;
-  late DbSource dbSource;
-
-
-  late ProcessCardController processCardController;
-  late CardController cardController;
-
   late DataLoader _dataLoader;
 
-  late Regulator regulator;
+  late Child curChild;
 
   factory AppState() {
     return _instance;
@@ -104,23 +97,10 @@ class AppState {
   Future<void> init() async {
     await _loadOptions();
 
-    decardDB = DecardDB(_appDir);
-    await decardDB.init();
+    curChild = Child('child', _appDir);
+    await curChild.init();
 
-    db = decardDB.database;
-    dbSource = decardDB.source;
-
-    regulator = await Regulator.fromFile('$_appDir/regulator.json');
-
-    processCardController = ProcessCardController(db, regulator, dbSource.tabCardStat, dbSource.tabCardHead);
-    await processCardController.init();
-
-    cardController = CardController(
-      dbSource             : dbSource,
-      processCardController: processCardController,
-    );
-
-    cardController.onAddEarn.subscribe((listener, earn){
+    curChild.cardController.onAddEarn.subscribe((listener, earn){
       addEarn(earn!);
     });
 
@@ -253,10 +233,10 @@ class AppState {
     if (_scanningOnProcess) return;
     _scanningOnProcess = true;
 
-    final errList = await scanNetworkFileSource(_fileSourceList, dbSource.tabSourceFile);
+    final errList = await scanNetworkFileSource(_fileSourceList, curChild.dbSource.tabSourceFile);
 
     final dirList = _fileSourceList.map((fileSource) => fileSource.localPath).toList();
-    _dataLoader.refreshDB(dirForScanList: dirList, selfDir: _appDir, dbSource: dbSource);
+    _dataLoader.refreshDB(dirForScanList: dirList, selfDir: _appDir, dbSource: curChild.dbSource);
     errList.addAll(_dataLoader.errorList);
 
     scanErrList.clear();
@@ -412,19 +392,19 @@ class AppState {
 
     final random = Random();
 
-    await dbSource.tabCardStat.clear();
-    await processCardController.init();
+    await curChild.dbSource.tabCardStat.clear();
+    await curChild.processCardController.init();
 
     final testCardController = CardController(
-      dbSource: dbSource,
-      processCardController: processCardController,
+      dbSource: curChild.dbSource,
+      processCardController: curChild.processCardController,
     );
 
     print('tstres start');
 
     for( var dayNum = 1 ; dayNum <= daysCount; dayNum++ ) {
       curDate = curDate.add(const Duration(days: 1));
-      processCardController.setTestDate(curDate);
+      curChild.processCardController.setTestDate(curDate);
 
       final testsCount =  random.nextInt(maxCountTestPerDay);
 
@@ -442,9 +422,9 @@ class AppState {
           result = rnd <= 98;
         }
 
-        await processCardController.registerResult(testCardController.card!.head.jsonFileID, testCardController.card!.head.cardID, result);
+        await curChild.processCardController.registerResult(testCardController.card!.head.jsonFileID, testCardController.card!.head.cardID, result);
 
-        final statData = await processCardController.getStatData(testCardController.card!.head.cardID);
+        final statData = await curChild.processCardController.getStatData(testCardController.card!.head.cardID);
         final cardStat = CardStat.fromMap(statData!);
 
         print('tstres; date ; ${dateToInt(curDate)}; cardKey ; ${testCardController.card!.head.cardKey}; result ; $result; testsCount ; ${cardStat.testsCount}; quality ; ${cardStat.quality}');

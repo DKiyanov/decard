@@ -37,12 +37,12 @@ class _CardNavigatorState extends State<CardNavigator> {
   }
 
   Future<void> getDbInfo() async {
-    final fileRows = await appState.dbSource.tabJsonFile.getAllRows();
+    final fileRows = await appState.curChild.dbSource.tabJsonFile.getAllRows();
     _fileList = fileRows.map((row) => PacInfo.fromMap(row)).toList();
     _fileList.sort((a, b) => a.jsonFileID.compareTo(b.jsonFileID));
     _selFile = _fileList.first;
 
-    final cardRows = await appState.dbSource.tabCardHead.getAllRows();
+    final cardRows = await appState.curChild.dbSource.tabCardHead.getAllRows();
     _cardList = cardRows.map((row) => CardHead.fromMap(row)).toList();
     _cardList.sort((a, b) => a.cardID.compareTo(b.cardID));
     setFirstCard();
@@ -94,7 +94,7 @@ class _CardNavigatorState extends State<CardNavigator> {
 
   void setSelected() {
     setState(() {});
-    appState.cardController.setCard(_selCard!.jsonFileID, _selCard!.cardID, bodyNum: _selBodyNum);
+    appState.curChild.cardController.setCard(_selCard!.jsonFileID, _selCard!.cardID, bodyNum: _selBodyNum);
   }
 
   @override
