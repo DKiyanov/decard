@@ -29,6 +29,9 @@ class DrfOptions {
 
   /// Maximum available quality with a negative last result
   static const String negativeLastResultMaxQualityLimit = "negativeLastResultMaxQualityLimit";
+
+  /// minimum earnings that can be transferred outside
+  static const String minEarnTransferValue = 'minEarnTransferVal';
 }
 
 class DrfSet {
@@ -70,6 +73,8 @@ class RegOptions {
   /// Maximum available quality with a negative last result
   final int negativeLastResultMaxQualityLimit;
 
+  final int minEarnTransferValue;
+
   RegOptions({
     this.hotDayCount                = 7,
     this.hotCardQualityTopLimit     = 70,
@@ -82,6 +87,7 @@ class RegOptions {
     this.lowTryCount                = 7,
     this.lowDayCount                = 4,
     this.negativeLastResultMaxQualityLimit = 50,
+    this.minEarnTransferValue = 10,
   });
 
   factory RegOptions.fromMap(Map<String, dynamic> json){
@@ -97,6 +103,7 @@ class RegOptions {
         lowTryCount                 : json[DrfOptions.lowTryCount               ],
         lowDayCount                 : json[DrfOptions.lowDayCount               ],
         negativeLastResultMaxQualityLimit : json[DrfOptions.negativeLastResultMaxQualityLimit],
+        minEarnTransferValue        : json[DrfOptions.minEarnTransferValue],
     );
   }
 }

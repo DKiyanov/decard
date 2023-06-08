@@ -22,20 +22,15 @@ class OptionsEditor extends StatefulWidget {
 
 class _OptionsEditorState extends State<OptionsEditor> {
   final _passwordController      = TextEditingController();
-  final _minEarnController       = TextEditingController();
-  final _uploadStatUrlController = TextEditingController();
 
   bool    _obscureText       = true;
   bool    _firstPasswordShow = true;
   String? _passwordError;
   bool    _passwordChanged   = false;
-  String? _minEarnError;
 
   @override
   void initState() {
     super.initState();
-    _minEarnController.text = '${appState.minEarnValue}';
-    _uploadStatUrlController.text = appState.uploadStatUrl?.url??'';
     if (!appState.firstRun) _passwordController.text = widget.password;
   }
 
@@ -62,69 +57,6 @@ class _OptionsEditorState extends State<OptionsEditor> {
             child: ListView(
               children: [
                 Container(height: 10),
-
-                // Поле ввода - виличина минимального зароботка
-                TextField(
-                  controller: _minEarnController,
-                  keyboardType: TextInputType.number,
-
-                  decoration: InputDecoration(
-                    labelText: TextConst.txtMinEarnInput,
-                    helperText: TextConst.txtMinEarnHelp,
-                    helperMaxLines: 2,
-                    errorText: _minEarnError,
-                    filled: true,
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: const BorderSide(width: 3, color: Colors.blueGrey),
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: const BorderSide(width: 3, color: Colors.blue),
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    errorBorder: OutlineInputBorder(
-                      borderSide: const BorderSide(width: 3, color: Colors.red),
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    focusedErrorBorder: OutlineInputBorder(
-                      borderSide: const BorderSide(width: 3, color: Colors.red),
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                  ),
-                ),
-
-                Container(height: 20),
-
-                // Поле ввода - Адрес для выгрузки статистики
-                TextField(
-                  controller: _uploadStatUrlController,
-                  readOnly: true,
-                  decoration: InputDecoration(
-                    labelText: TextConst.txtUploadStatUrl,
-                    filled: true,
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: const BorderSide(width: 3, color: Colors.blueGrey),
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: const BorderSide(width: 3, color: Colors.blue),
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    suffixIcon : IconButton(
-                      icon: const Icon(Icons.arrow_right, color: Colors.green),
-                      onPressed: ()=> _onUploadStatUrlEdit(),
-                    ),
-                  ),
-                  onChanged: (text){
-                    if (_minEarnError != null) {
-                      setState(() {
-                        _minEarnError = null;
-                      });
-                    }
-                  },
-                ),
-
-                Container(height: 20),
 
                 // Кнопка - настройка источников файлов
                 ElevatedButton(
@@ -203,33 +135,14 @@ class _OptionsEditorState extends State<OptionsEditor> {
     }
   }
 
-  Future<void> _onUploadStatUrlEdit() async {
-    if (await appState.editUploadStatUrl(context)) {
-      setState(() {
-        _uploadStatUrlController.text = appState.uploadStatUrl?.url??'';
-      });
-    }
-  }
-
   void _onOkExit() {
     _passwordError = null;
-    _minEarnError = null;
 
     if (_passwordController.text.isEmpty) {
       _passwordError = TextConst.errPasswordIsEmpty;
     }
 
-    if (_minEarnController.text.isEmpty) {
-      _minEarnError = TextConst.errSetMinEarn;
-    }
-
-    try {
-      appState.minEarnValue = int.parse(_minEarnController.text);
-    } catch (e){
-      _minEarnError = TextConst.errInvalidValue;
-    }
-
-    if (_minEarnError != null || _passwordError != null) {
+    if (_passwordError != null) {
       setState(() {});
       return;
     }

@@ -2,9 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
-import 'dart:typed_data';
 
-import 'package:decard/regulator.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -13,15 +11,12 @@ import 'package:crypto/crypto.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:flutter_broadcasts/flutter_broadcasts.dart';
 import 'package:simple_events/simple_events.dart';
-import 'package:sqflite/sqflite.dart';
 
 import 'card_model.dart';
 import 'child.dart';
-import 'db.dart';
 import 'card_controller.dart';
 import 'common.dart';
 import 'file_source.dart';
-import 'file_source_editor.dart';
 import 'file_source_list_editor.dart';
 import 'loader.dart';
 import 'net_file_source_scan.dart';
@@ -42,51 +37,25 @@ class AppState {
   static const String _keyUsingMode        = 'usingMode';
   static const String _keyPassword         = 'password';
   static const String _keyFileSourceList   = 'fileSourceList';
-  static const String _keyMinEarnValue     = 'minEarnValue';
-  static const String _keyUploadStatUrl    = 'uploadStatUrl';
-  static const String _keyLastUploadStatDT = 'lastUploadStatDT';
-
-  static const String _keyEarned         = 'earned';
-
-  static const String _keyAddEstimate = 'com.dkiyanov.learning_control.action.ADD_ESTIMATE';
-  static const String _keyCoinTypeMinute = 'minute';
-
 
   static final AppState _instance = AppState._();
 
   late SharedPreferences prefs;
-
-  final onChangeEarn = SimpleEvent();
+  late PackageInfo packageInfo;
 
   final _fileSourceList = <FileSource>[];
   late String _appDir;
-
-  late String _coinSourceName;
 
   UsingMode? _usingMode;
   UsingMode get usingMode => _usingMode!;
 
   bool get firstRun => _usingMode == null;
 
-  int _minEarnValue = 10;
-  int get minEarnValue => _minEarnValue;
-  set minEarnValue(int value) {
-    if (_minEarnValue == value) return;
-    _minEarnValue = value;
-    prefs.setInt(_keyMinEarnValue, value);
-  }
-
-  FileSource? _uploadStatUrl;
-  FileSource? get uploadStatUrl => _uploadStatUrl;
-
-  int _lastUploadStatDT = 0;
-
-  double _earned = 0;
-  double get earned => _earned;
-
   late DataLoader _dataLoader;
 
   late Child curChild;
+
+  late EarnController earnController;
 
   factory AppState() {
     return _instance;
@@ -100,8 +69,10 @@ class AppState {
     curChild = Child('child', _appDir);
     await curChild.init();
 
+    earnController = EarnController(prefs, packageInfo);
+
     curChild.cardController.onAddEarn.subscribe((listener, earn){
-      addEarn(earn!);
+      earnController.addEarn(earn!);
     });
 
     _dataLoader = DataLoader();
@@ -117,8 +88,7 @@ class AppState {
   }
 
   Future<void> _loadOptions() async {
-    PackageInfo packageInfo = await PackageInfo.fromPlatform();
-    _coinSourceName = '${packageInfo.packageName}@${packageInfo.appName}';
+    packageInfo = await PackageInfo.fromPlatform();
 
     Directory appDocDir = await getApplicationDocumentsDirectory();
     _appDir =  appDocDir.path;
@@ -137,16 +107,7 @@ class AppState {
       final fileSourceList = stringList.map<FileSource>((jsonStr) => FileSource.fromJson(jsonDecode(jsonStr))).toList();
       _fileSourceList.addAll(fileSourceList);
 
-      _earned = prefs.getDouble(_keyEarned)??0;
 
-      _minEarnValue = prefs.getInt(_keyMinEarnValue)??minEarnValue;
-
-      final fileSourceJson = prefs.getString(_keyUploadStatUrl)??'';
-      if (fileSourceJson.isNotEmpty){
-        _uploadStatUrl = FileSource.fromJson(jsonDecode(fileSourceJson));
-      }
-
-      _lastUploadStatDT = prefs.getInt(_keyLastUploadStatDT)??0;
     }
   }
 
@@ -300,88 +261,6 @@ class AppState {
     return savedHash == hash;
   }
 
-  Future<bool> editUploadStatUrl(BuildContext context) async {
-    final newFileSource = await FileSourceEditor.navigatorPush(context, TextConst.txtUploadStatUrl, _uploadStatUrl);
-    if (newFileSource != null) {
-      _uploadStatUrl = newFileSource;
-      final fileSourceJson = jsonEncode( newFileSource.toJson());
-      prefs.setString(_keyUploadStatUrl, fileSourceJson);
-      return true;
-    }
-    return false;
-  }
-
-  void addEarn(double earn){
-    _earned += earn;
-    prefs.setDouble(_keyEarned, _earned);
-    onChangeEarn.send();
-  }
-
-  Future<void> _sendEstimateIntent(int minuteCount) async {
-    await sendBroadcast(
-      BroadcastMessage(
-          name: _keyAddEstimate,
-          data: {
-            "CoinSourceName" : _coinSourceName,
-            "CoinType"       : _keyCoinTypeMinute,
-            "CoinCount"      : minuteCount,
-          }
-      ),
-    );
-  }
-
-  /// Рассылка уведомлений о зароботке
-  Future<void> sendEarned() async {
-    final minuteCount = _earned.truncate();
-
-    _sendEstimateIntent(minuteCount);
-
-    _earned = _earned - minuteCount;
-    await prefs.setDouble(_keyEarned, _earned);
-
-    onChangeEarn.send();
-  }
-
-  /// Выгрузка статистики
-  Future<void> uploadStat() async {
-    if (uploadStatUrl == null) return;
-
-//    final fdt = DateTime.fromMillisecondsSinceEpoch(_lastUploadStatDT);
-    final ndt = DateTime.now();
-
-    // в результате должна получиться строка json
-    //
-    // данные должны быть за период с последней выгрузки по текущий момент
-    // данные содержат:
-    //   статистику за период:
-    //     сколько карточек решено:
-    //       правильно
-    //       не правильно
-    //     общее затраченное время
-    //   текущее состояние по пакететам:
-    //     время изучения (кол-во дней от даты начала)
-    //     затраченное время (суммарное время по карточкам)
-    //     сколько картоек изучено
-    //     сколько осталось
-    //     процен изучения
-    //     сколько карточек в активном изучении
-
-    final Map<String, dynamic> map = {};
-
-
-    final jsonStr = jsonEncode(map);
-    final listInt = jsonStr.codeUnits;
-    final bytes = Uint8List.fromList(listInt);
-
-    String fileName = ndt.toIso8601String();
-    fileName.replaceAll(':', '-');
-
-    uploadData(uploadStatUrl!, '$fileName.json', bytes);
-
-    _lastUploadStatDT = ndt.millisecondsSinceEpoch;
-    prefs.setInt(_keyLastUploadStatDT, _lastUploadStatDT);
-  }
-
   /// тестирование и отладка алгоритма выбора карточек
   Future<void> selfTest() async {
     const int daysCount = 100;
@@ -433,5 +312,58 @@ class AppState {
     }
 
     print('tstres finish');
+  }
+}
+
+class EarnController {
+  static const String _keyEarned         = 'earned';
+
+  static const String _keyAddEstimate = 'com.dkiyanov.learning_control.action.ADD_ESTIMATE';
+  static const String _keyCoinTypeMinute = 'minute';
+
+  late String _coinSourceName;
+
+  final SharedPreferences prefs;
+  final PackageInfo packageInfo;
+
+  final onChangeEarn = SimpleEvent();
+
+  double _earned = 0;
+  double get earned => _earned;
+
+  EarnController(this.prefs, this.packageInfo) {
+    _earned = prefs.getDouble(_keyEarned)??0;
+    _coinSourceName = '${packageInfo.packageName}@${packageInfo.appName}';
+  }
+
+  void addEarn(double earn){
+    _earned += earn;
+    prefs.setDouble(_keyEarned, _earned);
+    onChangeEarn.send();
+  }
+
+  Future<void> _sendEstimateIntent(int minuteCount) async {
+    await sendBroadcast(
+      BroadcastMessage(
+          name: _keyAddEstimate,
+          data: {
+            "CoinSourceName" : _coinSourceName,
+            "CoinType"       : _keyCoinTypeMinute,
+            "CoinCount"      : minuteCount,
+          }
+      ),
+    );
+  }
+
+  /// Рассылка уведомлений о зароботке
+  Future<void> sendEarned() async {
+    final minuteCount = _earned.truncate();
+
+    _sendEstimateIntent(minuteCount);
+
+    _earned = _earned - minuteCount;
+    await prefs.setDouble(_keyEarned, _earned);
+
+    onChangeEarn.send();
   }
 }

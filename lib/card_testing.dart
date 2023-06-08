@@ -159,7 +159,7 @@ class _DeCardState extends State<DeCard> {
     return EventReceiverWidget(
       builder: (_) {
         Color? color;
-        if (appState.earned > appState.minEarnValue) {
+        if (appState.earnController.earned > appState.curChild.regulator.options.minEarnTransferValue) {
           color = Colors.green;
         } else {
           color = Colors.grey;
@@ -174,14 +174,14 @@ class _DeCardState extends State<DeCard> {
               ),
               borderRadius: const BorderRadius.all(Radius.circular(20))
           ),
-          child: Text(appState.earned.toStringAsFixed(1)),
+          child: Text(appState.earnController.earned.toStringAsFixed(1)),
         );
 
-        if (appState.earned > appState.minEarnValue) {
+        if (appState.earnController.earned > appState.curChild.regulator.options.minEarnTransferValue ) {
           return Row(children: [
             earnedBox,
             IconButton(
-              onPressed: appState.sendEarned,
+              onPressed: appState.earnController.sendEarned,
               icon: const Icon(Icons.send)
             )
           ]);
@@ -189,7 +189,7 @@ class _DeCardState extends State<DeCard> {
           return earnedBox;
         }
       },
-      events: [appState.onChangeEarn],
+      events: [appState.earnController.onChangeEarn],
     );
   }
 
