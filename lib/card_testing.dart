@@ -6,7 +6,6 @@ import 'app_state.dart';
 import 'card_navigator.dart';
 import 'card_widget.dart';
 import 'common.dart';
-import 'db.dart';
 import 'package:decard/password_input.dart';
 
 class DeCard extends StatefulWidget {
@@ -43,15 +42,15 @@ class _DeCardState extends State<DeCard> {
                 return [
                   TextConst.txtOptions,
 
-                  if (appState.scanningOnProcess) ...[
-                    TextConst.txtDownloadingInProgress,
-                  ] else ...[
-                    TextConst.txtDownloadNewFiles,
-                  ],
-
-                  if (appState.scanErrList.isNotEmpty) ...[
-                    TextConst.txtLastDownloadError
-                  ],
+                  // if (appState.scanningOnProcess) ...[
+                  //   TextConst.txtDownloadingInProgress,
+                  // ] else ...[
+                  //   TextConst.txtDownloadNewFiles,
+                  // ],
+                  //
+                  // if (appState.scanErrList.isNotEmpty) ...[
+                  //   TextConst.txtLastDownloadError
+                  // ],
 
                   if (appState.appMode == AppMode.testing) ...[
                     TextConst.txtDemo,
@@ -76,20 +75,20 @@ class _DeCardState extends State<DeCard> {
                   PasswordInput.navigatorPush(context);
                 }
 
-                if (value == TextConst.txtDownloadNewFiles) {
-                  await appState.scanFileSourceList();
-                  if (mounted) {
-                    appState.scanErrorsDialog(context);
-                  }
-                }
+                // if (value == TextConst.txtDownloadNewFiles) {
+                //   await appState.scanFileSourceList();
+                //   if (mounted) {
+                //     appState.scanErrorsDialog(context);
+                //   }
+                // }
 
-                if (value == TextConst.txtLastDownloadError) {
-                  if (mounted) appState.scanErrorsDialog(context);
-                }
-
-                if (value == TextConst.txtInitDirList){
-                  appState.initFileSourceList();
-                }
+                // if (value == TextConst.txtLastDownloadError) {
+                //   if (mounted) appState.scanErrorsDialog(context);
+                // }
+                //
+                // if (value == TextConst.txtInitDirList){
+                //   appState.initFileSourceList();
+                // }
                 // if (value == TextConst.txtDeleteDB){
                 //   _deleteDB();
                 // }

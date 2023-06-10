@@ -58,14 +58,6 @@ class _OptionsEditorState extends State<OptionsEditor> {
               children: [
                 Container(height: 10),
 
-                // Кнопка - настройка источников файлов
-                ElevatedButton(
-                    onPressed: _onPressEditFileSource,
-                    child: Text(TextConst.txtTuningFileSourceList)
-                ),
-
-                Container(height: 30),
-
                 // Поле ввода - изенение пароля
                 TextField(
                   controller: _passwordController,
@@ -127,13 +119,6 @@ class _OptionsEditorState extends State<OptionsEditor> {
     );
   }
 
-  Future<void> _onPressEditFileSource() async {
-    await appState.editFileSourceList(context);
-    await appState.scanFileSourceList();
-    if (mounted){
-      appState.scanErrorsDialog(context);
-    }
-  }
 
   void _onOkExit() {
     _passwordError = null;

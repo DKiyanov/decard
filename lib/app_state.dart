@@ -16,10 +16,7 @@ import 'card_model.dart';
 import 'child.dart';
 import 'card_controller.dart';
 import 'common.dart';
-import 'file_source.dart';
-import 'file_source_list_editor.dart';
 import 'loader.dart';
-import 'net_file_source_scan.dart';
 
 enum UsingMode {
   testing,
@@ -34,16 +31,14 @@ enum AppMode {
 final appState = AppState();
 
 class AppState {
-  static const String _keyUsingMode        = 'usingMode';
-  static const String _keyPassword         = 'password';
-  static const String _keyFileSourceList   = 'fileSourceList';
+  static const String _kUsingMode        = 'usingMode';
+  static const String _kPassword         = 'password';
 
   static final AppState _instance = AppState._();
 
   late SharedPreferences prefs;
   late PackageInfo packageInfo;
 
-  final _fileSourceList = <FileSource>[];
   late String _appDir;
 
   UsingMode? _usingMode;
@@ -57,6 +52,8 @@ class AppState {
 
   late EarnController earnController;
 
+  late AppMode appMode;
+
   factory AppState() {
     return _instance;
   }
@@ -64,7 +61,16 @@ class AppState {
   AppState._();
 
   Future<void> init() async {
-    await _loadOptions();
+    prefs = await SharedPreferences.getInstance();
+
+    final usingModeStr = prefs.getString(_kUsingMode)??'';
+    if (usingModeStr.isEmpty) return; // first run
+    _usingMode = UsingMode.values.firstWhere((usingMode) => usingMode.name == usingModeStr);
+
+    packageInfo = await PackageInfo.fromPlatform();
+
+    Directory appDocDir = await getApplicationDocumentsDirectory();
+    _appDir =  appDocDir.path;
 
     curChild = Child('child', _appDir);
     await curChild.init();
@@ -77,37 +83,8 @@ class AppState {
 
     _dataLoader = DataLoader();
 
-    if (await checkStoragePermission()) {
-      scanFileSourceList(); // без await - оно не должно тормозить запуск программы
-    }
-    Timer.periodic(const Duration(hours: 1), (_) => scanFileSourceList());
-
     if (usingMode == UsingMode.testing) {
       appMode = AppMode.testing;
-    }
-  }
-
-  Future<void> _loadOptions() async {
-    packageInfo = await PackageInfo.fromPlatform();
-
-    Directory appDocDir = await getApplicationDocumentsDirectory();
-    _appDir =  appDocDir.path;
-
-    prefs = await SharedPreferences.getInstance();
-//    _prefs.clear(); // for debug
-
-    final usingModeStr = prefs.getString(_keyUsingMode)??'';
-    if (usingModeStr.isEmpty){ // first run
-      await initFileSourceList();
-    } else {
-      _usingMode = UsingMode.values.firstWhere((usingMode) => usingMode.name == usingModeStr);
-
-      _fileSourceList.clear();
-      final stringList = prefs.getStringList(_keyFileSourceList)??[];
-      final fileSourceList = stringList.map<FileSource>((jsonStr) => FileSource.fromJson(jsonDecode(jsonStr))).toList();
-      _fileSourceList.addAll(fileSourceList);
-
-
     }
   }
 
@@ -120,95 +97,6 @@ class AppState {
       }
     }
     return true;
-  }
-
-  Future<void> initFileSourceList() async {
-    _fileSourceList.clear();
-
-    // https://stackoverflow.com/questions/72530115/flutter-download-a-file-from-url-automatically-to-downloads-directory
-
-    if (!await checkStoragePermission()) return;
-
-    // final status = await Permission.storage.status;
-    // if (status != PermissionStatus.granted) {
-    //   final result = await Permission.storage.request();
-    //   if (result != PermissionStatus.granted) {
-    //     return;
-    //   }
-    // }
-
-    // {
-    //   final status = await Permission.manageExternalStorage.status;
-    //   if (status != PermissionStatus.granted) {
-    //     final result = await Permission.manageExternalStorage.request();
-    //     if (result != PermissionStatus.granted) {
-    //       return;
-    //     }
-    //   }
-    // }
-
-    final downloadDirList = await getExternalStorageDirectories();
-    if (downloadDirList == null || downloadDirList.isEmpty) return;
-
-    for (var dir in downloadDirList) {
-      final path = dir.path;
-      final pos = path.indexOf('Android/data');
-      if (pos < 0) continue;
-
-      final downloadPath = '${path.substring(0,pos)}Download';
-      if (_fileSourceList.any((fileSource) => fileSource.url == downloadPath)) continue;
-
-      final downloadDir = Directory(downloadPath);
-      if (!await downloadDir.exists()) continue;
-
-      _fileSourceList.add(FileSource(type: FileSourceType.localPath, url: downloadPath));
-    }
-
-    _saveFileSourceList();
-  }
-
-  Future<void> editFileSourceList(BuildContext context) async {
-    final newFileSourceList = await FileSourceListEditor.navigatorPush(context, _fileSourceList);
-    if (newFileSourceList == null) return;
-
-    await prepareLocalPath(newFileSourceList, _appDir);
-
-    _fileSourceList.clear();
-    _fileSourceList.addAll(newFileSourceList);
-    _saveFileSourceList();
-  }
-
-  Future<void> _saveFileSourceList() async {
-    final prefs = await SharedPreferences.getInstance();
-    final stringList = _fileSourceList.map((fileSource) => jsonEncode(fileSource.toJson())).toList();
-    await prefs.setStringList(_keyFileSourceList, stringList);
-  }
-
-  bool _scanningOnProcess = false;
-  bool get scanningOnProcess => _scanningOnProcess;
-  final scanErrList = <String>[];
-
-  late AppMode appMode;
-
-  Future<void> scanFileSourceList() async {
-    if (_scanningOnProcess) return;
-    _scanningOnProcess = true;
-
-    final errList = await scanNetworkFileSource(_fileSourceList, curChild.dbSource.tabSourceFile);
-
-    final dirList = _fileSourceList.map((fileSource) => fileSource.localPath).toList();
-    _dataLoader.refreshDB(dirForScanList: dirList, selfDir: _appDir, dbSource: curChild.dbSource);
-    errList.addAll(_dataLoader.errorList);
-
-    scanErrList.clear();
-    scanErrList.addAll(errList);
-
-    _scanningOnProcess = false;
-  }
-
-  Future<void> scanErrorsDialog(BuildContext context) async {
-    if (scanErrList.isEmpty) return;
-    await errorsDialog(context, scanErrList, TextConst.txtUploadErrorInfo);
   }
 
   Future<void> errorsDialog(BuildContext context, List<String> errorList, String title) async {
@@ -239,7 +127,7 @@ class AppState {
   }
 
   Future<void> setUsingMode(UsingMode usingMode) async {
-    prefs.setString(_keyUsingMode, usingMode.name);
+    prefs.setString(_kUsingMode, usingMode.name);
   }
 
   String _getHash(String str) {
@@ -251,12 +139,12 @@ class AppState {
   /// Установка пароля
   Future<void> setPassword(String password) async {
     final hash = _getHash(password);
-    await prefs.setString(_keyPassword, hash);
+    await prefs.setString(_kPassword, hash);
   }
 
   /// Проверка пароля
   bool checkPassword(String password) {
-    final savedHash = prefs.getString(_keyPassword)??'';
+    final savedHash = prefs.getString(_kPassword)??'';
     final hash = _getHash(password);
     return savedHash == hash;
   }
