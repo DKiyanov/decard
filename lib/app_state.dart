@@ -1,13 +1,13 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:collection/collection.dart';
+import 'package:decard/server_connect.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:crypto/crypto.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:flutter_broadcasts/flutter_broadcasts.dart';
 import 'package:simple_events/simple_events.dart';
@@ -17,6 +17,7 @@ import 'child.dart';
 import 'card_controller.dart';
 import 'common.dart';
 import 'loader.dart';
+import 'package:path/path.dart' as path_util;
 
 enum UsingMode {
   testing,
@@ -31,8 +32,7 @@ enum AppMode {
 final appState = AppState();
 
 class AppState {
-  static const String _kUsingMode        = 'usingMode';
-  static const String _kPassword         = 'password';
+  static const String _kUsingMode = 'usingMode';
 
   static final AppState _instance = AppState._();
 
@@ -48,7 +48,9 @@ class AppState {
 
   late DataLoader _dataLoader;
 
-  late Child curChild;
+  late ServerConnect serverConnect;
+
+  final childList = <Child>[];
 
   late EarnController earnController;
 
@@ -63,28 +65,98 @@ class AppState {
   Future<void> init() async {
     prefs = await SharedPreferences.getInstance();
 
-    final usingModeStr = prefs.getString(_kUsingMode)??'';
-    if (usingModeStr.isEmpty) return; // first run
-    _usingMode = UsingMode.values.firstWhere((usingMode) => usingMode.name == usingModeStr);
-
     packageInfo = await PackageInfo.fromPlatform();
 
     Directory appDocDir = await getApplicationDocumentsDirectory();
     _appDir =  appDocDir.path;
 
-    curChild = Child('child', _appDir);
-    await curChild.init();
-
-    earnController = EarnController(prefs, packageInfo);
-
-    curChild.cardController.onAddEarn.subscribe((listener, earn){
-      earnController.addEarn(earn!);
-    });
+    serverConnect = ServerConnect(prefs);
 
     _dataLoader = DataLoader();
 
+    final usingModeStr = prefs.getString(_kUsingMode)??'';
+    if (usingModeStr.isEmpty) return; // first run
+
+    _usingMode = UsingMode.values.firstWhere((usingMode) => usingMode.name == usingModeStr);
+
+    await _initFinish();
+  }
+
+  Future<void> _initFinish() async {
+    await _initChildren();
+
     if (usingMode == UsingMode.testing) {
+      earnController = EarnController(prefs, packageInfo);
+
+      childList.first.cardController.onAddEarn.subscribe((listener, earn){
+        earnController.addEarn(earn!);
+      });
+
       appMode = AppMode.testing;
+    }
+
+    if (usingMode == UsingMode.manager) {
+      await _searchNewChildrenInServer();
+    }
+
+    synchronize();
+  }
+
+  Future<void> addChild(String childName) async {
+    final lowChildName = childName.toLowerCase();
+    if (childList.any((child) => child.name.toLowerCase() == lowChildName)) return;
+
+    final child = Child(childName, _appDir);
+    await child.init();
+
+    childList.add(child);
+  }
+
+  /// инициализирует детей каталоги которых есть на устройстве
+  Future<void> _initChildren() async {
+    final dir = Directory(_appDir);
+    final fileList = dir.listSync();
+    for (var file in fileList) {
+      if (file is Directory) {
+        final childName = path_util.basename(file.path);
+        if (childName == 'flutter_assets') continue;
+
+        print(childName);
+        await addChild(childName);
+      }
+    }
+  }
+
+  /// Поиск новых детей на сервере и заведение их локально
+  Future<void> _searchNewChildrenInServer() async {
+    final serverChildList = await appState.serverConnect.getChildList();
+
+    for (var childName in serverChildList) {
+      await addChild(childName);
+    }
+  }
+
+  Future<void> setUsingMode(UsingMode newUsingMode, String childName) async {
+    if (newUsingMode == UsingMode.testing) {
+      final useChildName = await serverConnect.addChild(childName);
+      await addChild(useChildName);
+    }
+
+    prefs.setString(_kUsingMode, newUsingMode.name);
+    _usingMode = newUsingMode;
+
+    await _initFinish();
+  }
+
+  Future<void> synchronize() async {
+    final serverChildList = await serverConnect.getChildList();
+    for (var childName in serverChildList) {
+      final lowChildName = childName.toLowerCase();
+      final child = childList.firstWhereOrNull((child) => child.name.toLowerCase() == lowChildName);
+      if (child == null) continue;
+
+      await serverConnect.synchronizeChild(child, childName);
+      await _dataLoader.refreshDB(dirForScanList: [child.downloadDir], selfDir: child.cardsDir, dbSource: child.dbSource);
     }
   }
 
@@ -126,31 +198,8 @@ class AppState {
     );
   }
 
-  Future<void> setUsingMode(UsingMode usingMode) async {
-    prefs.setString(_kUsingMode, usingMode.name);
-  }
-
-  String _getHash(String str) {
-    final bytes = utf8.encode(str);
-    final digest = sha256.convert(bytes);
-    return digest.toString();
-  }
-
-  /// Установка пароля
-  Future<void> setPassword(String password) async {
-    final hash = _getHash(password);
-    await prefs.setString(_kPassword, hash);
-  }
-
-  /// Проверка пароля
-  bool checkPassword(String password) {
-    final savedHash = prefs.getString(_kPassword)??'';
-    final hash = _getHash(password);
-    return savedHash == hash;
-  }
-
   /// тестирование и отладка алгоритма выбора карточек
-  Future<void> selfTest() async {
+  Future<void> selfTest(Child child) async {
     const int daysCount = 100;
     const int maxCountTestPerDay = 100;
     const int speed = 20; // колво показов для отличного запминания
@@ -159,19 +208,19 @@ class AppState {
 
     final random = Random();
 
-    await curChild.dbSource.tabCardStat.clear();
-    await curChild.processCardController.init();
+    await child.dbSource.tabCardStat.clear();
+    await child.processCardController.init();
 
     final testCardController = CardController(
-      dbSource: curChild.dbSource,
-      processCardController: curChild.processCardController,
+      dbSource: child.dbSource,
+      processCardController: child.processCardController,
     );
 
     print('tstres start');
 
     for( var dayNum = 1 ; dayNum <= daysCount; dayNum++ ) {
       curDate = curDate.add(const Duration(days: 1));
-      curChild.processCardController.setTestDate(curDate);
+      child.processCardController.setTestDate(curDate);
 
       final testsCount =  random.nextInt(maxCountTestPerDay);
 
@@ -189,9 +238,9 @@ class AppState {
           result = rnd <= 98;
         }
 
-        await curChild.processCardController.registerResult(testCardController.card!.head.jsonFileID, testCardController.card!.head.cardID, result);
+        await child.processCardController.registerResult(testCardController.card!.head.jsonFileID, testCardController.card!.head.cardID, result);
 
-        final statData = await curChild.processCardController.getStatData(testCardController.card!.head.cardID);
+        final statData = await child.processCardController.getStatData(testCardController.card!.head.cardID);
         final cardStat = CardStat.fromMap(statData!);
 
         print('tstres; date ; ${dateToInt(curDate)}; cardKey ; ${testCardController.card!.head.cardKey}; result ; $result; testsCount ; ${cardStat.testsCount}; quality ; ${cardStat.quality}');

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'app_state.dart';
 import 'card_testing.dart';
 import 'common.dart';
+import 'login.dart';
 
 class StartPage extends StatefulWidget {
   const StartPage({Key? key}) : super(key: key);
@@ -14,7 +15,6 @@ class StartPage extends StatefulWidget {
 
 class _StartPageState extends State<StartPage> {
   bool _isStarting = true;
-  Widget? _screen;
 
   @override
   void initState() {
@@ -28,8 +28,6 @@ class _StartPageState extends State<StartPage> {
   void _starting() async {
     await appState.init();
 
-    _screen = getScreenWidget();
-
     setState(() {
       _isStarting = false;
     });
@@ -37,14 +35,29 @@ class _StartPageState extends State<StartPage> {
 
   Widget getScreenWidget() {
     if (appState.firstRun) {
-      return const UsingModeSelector();
+      if (!appState.serverConnect.loggedIn) {
+        return Login(
+          serverConnect: appState.serverConnect,
+          editConnection: true,
+          onLoginOk: (){
+            setState(() {});
+          },
+        );
+      } else {
+        return UsingModeSelector(onUsingModeSelectOk: () {
+          setState(() {});
+        });
+      }
     }
+
     if (appState.usingMode == UsingMode.testing) {
-      return const DeCard();
+      return DeCard(child: appState.childList.first);
     }
+
     if (appState.usingMode == UsingMode.manager) {
       // TODO return child list
     }
+
     return Container();
   }
 
@@ -60,7 +73,7 @@ class _StartPageState extends State<StartPage> {
       );
     }
 
-    return _screen!;
+    return getScreenWidget();
   }
 
 }

@@ -5,15 +5,12 @@ import 'package:simple_events/simple_events.dart';
 import 'app_state.dart';
 import 'card_navigator.dart';
 import 'card_widget.dart';
+import 'child.dart';
 import 'common.dart';
-import 'package:decard/password_input.dart';
 
 class DeCard extends StatefulWidget {
-  static Future<Object?> navigatorPushReplacement(BuildContext context) async {
-    return Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const DeCard() ));
-  }
-
-  const DeCard({Key? key}) : super(key: key);
+  final Child child;
+  const DeCard({required this.child, Key? key}) : super(key: key);
 
   @override
   State<DeCard> createState() => _DeCardState();
@@ -40,7 +37,7 @@ class _DeCardState extends State<DeCard> {
               icon: const Icon(Icons.menu),
               itemBuilder: (context) {
                 return [
-                  TextConst.txtOptions,
+                  // TextConst.txtOptions,
 
                   // if (appState.scanningOnProcess) ...[
                   //   TextConst.txtDownloadingInProgress,
@@ -71,9 +68,9 @@ class _DeCardState extends State<DeCard> {
                 )).toList();
               },
               onSelected: (value) async {
-                if (value == TextConst.txtOptions) {
-                  PasswordInput.navigatorPush(context);
-                }
+                // if (value == TextConst.txtOptions) {
+                //   PasswordInput.navigatorPush(context);
+                // }
 
                 // if (value == TextConst.txtDownloadNewFiles) {
                 //   await appState.scanFileSourceList();
@@ -96,9 +93,9 @@ class _DeCardState extends State<DeCard> {
                 //   _clearDB();
                 // }
 
-                if (value == TextConst.txtStartTest) {
-                  appState.selfTest();
-                }
+                // if (value == TextConst.txtStartTest) {
+                //   appState.selfTest();
+                // }
 
                 if (value == TextConst.txtDemo) {
                   setState(() {
@@ -135,19 +132,19 @@ class _DeCardState extends State<DeCard> {
   // }
 
   Future<void> _selectNextCard() async {
-    final ok = await appState.curChild.cardController.selectNextCard();
+    final ok = await widget.child.cardController.selectNextCard();
     if (!ok) {
       Fluttertoast.showToast(msg: TextConst.txtNoCards);
     } else {
-      appState.prefs.setInt(keyCardFileID , appState.curChild.cardController.card!.head.jsonFileID);
-      appState.prefs.setInt(keyCardID     , appState.curChild.cardController.card!.head.cardID);
-      appState.prefs.setInt(keyCardBodyNum, appState.curChild.cardController.card!.body.bodyNum);
+      appState.prefs.setInt(keyCardFileID , widget.child.cardController.card!.head.jsonFileID);
+      appState.prefs.setInt(keyCardID     , widget.child.cardController.card!.head.cardID);
+      appState.prefs.setInt(keyCardBodyNum, widget.child.cardController.card!.body.bodyNum);
     }
   }
 
   Future<void> _setTestCard(int jsonFileID, int cardID, int bodyNum) async {
     try {
-      await appState.curChild.cardController.setCard(jsonFileID, cardID, bodyNum: bodyNum);
+      await widget.child.cardController.setCard(jsonFileID, cardID, bodyNum: bodyNum);
     } catch (e) {
       _selectNextCard();
     }
@@ -158,7 +155,7 @@ class _DeCardState extends State<DeCard> {
     return EventReceiverWidget(
       builder: (_) {
         Color? color;
-        if (appState.earnController.earned > appState.curChild.regulator.options.minEarnTransferValue) {
+        if (appState.earnController.earned > widget.child.regulator.options.minEarnTransferValue) {
           color = Colors.green;
         } else {
           color = Colors.grey;
@@ -176,7 +173,7 @@ class _DeCardState extends State<DeCard> {
           child: Text(appState.earnController.earned.toStringAsFixed(1)),
         );
 
-        if (appState.earnController.earned > appState.curChild.regulator.options.minEarnTransferValue ) {
+        if (appState.earnController.earned > widget.child.regulator.options.minEarnTransferValue ) {
           return Row(children: [
             earnedBox,
             IconButton(
@@ -193,7 +190,7 @@ class _DeCardState extends State<DeCard> {
   }
 
   Widget _cardNavigator() {
-    return const CardNavigator();
+    return CardNavigator(child: widget.child,);
   }
 
   Widget _body( ) {
@@ -204,7 +201,7 @@ class _DeCardState extends State<DeCard> {
       ]);
     }
 
-    if (appState.curChild.cardController.card == null) {
+    if (widget.child.cardController.card == null) {
       return Center(
         child: ElevatedButton(
             onPressed : _startFirstTest,
@@ -221,15 +218,15 @@ class _DeCardState extends State<DeCard> {
   Widget _cardWidget() {
     return EventReceiverWidget(
       builder: (_) {
-        if (appState.curChild.cardController.card == null) return Container();
+        if (widget.child.cardController.card == null) return Container();
 
         return CardWidget(
-          card                  : appState.curChild.cardController.card!,
+          card                  : widget.child.cardController.card!,
           onPressSelectNextCard : _selectNextCard,
           demoMode              : appState.appMode == AppMode.demo,
         );
       },
-      events: [appState.curChild.cardController.onChange],
+      events: [widget.child.cardController.onChange],
     );
   }
 

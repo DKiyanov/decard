@@ -2,14 +2,11 @@ import 'package:flutter/material.dart';
 
 import 'app_state.dart';
 import 'common.dart';
-import 'options_editor.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class UsingModeSelector extends StatefulWidget {
-  static Future<Object?> navigatorPush(BuildContext context) async {
-    return Navigator.push(context, MaterialPageRoute(builder: (_) => const UsingModeSelector() ));
-  }
-
-  const UsingModeSelector({Key? key}) : super(key: key);
+  final VoidCallback onUsingModeSelectOk;
+  const UsingModeSelector({required this.onUsingModeSelectOk, Key? key}) : super(key: key);
 
   @override
   State<UsingModeSelector> createState() => _UsingModeSelectorState();
@@ -17,9 +14,43 @@ class UsingModeSelector extends StatefulWidget {
 
 class _UsingModeSelectorState extends State<UsingModeSelector> {
   UsingMode? _usingMode;
+  final _textControllerChildName  = TextEditingController();
+  final _childNameList = <String>[];
+
+  bool _isStarting = true;
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _starting();
+    });
+  }
+
+  void _starting() async {
+    final childList = await appState.serverConnect.getChildList();
+    _childNameList.clear();
+    _childNameList.addAll(childList);
+    _childNameList.add(TextConst.txtAddNewChild);
+
+    setState(() {
+      _isStarting = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isStarting) {
+      return Scaffold(
+        appBar: AppBar(
+          centerTitle: true,
+          title: Text(TextConst.txtStarting),
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
         appBar: AppBar(
           centerTitle: true,
@@ -50,6 +81,41 @@ class _UsingModeSelectorState extends State<UsingModeSelector> {
                       selectedColor: Colors.lightGreen,
                     ),
 
+                    if (_usingMode == UsingMode.testing) ...[
+                      TextField(
+                        controller: _textControllerChildName,
+                        decoration: InputDecoration(
+                            filled: true,
+                            labelText: TextConst.txtChildName,
+                            enabledBorder: OutlineInputBorder(
+                              borderSide: const BorderSide(width: 3, color: Colors.blueGrey),
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderSide: const BorderSide(width: 3, color: Colors.blue),
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            suffixIcon: _childNameList.isNotEmpty?
+                            PopupMenuButton<String>(
+                              itemBuilder: (context) {
+                                return _childNameList.map<PopupMenuItem<String>>((childName) => PopupMenuItem<String>(
+                                  value: childName,
+                                  child: Text(childName),
+                                )).toList();
+                              },
+                              onSelected: (childName) {
+                                setState(() {
+                                  _textControllerChildName.text = childName != TextConst.txtAddNewChild?childName:'';
+                                });
+                              },
+                            ): null
+                        ),
+                        onChanged: ((_) {
+                          setState(() { });
+                        }),
+                      ),
+                    ],
+
                     ChoiceChip(
                       label: Text(TextConst.txtUsingModeCardEdit),
                       selected: _usingMode == UsingMode.manager,
@@ -71,17 +137,18 @@ class _UsingModeSelectorState extends State<UsingModeSelector> {
   }
 
   Future<void> proceed() async {
-    if (_usingMode == UsingMode.testing){
-      OptionsEditor.navigatorPush(context).then((ok) {
-        if (ok) {
-          appState.setUsingMode(_usingMode!);
-        }
-      });
+    if (_usingMode == UsingMode.testing) {
+      if (_textControllerChildName.text.isEmpty){
+        Fluttertoast.showToast(msg: TextConst.txtInputChildName);
+        return;
+      }
     }
 
-    if (_usingMode == UsingMode.manager){
-      appState.setUsingMode(_usingMode!);
-      // TODO navigate to child list
+    try {
+      await appState.setUsingMode(_usingMode!, _textControllerChildName.text);
+      widget.onUsingModeSelectOk();
+    } catch (e) {
+      Fluttertoast.showToast(msg: e.toString());
     }
   }
 }

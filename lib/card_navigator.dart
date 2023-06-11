@@ -1,10 +1,11 @@
-import 'package:decard/app_state.dart';
 import 'package:flutter/material.dart';
 
 import 'card_model.dart';
+import 'child.dart';
 
 class CardNavigator extends StatefulWidget {
-  const CardNavigator({Key? key}) : super(key: key);
+  final Child child;
+  const CardNavigator({required this.child, Key? key}) : super(key: key);
 
   @override
   State<CardNavigator> createState() => _CardNavigatorState();
@@ -37,12 +38,16 @@ class _CardNavigatorState extends State<CardNavigator> {
   }
 
   Future<void> getDbInfo() async {
-    final fileRows = await appState.curChild.dbSource.tabJsonFile.getAllRows();
+    final fileRows = await widget.child.dbSource.tabJsonFile.getAllRows();
+    if (fileRows.isEmpty) return;
+
     _fileList = fileRows.map((row) => PacInfo.fromMap(row)).toList();
     _fileList.sort((a, b) => a.jsonFileID.compareTo(b.jsonFileID));
     _selFile = _fileList.first;
 
-    final cardRows = await appState.curChild.dbSource.tabCardHead.getAllRows();
+    final cardRows = await widget.child.dbSource.tabCardHead.getAllRows();
+    if (cardRows.isEmpty) return;
+
     _cardList = cardRows.map((row) => CardHead.fromMap(row)).toList();
     _cardList.sort((a, b) => a.cardID.compareTo(b.cardID));
     setFirstCard();
@@ -94,7 +99,7 @@ class _CardNavigatorState extends State<CardNavigator> {
 
   void setSelected() {
     setState(() {});
-    appState.curChild.cardController.setCard(_selCard!.jsonFileID, _selCard!.cardID, bodyNum: _selBodyNum);
+    widget.child.cardController.setCard(_selCard!.jsonFileID, _selCard!.cardID, bodyNum: _selBodyNum);
   }
 
   @override

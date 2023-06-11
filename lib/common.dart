@@ -1,4 +1,15 @@
 class TextConst{
+  static String defaultURL        = 'http://192.168.0.142:8765';
+  static String defaultLogin      = 'decard_stat_writer';
+  static String txtServerURL      = 'Адрес сервера';
+  static String txtSignUp         = 'Зарегистрироваться';
+  static String txtSignIn         = 'Войти';
+  static String txtInputAllParams = 'Нужно заполнить все поля';
+  static String txtChildName      = 'Имя ребёнка';
+  static String txtInputChildName = 'Введите имя ребёнка';
+  static String txtAddNewChild    = 'Добавить нового';
+  static String txtEntryToOptions = 'Вход в настройку';
+  static String errServerConnection1 = 'Соединение с сервером не настроено';
   static String txtAppTitle       = 'Карточник';
   static String txtStarting       = 'Запуск';
   static String txtTuningFileSourceList = 'Настройка источников для загрузки карточек';
