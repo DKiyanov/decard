@@ -163,7 +163,7 @@ class ProcessCardStat {
       cardID       : json[TabCardStat.kCardID],
       cardGroupKey : json[TabCardStat.kCardGroupKey],
       quality      : json[TabCardStat.kQuality],
-      lastResult   : json[TabCardStat.kLastResult],
+      lastResult   : (json[TabCardStat.kLastResult]??0)==1,
     );
   }
 }

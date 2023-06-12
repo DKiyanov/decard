@@ -452,7 +452,9 @@ class _CardWidgetState extends State<CardWidget> {
         );
 
         if (!widget.card.style.dontShowAnswer) {
-          widgetList.add( Text( '${TextConst.txtRightAnswerIs} ${widget.card.body.answerList.join("; ")}' ) );
+          widgetList.add(
+              _answerLine(TextConst.txtRightAnswerIs)
+          );
         }
       }
     }
@@ -466,11 +468,10 @@ class _CardWidgetState extends State<CardWidget> {
             ),
             child: Padding(
               padding: const EdgeInsets.all(4.0),
-              child: Text( '${TextConst.txtAnswerIs} ${widget.card.body.answerList.join("; ")}' ),
+              child: _answerLine(TextConst.txtAnswerIs),
             )
         )
       );
-      //widgetList.add( Text( '${TextConst.txtAnswerIs} ${widget.card.body.answerList.join("; ")}' ) );
     }
 
     if (_result == null && !widget.demoMode) {
@@ -517,6 +518,22 @@ class _CardWidgetState extends State<CardWidget> {
       ]
 
     ]);
+  }
+
+  Widget _answerLine(String label){
+    final answerList = <Widget>[];
+    answerList.add(Text('$label '));
+
+    for (int i = 0; i < widget.card.body.answerList.length; i++){
+      final answerValue = widget.card.body.answerList[i];
+      answerList.add(_valueWidget(answerValue));
+
+      if ((widget.card.body.answerList.length > 1) && ((i + 1) < widget.card.body.answerList.length)){
+        answerList.add(const Text("; "));
+      }
+    }
+
+    return Row(children: answerList);
   }
 
   Alignment _getAnswerAlignment() {

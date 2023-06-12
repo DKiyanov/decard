@@ -120,8 +120,6 @@ class AppState {
       if (file is Directory) {
         final childName = path_util.basename(file.path);
         if (childName == 'flutter_assets') continue;
-
-        print(childName);
         await addChild(childName);
       }
     }
