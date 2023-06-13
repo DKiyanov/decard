@@ -1,5 +1,5 @@
 ///Two types of files with appropriate extensions are supported:
-///".decardj" - a text file in utf8 format containing data in Djf format as described below.
+///".decardj" - a text file in utf8 format containing data in json format as described below.
 
 ///".decardz" - a zip archive containing one or more files with the extension ".decardj" and media files
 ///all of which can be arranged in subdirectories within the archive

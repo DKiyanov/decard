@@ -145,6 +145,7 @@ class _DeCardState extends State<DeCard> {
   Future<void> _setTestCard(int jsonFileID, int cardID, int bodyNum) async {
     try {
       await widget.child.cardController.setCard(jsonFileID, cardID, bodyNum: bodyNum);
+      setState(() {});
     } catch (e) {
       _selectNextCard();
     }
@@ -231,14 +232,14 @@ class _DeCardState extends State<DeCard> {
   }
 
   void _startFirstTest() {
-    // final cardFileID  = appState.prefs.getInt(keyCardFileID)??-1;
-    // final cardID      = appState.prefs.getInt(keyCardID)??-1;
-    // final cardBodyNum = appState.prefs.getInt(keyCardBodyNum)??0;
+    final cardFileID  = appState.prefs.getInt(keyCardFileID)??-1;
+    final cardID      = appState.prefs.getInt(keyCardID)??-1;
+    final cardBodyNum = appState.prefs.getInt(keyCardBodyNum)??0;
 
-    // if (cardFileID >= 0 && cardID >= 0) {
-    //   _setTestCard(cardFileID, cardID, cardBodyNum);
-    //   return;
-    // }
+    if (cardFileID >= 0 && cardID >= 0) {
+      _setTestCard(cardFileID, cardID, cardBodyNum);
+      return;
+    }
 
     _selectNextCard().then((value) => setState(() {}));
   }

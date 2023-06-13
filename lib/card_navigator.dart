@@ -17,6 +17,7 @@ class _CardNavigatorState extends State<CardNavigator> {
   late List<CardHead> _cardList;
 
   PacInfo? _selFile;
+  final _selFileCardList = <CardHead>[];
   CardHead? _selCard;
   int _selBodyNum = 0;
 
@@ -43,18 +44,25 @@ class _CardNavigatorState extends State<CardNavigator> {
 
     _fileList = fileRows.map((row) => PacInfo.fromMap(row)).toList();
     _fileList.sort((a, b) => a.jsonFileID.compareTo(b.jsonFileID));
-    _selFile = _fileList.first;
 
     final cardRows = await widget.child.dbSource.tabCardHead.getAllRows();
     if (cardRows.isEmpty) return;
 
     _cardList = cardRows.map((row) => CardHead.fromMap(row)).toList();
     _cardList.sort((a, b) => a.cardID.compareTo(b.cardID));
+
+    setSelFile(_fileList.first);
     setFirstCard();
   }
 
+  void setSelFile(PacInfo file){
+    _selFile = file;
+    _selFileCardList.clear();
+    _selFileCardList.addAll(_cardList.where((card) => card.jsonFileID == _selFile!.jsonFileID));
+  }
+
   void setFirstCard() {
-    _selCard = _cardList.firstWhere((card) => card.jsonFileID == _selFile!.jsonFileID);
+    _selCard = _selFileCardList.first;
     _selBodyNum = 0;
   }
   
@@ -66,7 +74,7 @@ class _CardNavigatorState extends State<CardNavigator> {
     if (index < 0) return;
     if (index >= _fileList.length) return;
 
-    _selFile = _fileList[index];
+    setSelFile(_fileList[index]);
     setFirstCard();
 
     setSelected();
@@ -75,12 +83,12 @@ class _CardNavigatorState extends State<CardNavigator> {
   void setCardDirect(int direct) {
     if (_selCard == null) return;
 
-    var index = _cardList.indexOf(_selCard!);
+    var index = _selFileCardList.indexOf(_selCard!);
     index = index + direct;
     if (index < 0) return;
-    if (index >= _cardList.length) return;
+    if (index >= _selFileCardList.length) return;
 
-    _selCard = _cardList[index];
+    _selCard = _selFileCardList[index];
     _selBodyNum = 0;
 
     setSelected();
@@ -124,7 +132,7 @@ class _CardNavigatorState extends State<CardNavigator> {
             icon: const Icon(Icons.arrow_drop_down),
             isExpanded: true,
             onChanged: (value) {
-              _selFile = value;
+              setSelFile(value!);
               setFirstCard();
               setSelected();
             },
@@ -165,7 +173,7 @@ class _CardNavigatorState extends State<CardNavigator> {
                 setSelected();
               },
 
-              items: _cardList.where((card) => card.jsonFileID == _selFile!.jsonFileID).map<DropdownMenuItem<CardHead>>((cardHead) {
+              items: _selFileCardList.map<DropdownMenuItem<CardHead>>((cardHead) {
                 return DropdownMenuItem<CardHead>(
                   value: cardHead,
                   child: Text(cardHead.title, overflow: TextOverflow.ellipsis),

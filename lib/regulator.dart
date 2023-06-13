@@ -44,6 +44,30 @@ class DrfSet {
   static const String style    = "style";    // body style
 }
 
+class DrfDifficulty {
+  static const String id                         = "id";                         // int, difficulty ID, values 0 - 5
+
+  // integer, the number of seconds earned if the answer is correct
+  static const String maxCost                    = "maxCost";
+  static const String minCost                    = "minCost";
+
+  // integer, the number of penalty seconds in case of NOT correct answer
+  static const String maxPenalty                 = "maxPenalty";
+  static const String minPenalty                 = "minPenalty";
+
+  // integer, the number of attempts at a solution in one approach
+  static const String maxTryCount                = "maxTryCount";
+  static const String minTryCount                = "minTryCount";
+
+  // integer, seconds, the time allotted for the solution
+  static const String maxDuration                = "maxDuration";
+  static const String minDuration                = "minDuration";
+
+  // integer, the lower value of the cost as a percentage of the current set cost
+  static const String maxDurationLowCostPercent  = "maxDurationLowCostPercent";
+  static const String minDurationLowCostPercent  = "minDurationLowCostPercent";
+}
+
 class RegOptions {
   final int hotDayCount;   // Number of days for which the stastistics are calculated
 
@@ -142,22 +166,80 @@ class RegSet {
   }
 }
 
+class RegDifficulty {
+  final int id; // int, difficulty ID, values 0 - 5
+
+  // integer, the number of seconds earned if the answer is correct
+  final int maxCost;
+  final int minCost;
+
+  // integer, the number of penalty seconds in case of NOT correct answer
+  final int maxPenalty;
+  final int minPenalty;
+
+  // integer, the number of attempts at a solution in one approach
+  final int maxTryCount;
+  final int minTryCount;
+
+  // integer, seconds, the time allotted for the solution
+  final int maxDuration;
+  final int minDuration;
+
+  // integer, the lower value of the cost as a percentage of the current set cost
+  final int maxDurationLowCostPercent;
+  final int minDurationLowCostPercent;
+
+  RegDifficulty({
+    required this.id,
+    required this.maxCost,
+    required this.minCost,
+    required this.maxPenalty,
+    required this.minPenalty,
+    required this.maxTryCount,
+    required this.minTryCount,
+    required this.maxDuration,
+    required this.minDuration,
+    required this.maxDurationLowCostPercent,
+    required this.minDurationLowCostPercent,
+  });
+
+  factory RegDifficulty.fromMap(Map<String, dynamic> json){
+    return RegDifficulty(
+      id                        : json[DrfDifficulty.id],
+      maxCost                   : json[DrfDifficulty.maxCost],
+      minCost                   : json[DrfDifficulty.minCost],
+      maxPenalty                : json[DrfDifficulty.maxPenalty],
+      minPenalty                : json[DrfDifficulty.minPenalty],
+      maxTryCount               : json[DrfDifficulty.maxTryCount],
+      minTryCount               : json[DrfDifficulty.minTryCount],
+      maxDuration               : json[DrfDifficulty.maxDuration],
+      minDuration               : json[DrfDifficulty.minDuration],
+      maxDurationLowCostPercent : json[DrfDifficulty.maxDurationLowCostPercent],
+      minDurationLowCostPercent : json[DrfDifficulty.minDurationLowCostPercent],
+    );
+  }
+}
+
 class Regulator {
   static const String kOptions = "options";
   static const String kSetList = "setList";
+  static const String kDifficultyList = "difficultyList";
 
   final RegOptions options;
   final List<RegSet> setList;
+  final List<RegDifficulty> difficultyList;
 
   Regulator({
     required this.options,
     required this.setList,
+    required this.difficultyList,
   });
 
   factory Regulator.fromMap(Map<String, dynamic> json) {
     return Regulator(
       options : RegOptions.fromMap(json[kOptions]),
       setList : json[kSetList] != null ? List<RegSet>.from(json[kSetList].map((setJson) => RegSet.fromMap(setJson))) : [],
+      difficultyList: json[kDifficultyList] != null ? List<RegDifficulty>.from(json[kDifficultyList].map((setJson) => RegDifficulty.fromMap(setJson))) : [],
     );
   }
 
@@ -165,7 +247,7 @@ class Regulator {
     final jsonFile = File(filePath);
 
     if (! await jsonFile.exists()) {
-      return Regulator(options: RegOptions(), setList: []);
+      return Regulator(options: RegOptions(), setList: [], difficultyList: []);
     }
 
     final fileData = await jsonFile.readAsString();
