@@ -40,12 +40,13 @@ class DrfSet {
   static const String groups   = "groups";   // array of cards group or mask
   static const String tags     = "tags";     // array of tags
   static const String andTags  = "andTags";  // array of tags join trough and
+  static const String difficultyLevels  = "difficultyLevels";  // array of difficulty levels
   static const String exclude  = "exclude";  // bool - exclude card from studying
   static const String style    = "style";    // body style
 }
 
 class DrfDifficulty {
-  static const String id                         = "id";                         // int, difficulty ID, values 0 - 5
+  static const String level                      = "level"; // int, difficulty level, values 0 - 5
 
   // integer, the number of seconds earned if the answer is correct
   static const String maxCost                    = "maxCost";
@@ -138,7 +139,10 @@ class RegSet {
   final List<String>? groups;   // array of cards group or mask
   final List<String>? tags;     // array of tags
   final List<String>? andTags;  // array of tags join trough and
-  final bool exclude;           // bool - exclude card from studying
+  final List<int>? difficultyLevels; // array of difficulty levels
+  
+  final bool? exclude;          // bool - exclude card from studying
+  final int?  difficultyLevel;  // int - difficulty level
   final Map<String, dynamic>? style; // body style
 
   RegSet({
@@ -147,7 +151,9 @@ class RegSet {
     this.groups,
     this.tags,
     this.andTags,
-    this.exclude = false,
+    this.difficultyLevels,
+    this.exclude,
+    this.difficultyLevel,
     this.style
   });
 
@@ -160,14 +166,17 @@ class RegSet {
       groups   : json[DrfSet.groups]  != null ? List<String>.from(json[DrfSet.groups].map((x)  => x)) : [],
       tags     : json[DrfSet.tags]    != null ? List<String>.from(json[DrfSet.tags].map((x)    => x)) : [],
       andTags  : json[DrfSet.andTags] != null ? List<String>.from(json[DrfSet.andTags].map((x) => x)) : [],
+      difficultyLevels : json[DrfSet.difficultyLevels] != null ? List<int>.from(json[DrfSet.difficultyLevels].map((x) => x)) : [],
+      
       exclude  : json[DrfSet.exclude],
+      difficultyLevel : json[DrfSet.difficultyLevel],
       style    : json[DrfSet.style],
     );
   }
 }
 
 class RegDifficulty {
-  final int id; // int, difficulty ID, values 0 - 5
+  final int level; // int, difficulty level, values 0 - 5
 
   // integer, the number of seconds earned if the answer is correct
   final int maxCost;
@@ -190,7 +199,7 @@ class RegDifficulty {
   final int minDurationLowCostPercent;
 
   RegDifficulty({
-    required this.id,
+    required this.level,
     required this.maxCost,
     required this.minCost,
     required this.maxPenalty,
@@ -205,7 +214,7 @@ class RegDifficulty {
 
   factory RegDifficulty.fromMap(Map<String, dynamic> json){
     return RegDifficulty(
-      id                        : json[DrfDifficulty.id],
+      level                     : json[DrfDifficulty.level],
       maxCost                   : json[DrfDifficulty.maxCost],
       minCost                   : json[DrfDifficulty.minCost],
       maxPenalty                : json[DrfDifficulty.maxPenalty],
@@ -224,6 +233,8 @@ class Regulator {
   static const String kOptions = "options";
   static const String kSetList = "setList";
   static const String kDifficultyList = "difficultyList";
+  static const int lowDifficultyLevel  = 0;
+  static const int highDifficultyLevel = 5;
 
   final RegOptions options;
   final List<RegSet> setList;
@@ -233,13 +244,91 @@ class Regulator {
     required this.options,
     required this.setList,
     required this.difficultyList,
-  });
+  }) {
+    // fills missing levels with default values or proportionally from neighboring levels
+    
+    if (!difficultyList.any((difficulty) => difficulty.level == lowDifficultyLevel) {      
+      difficultyList.add(RegDifficulty({
+        level                     : lowDifficultyLevel,
+        maxCost                   : 60,
+        minCost                   : 15,
+        maxPenalty                : 90,
+        minPenalty                : 0,
+        maxTryCount               : 2,
+        minTryCount               : 1,
+        maxDuration               : 120,
+        minDuration               : 7,
+        maxDurationLowCostPercent : 50,
+        minDurationLowCostPercent : 0,
+      }));
+    }
+        
+    if (!difficultyList.any((difficulty) => difficulty.level == highDifficultyLevel) {
+      difficultyList.add(RegDifficulty({
+        level                     : highDifficultyLevel,
+        maxCost                   : 900,
+        minCost                   : 300,
+        maxPenalty                : 700,
+        minPenalty                : 30,
+        maxTryCount               : 3,
+        minTryCount               : 2,
+        maxDuration               : 1200,
+        minDuration               : 120,
+        maxDurationLowCostPercent : 15,
+        minDurationLowCostPercent : 15,
+      }));
+    }
+    
+    final absTop    = difficultyList.firstWhere((difficulty)=> difficulty.level == lowDifficultyLevel);
+    final absBottom = difficultyList.firstWhere((difficulty)=> difficulty.level == highDifficultyLevel);  
+        
+    for (int level = lowDifficultyLevel + 1; level < highDifficultyLevel; i++) {
+      if (!difficultyList.any((difficulty) => difficulty.level == level) _addMidleLevel(absTop, absBottom, level);
+    }
+  }
+          
+  void _addMidleLevel(RegDifficulty absTop, RegDifficulty absBottom, int level) {
+    if (difficultyList.any((difficulty) => difficulty.level == level)) return;
+        
+    RegDifficulty top;
+    RegDifficulty bootom;
+    
+    difficultyList.forEach((difficulty) => {
+      if (difficulty.level < level && difficulty.level > top.level) {
+        top = difficulty;
+      }
+      if (difficulty.level > level && difficulty.level < bottom.level) {
+        bottom = difficulty;
+      }      
+    });
+    
+    difficultyList.add(RegDifficulty({
+      level                     : level,
+      maxCost                   : _proportionalValue(top.level, top.maxCost,                   bottom.level, bottom.maxCost,                   level),
+      minCost                   : _proportionalValue(top.level, top.minCost,                   bottom.level, bottom.minCost,                   level),
+      maxPenalty                : _proportionalValue(top.level, top.maxPenalty,                bottom.level, bottom.maxPenalty,                level),
+      minPenalty                : _proportionalValue(top.level, top.minPenalty,                bottom.level, bottom.minPenalty,                level),
+      maxTryCount               : _proportionalValue(top.level, top.maxTryCount,               bottom.level, bottom.maxTryCount,               level),
+      minTryCount               : _proportionalValue(top.level, top.minTryCount,               bottom.level, bottom.minTryCount,               level),
+      maxDuration               : _proportionalValue(top.level, top.maxDuration,               bottom.level, bottom.maxDuration,               level),
+      minDuration               : _proportionalValue(top.level, top.minDuration,               bottom.level, bottom.minDuration,               level),
+      maxDurationLowCostPercent : _proportionalValue(top.level, top.maxDurationLowCostPercent, bottom.level, bottom.maxDurationLowCostPercent, level),
+      minDurationLowCostPercent : _proportionalValue(top.level, top.minDurationLowCostPercent, bottom.level, bottom.minDurationLowCostPercent, level),
+    }));    
+    
+  }
+        
+  int _proportionalValue(int topLevel, int topValue, int bottomLevel, int bottomValue, int level) {
+    final z = (level - topLevel) / (bottomLevel - level);
+    final int result = (( z * bottomValue + topValue ) / ( 1 + z )).round();
+    return result;
+  }
 
   factory Regulator.fromMap(Map<String, dynamic> json) {
     return Regulator(
       options : RegOptions.fromMap(json[kOptions]),
       setList : json[kSetList] != null ? List<RegSet>.from(json[kSetList].map((setJson) => RegSet.fromMap(setJson))) : [],
-      difficultyList: json[kDifficultyList] != null ? List<RegDifficulty>.from(json[kDifficultyList].map((setJson) => RegDifficulty.fromMap(setJson))) : [],
+      difficultyList: json[kDifficultyList] != null ? List<RegDifficulty>.from(json[kDifficultyList].map((difficultyJson) => RegDifficulty.fromMap(difficultyJson))) : [],
     );
   }
 
