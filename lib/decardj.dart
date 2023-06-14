@@ -26,14 +26,6 @@ class DjfFile{ // top json file structure
 
 class DjfCardStyle { // DjfFile.cardStyleList element
 	static const String id                         = "id";                         // string, style ID, unique within the file, used to reference the style from the card body
-	static const String maxCost                    = "maxCost";                    // integer, the number of minutes earned if the answer is correct
-	static const String minCost                    = "minCost";                    // integer, the number of minutes earned in the case of a correct answer
-	static const String maxPenalty                 = "maxPenalty";                 // integer, the number of penalty minutes in case of NOT correct answer
-	static const String minPenalty                 = "minPenalty";                 // integer, the number of penalty minutes in case of NOT correct answer
-	static const String maxTryCount                = "maxTryCount";                // integer, the number of attempts at a solution in one approach
-	static const String maxDuration                = "maxDuration";                // integer, seconds, the time allotted for the solution, default 1
-	static const String minDuration                = "minDuration";                // integer, seconds, time allotted to solve, optional
-	static const String lowDurationPercentCost     = "lowDurationPercentCost";     // integer, the lower value of the cost as a percentage of the current set cost, default 100
 	static const String dontShowAnswer             = "dontShowAnswer";             // boolean, default false, do NOT show in case of a wrong answer
 	static const String dontShowAnswerOnDemo       = "dontShowAnswerOnDemo";       // TODO boolean, default false, do NOT show in demo mode
 	static const String answerVariantList          = "answerVariantList";          // list of answer choices
@@ -86,12 +78,13 @@ class DjfTemplateSource { // element of DjfCardStyle.templatesSources
 }
 
 class DjfCard { // element of DjfFile.cardList 
-	static const String id       = "id";       // string, unique identifier of the card within the file
-	static const String title    = "title";    // title
-	static const String group    = "group";    // string, name of the group of cards
-	static const String tags     = "tags";     // array of card tags
-	static const String upLinks  = "upLinks";  // array of DjfUpLink, links to the cards to be studied earlier (predecessors)
-	static const String bodyList = "bodyList"; // array of DjfCardBody
+	static const String id         = "id";         // string, unique identifier of the card within the file
+	static const String title      = "title";      // title
+	static const String difficulty = 'difficulty'; // difficulty
+	static const String group      = "group";      // string, name of the group of cards
+	static const String tags       = "tags";       // array of card tags
+	static const String upLinks    = "upLinks";    // array of DjfUpLink, links to the cards to be studied earlier (predecessors)
+	static const String bodyList   = "bodyList";   // array of DjfCardBody
 	static const String introductoryCount = "introductoryCount";          // TODO the number of impressions at the beginning of the study without penalty
 	static const String notShowIfLearned  = "notShowIfLearned";           // TODO Do not show if the card is learned
 }

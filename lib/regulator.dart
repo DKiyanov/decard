@@ -30,8 +30,8 @@ class DrfOptions {
   /// Maximum available quality with a negative last result
   static const String negativeLastResultMaxQualityLimit = "negativeLastResultMaxQualityLimit";
 
-  /// minimum earnings that can be transferred outside
-  static const String minEarnTransferValue = 'minEarnTransferVal';
+  /// minimum earnings count minutes that can be transferred outside
+  static const String minEarnTransferMinutes = 'minEarnTransferMinutes';
 }
 
 class DrfSet {
@@ -42,6 +42,7 @@ class DrfSet {
   static const String andTags  = "andTags";  // array of tags join trough and
   static const String difficultyLevels  = "difficultyLevels";  // array of difficulty levels
   static const String exclude  = "exclude";  // bool - exclude card from studying
+  static const String difficultyLevel  = "difficultyLevel"; // int, for reset difficultyLevel
   static const String style    = "style";    // body style
 }
 
@@ -98,7 +99,7 @@ class RegOptions {
   /// Maximum available quality with a negative last result
   final int negativeLastResultMaxQualityLimit;
 
-  final int minEarnTransferValue;
+  final int minEarnTransferMinutes;
 
   RegOptions({
     this.hotDayCount                = 7,
@@ -112,7 +113,7 @@ class RegOptions {
     this.lowTryCount                = 7,
     this.lowDayCount                = 4,
     this.negativeLastResultMaxQualityLimit = 50,
-    this.minEarnTransferValue = 10,
+    this.minEarnTransferMinutes = 10,
   });
 
   factory RegOptions.fromMap(Map<String, dynamic> json){
@@ -128,7 +129,7 @@ class RegOptions {
         lowTryCount                 : json[DrfOptions.lowTryCount               ],
         lowDayCount                 : json[DrfOptions.lowDayCount               ],
         negativeLastResultMaxQualityLimit : json[DrfOptions.negativeLastResultMaxQualityLimit],
-        minEarnTransferValue        : json[DrfOptions.minEarnTransferValue],
+        minEarnTransferMinutes        : json[DrfOptions.minEarnTransferMinutes],
     );
   }
 }
@@ -246,9 +247,10 @@ class Regulator {
     required this.difficultyList,
   }) {
     // fills missing levels with default values or proportionally from neighboring levels
-    
-    if (!difficultyList.any((difficulty) => difficulty.level == lowDifficultyLevel) {      
-      difficultyList.add(RegDifficulty({
+
+    //difficultyList.any((element) => false);
+    if (!difficultyList.any((difficulty) => difficulty.level == lowDifficultyLevel)) {
+      difficultyList.add(RegDifficulty(
         level                     : lowDifficultyLevel,
         maxCost                   : 60,
         minCost                   : 15,
@@ -260,11 +262,11 @@ class Regulator {
         minDuration               : 7,
         maxDurationLowCostPercent : 50,
         minDurationLowCostPercent : 0,
-      }));
+      ));
     }
         
-    if (!difficultyList.any((difficulty) => difficulty.level == highDifficultyLevel) {
-      difficultyList.add(RegDifficulty({
+    if (!difficultyList.any((difficulty) => difficulty.level == highDifficultyLevel)) {
+      difficultyList.add(RegDifficulty(
         level                     : highDifficultyLevel,
         maxCost                   : 900,
         minCost                   : 300,
@@ -276,33 +278,33 @@ class Regulator {
         minDuration               : 120,
         maxDurationLowCostPercent : 15,
         minDurationLowCostPercent : 15,
-      }));
+      ));
     }
     
     final absTop    = difficultyList.firstWhere((difficulty)=> difficulty.level == lowDifficultyLevel);
     final absBottom = difficultyList.firstWhere((difficulty)=> difficulty.level == highDifficultyLevel);  
         
-    for (int level = lowDifficultyLevel + 1; level < highDifficultyLevel; i++) {
-      if (!difficultyList.any((difficulty) => difficulty.level == level) _addMidleLevel(absTop, absBottom, level);
+    for (int level = lowDifficultyLevel + 1; level < highDifficultyLevel; level++) {
+      if (!difficultyList.any((difficulty) => difficulty.level == level)) _addMiddleLevel(absTop, absBottom, level);
     }
   }
           
-  void _addMidleLevel(RegDifficulty absTop, RegDifficulty absBottom, int level) {
+  void _addMiddleLevel(RegDifficulty absTop, RegDifficulty absBottom, int level) {
     if (difficultyList.any((difficulty) => difficulty.level == level)) return;
         
-    RegDifficulty top;
-    RegDifficulty bootom;
+    RegDifficulty top = absTop;
+    RegDifficulty bottom = absBottom;
     
-    difficultyList.forEach((difficulty) => {
+    for (var difficulty in difficultyList) {
       if (difficulty.level < level && difficulty.level > top.level) {
         top = difficulty;
       }
       if (difficulty.level > level && difficulty.level < bottom.level) {
         bottom = difficulty;
       }      
-    });
+    }
     
-    difficultyList.add(RegDifficulty({
+    difficultyList.add(RegDifficulty(
       level                     : level,
       maxCost                   : _proportionalValue(top.level, top.maxCost,                   bottom.level, bottom.maxCost,                   level),
       minCost                   : _proportionalValue(top.level, top.minCost,                   bottom.level, bottom.minCost,                   level),
@@ -314,7 +316,7 @@ class Regulator {
       minDuration               : _proportionalValue(top.level, top.minDuration,               bottom.level, bottom.minDuration,               level),
       maxDurationLowCostPercent : _proportionalValue(top.level, top.maxDurationLowCostPercent, bottom.level, bottom.maxDurationLowCostPercent, level),
       minDurationLowCostPercent : _proportionalValue(top.level, top.minDurationLowCostPercent, bottom.level, bottom.minDurationLowCostPercent, level),
-    }));    
+    ));
     
   }
         
@@ -322,6 +324,10 @@ class Regulator {
     final z = (level - topLevel) / (bottomLevel - level);
     final int result = (( z * bottomValue + topValue ) / ( 1 + z )).round();
     return result;
+  }
+
+  RegDifficulty getDifficulty(int level){
+    return difficultyList.firstWhere((difficulty) => difficulty.level == level);
   }
 
   factory Regulator.fromMap(Map<String, dynamic> json) {

@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'db.dart';
 import 'decardj.dart';
+import 'regulator.dart';
 
 typedef CardResultCallback = void Function(bool result, double earned);
 
@@ -11,6 +12,8 @@ class CardData {
   CardBody  body;
   CardStyle style;
   CardStat  stat;
+
+  RegDifficulty difficulty;
 
   CardResultCallback? onResult;
 
@@ -26,18 +29,18 @@ class CardData {
   double _earned = 0;
   double get earned => _earned;
 
-  CardData({ required this.head, required this.style, required this.body, required this.stat, required this.pacInfo, this.onResult}) {
-    cost     = style.maxCost     - ( (style.maxCost - style.minCost) * (100 - stat.quality) ) ~/ 100;
-    tryCount = style.maxTryCount - ( (style.maxTryCount - 1) * (100 - stat.quality) ) ~/ 100;
-    duration = style.maxDuration - ( (style.maxDuration - style.minDuration) * (100 - stat.quality) ) ~/ 100;
-    penalty  = style.maxPenalty  - ( (style.maxPenalty - style.minPenalty) * (stat.quality) ) ~/ 100;
+  CardData({ required this.head, required this.style, required this.body, required this.stat, required this.pacInfo, required this.difficulty, this.onResult}) {
+    cost     = _getValueForQuality(difficulty.maxCost,     difficulty.minCost,     stat.quality);
+    penalty  = _getValueForQuality(difficulty.minPenalty,  difficulty.maxPenalty,  stat.quality); // penalty moves in the opposite direction to all others
+    tryCount = _getValueForQuality(difficulty.maxTryCount, difficulty.minTryCount, stat.quality);
+    duration = _getValueForQuality(difficulty.maxDuration, difficulty.minDuration, stat.quality);
 
-    lowCost = ( cost * style.lowDurationPercentCost ) ~/ 100;
+    lowCost = (cost * _getValueForQuality(difficulty.maxDurationLowCostPercent, difficulty.minDurationLowCostPercent, stat.quality) / 100).round();
+  }
 
-    //TODO for debug
-    // cost = 10;
-    // lowCost = 3;
-    // duration = 5;
+  int _getValueForQuality(int maxValue, int minValue, int quality){
+    final int result = (maxValue - (( (maxValue - minValue) * quality ) / 100 ) ).round();
+    return result;
   }
 
   void setResult(bool result, double earned){
@@ -48,10 +51,10 @@ class CardData {
 }
 
 class CardPointer {
-  final int jsonFileID;  // целое, идентификатор файла в БД
-  final int id;          // целое идентификатор карточки
+  final int jsonFileID;  // integer, identifier of the file in the database
+  final int cardID;      // integer card identifier in the database
 
-  CardPointer(this.jsonFileID, this.id);
+  CardPointer(this.jsonFileID, this.cardID);
 }
 
 enum AnswerInputMode {
@@ -68,14 +71,6 @@ class CardStyle {
   final int id;                          // integer, style identifier in the database
   final int jsonFileID;                  // integer, identifier of the file in the database
   final String cardStyleKey;             // string, style identifier
-  final int minCost;                     // integer, the number of minutes earned in case the answer is correct
-  final int maxCost;                     // integer, the number of earned minutes in case of a correct answer
-  final int minPenalty;                  // integer, the number of penalty minutes in case of incorrect answer
-  final int maxPenalty;                  // integer, the number of penalty minutes in case of incorrect answer
-  final int maxTryCount;                 // integer, the number of attempts for one attempt
-  final int minDuration;                 // integer, the number of seconds, the time given for the solution, optional
-  final int maxDuration;                 // integer, seconds, time allowed for solving, default 1
-  final int lowDurationPercentCost;      // integer, the lower value of the cost as a percentage of the current set cost, the cost decreases proportionally to the time, default 100
   final bool dontShowAnswer;             // boolean, default false, will NOT show if the answer is wrong
   final List<String> answerVariantList;  // list of answer choices
   final int answerVariantCount;          // the number of displayed answer variants
@@ -93,14 +88,6 @@ class CardStyle {
     required this.id,
     required this.jsonFileID,
     required this.cardStyleKey,
-    this.minCost = 0,
-    required this.maxCost,
-    this.minPenalty = 0,
-    required this.maxPenalty,
-    this.maxTryCount = 1,
-    this.minDuration = 0,
-    this.maxDuration = 0,
-    this.lowDurationPercentCost = 100,
     this.dontShowAnswer = false,
     required this.answerVariantList,
     this.answerVariantCount = -1,
@@ -123,14 +110,6 @@ class CardStyle {
       id                         : json[TabCardStyle.kID],
       jsonFileID                 : json[TabCardStyle.kJsonFileID],
       cardStyleKey               : json[TabCardStyle.kCardStyleKey],
-      minCost                    : json[DjfCardStyle.minCost]??0,
-      maxCost                    : json[DjfCardStyle.maxCost],
-      minPenalty                 : json[DjfCardStyle.minPenalty]??0,
-      maxPenalty                 : json[DjfCardStyle.maxPenalty],
-      maxTryCount                : json[DjfCardStyle.maxTryCount]??1,
-      minDuration                : json[DjfCardStyle.minDuration]??0,
-      maxDuration                : json[DjfCardStyle.maxDuration]??0,
-      lowDurationPercentCost     : json[DjfCardStyle.lowDurationPercentCost]??100,
       dontShowAnswer             : json[DjfCardStyle.dontShowAnswer]??false,
       answerVariantList          : json[DjfCardStyle.answerVariantList] != null ? List<String>.from(json[DjfCardStyle.answerVariantList].map((x) => x)) : [],
       answerVariantCount         : json[DjfCardStyle.answerVariantCount]??-1,
@@ -148,11 +127,12 @@ class CardStyle {
 }
 
 class CardHead {
-  final int    cardID;      // целое, идентификатор карточки в БД
-  final int    jsonFileID;  // целое, идентификатор файла в БД
-  final String cardKey;     // строка, идентификатор карточки в файле
+  final int    cardID;      // integer, the card identifier in the database
+  final int    jsonFileID;  // integer, identifier of the file in the database
+  final String cardKey;     // string, identifier of the card in the file
   final String group;
   final String title;
+  final int    difficulty;
   final int    bodyCount;
 
   const CardHead({
@@ -161,6 +141,7 @@ class CardHead {
     required this.cardKey,
     required this.group,
     required this.title,
+    required this.difficulty,
     required this.bodyCount,
   });
 
@@ -171,6 +152,7 @@ class CardHead {
       cardKey    : json[TabCardHead.kCardKey],
       group      : json[TabCardHead.kGroup],
       title      : json[TabCardHead.kTitle],
+      difficulty : json[TabCardHead.kDifficulty],
       bodyCount  : json[TabCardHead.kBodyCount],
     );
   }
@@ -180,76 +162,37 @@ class QuestionData {
   QuestionData({
     this.text,
     this.html,
-    this.webUrl,
+    this.markdown,
     this.audio,
     this.video,
     this.image,
-    this.imgqt,
-    this.app,
   });
 
-  final String? text;   // строка, текст вопроса
-  final String? html;   // строка, html с вопросом
-  final String? webUrl; // ссылка на ресурс для отображения в браузере
-  final String? audio;  // ссылка на audio ресурс
-  final String? video;  // ссылка на video ресурс
-  final String? image;  // ссылка на image
-  final QuestionDataImgQt? imgqt;  // json структура см. ниже
-  final QuestionDataApp? app; // json структура см. ниже
+  final String? text;     // String question text
+  final String? html;     // link to html source
+  final String? markdown; // link to markdown source
+  final String? audio;    // link to audio source
+  final String? video;    // link to video source
+  final String? image;    // link to image source
 
   factory QuestionData.fromMap(Map<String, dynamic> json) => QuestionData(
-    text   : json["text"],
-    html   : json["html"],
-    webUrl : json["webURL"],
-    audio  : json["audio"],
-    video  : json["video"],
-    image  : json["image"],
-    imgqt  : json["imgqt"] != null ? QuestionDataImgQt.fromMap(json["imgqt"]) : null,
-    app    : json["app"] != null ? QuestionDataApp.fromMap(json["app"]) : null,
-  );
-}
-
-class QuestionDataApp {
-  QuestionDataApp({
-    required this.packageName,
-    this.message,
-  });
-
-  final String packageName;
-  final String? message;
-
-  factory QuestionDataApp.fromMap(Map<String, dynamic> json) => QuestionDataApp(
-    packageName : json["packageName"],
-    message     : json["message"],
-  );
-}
-
-class QuestionDataImgQt {
-  QuestionDataImgQt({
-    required this.image,
-    required this.mask,
-    this.answers,
-  });
-
-  final String image;
-  final String mask;
-  final List<String>? answers;
-
-  factory QuestionDataImgQt.fromMap(Map<String, dynamic> json) => QuestionDataImgQt(
-    image   : json["image"],
-    mask    : json["mask"],
-    answers : List<String>.from(json["answers"].map((x) => x)),
+    text     : json[DjfQuestionData.text],
+    html     : json[DjfQuestionData.html],
+    markdown : json[DjfQuestionData.markdown],
+    audio    : json[DjfQuestionData.audio],
+    video    : json[DjfQuestionData.video],
+    image    : json[DjfQuestionData.image],
   );
 }
 
 class CardBody {
-  final int    id;                // целое, идентификатор стиля в БД
-  final int    jsonFileID;        // целое, идентификатор файла в БД
-  final int    cardID;            // целое, идентификатор карточки
-  final int    bodyNum;           // целое,
+  final int    id;                // integer, body identifier in the database
+  final int    jsonFileID;        // integer, file identifier in the database
+  final int    cardID;            // integer, card identifier in the database
+  final int    bodyNum;           // integer, body number
   final QuestionData questionData;
-  final List<String> styleKeyList; // Список глобальных стилей
-  final Map<String, dynamic> styleMap; // Собственный стль тела
+  final List<String> styleKeyList; // List of global styles
+  final Map<String, dynamic> styleMap; // Own body style
   final List<String> answerList;
 
   const CardBody({
@@ -269,26 +212,26 @@ class CardBody {
       jsonFileID        : json[TabCardBody.kJsonFileID],
       cardID            : json[TabCardBody.kCardID],
       bodyNum           : json[TabCardBody.kBodyNum],
-      questionData      : QuestionData.fromMap(json['questionData']),
-      styleKeyList      : json["styleIdList"] != null ? List<String>.from(json["styleIdList"].map((x) => x)) : [],
-      styleMap          : json['style']??{},
-      answerList        : List<String>.from(json["answerList"].map((x) => x)),
+      questionData      : QuestionData.fromMap(json[ DjfCardBody.questionData]),
+      styleKeyList      : json[ DjfCardBody.styleIdList] != null ? List<String>.from(json[ DjfCardBody.styleIdList].map((x) => x)) : [],
+      styleMap          : json[ DjfCardBody.style]??{},
+      answerList        : List<String>.from(json[ DjfCardBody.answerList].map((x) => x)),
     );
   }
 }
 
 class CardStat {
-  final int    id;                // целое,   идентификатор стиля в БД
-  final int    jsonFileID;        // целое,   идентификатор файла в БД
-  final int    cardID;            // целое,  идентификатор карточки в БД
-  final String cardKey;           // строка,  идентификатор карточки
-  final String cardGroupKey;      // строка,  идентификатор группы карточек
-  final int    quality;           // качество изучения, 1 - картичка полностью изучена; 100 - минимальная степень изученности
-  final int    qualityFromDate;   // первая дата учтённая при расчёте quality
-  final int    startDate;         // дата начала изучения
-  final int    lastTestDate;      // дата последнего изучения
-  final int    testsCount;        // количество предъявления
-  final String json;              // данные статистики карточки хранятся как json, когда понадобится распаковываются используются для расчёта quality и обновляются
+  final int    id;                // integer, stat identifier in the database
+  final int    jsonFileID;        // integer, file identifier in the database
+  final int    cardID;            // integer, card identifier in the database
+  final String cardKey;           // string, card identifier in the file
+  final String cardGroupKey;      // string, card group identifier
+  final int    quality;           // studying quality, 100 - card is completely studied; 0 - minimum studying quality
+  final int    qualityFromDate;   // the first date taken into account when calculating quality
+  final int    startDate;         // date of studying beginning
+  final int    lastTestDate;      // date of last test
+  final int    testsCount;        // number of tests
+  final String json;              // card statistics data are stored as json, when needed they are unpacked and used for quality calculation and updated
 
   CardStat({
     required this.id,

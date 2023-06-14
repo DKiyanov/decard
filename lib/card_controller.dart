@@ -23,10 +23,12 @@ enum CardSetBody {
 class CardController {
   final DbSource dbSource;
   final ProcessCardController processCardController;
+  final Regulator regulator;
 
   CardController({
     required this.dbSource,
     required this.processCardController,
+    required this.regulator,
   });
 
   PacInfo?   _pacInfo;
@@ -34,6 +36,8 @@ class CardController {
   CardBody?  _cardBody;
   CardStyle? _cardStyle;
   CardStat?  _cardStat;
+
+  RegDifficulty? _difficulty;
 
   CardData? _card;
   CardData? get card => _card;
@@ -76,7 +80,17 @@ class CardController {
     final pacData = await dbSource.tabJsonFile.getRow(jsonFileID: jsonFileID);
     _pacInfo = PacInfo.fromMap(pacData!);
 
-    _card = CardData(head : _cardHead!, body: _cardBody!, style: _cardStyle!, stat: _cardStat!, pacInfo : _pacInfo!, onResult: _onCardResult );
+    _difficulty = regulator.getDifficulty(_cardHead!.difficulty);
+
+    _card = CardData(
+        head       : _cardHead!,
+        body       : _cardBody!,
+        style      : _cardStyle!,
+        stat       : _cardStat!,
+        pacInfo    : _pacInfo!,
+        difficulty : _difficulty!,
+        onResult   : _onCardResult
+    );
 
     onChange.send();
   }
@@ -118,13 +132,13 @@ class CardController {
       newCard = await processCardController.getCardForTest();
       if (newCard == null) return false;
 
-      if (card?.head.cardID != newCard.id || card?.head.jsonFileID != newCard.jsonFileID){
+      if (card?.head.cardID != newCard.cardID || card?.head.jsonFileID != newCard.jsonFileID){
         break;
       }
     }
 
     if (newCard == null) return false;
-    await setCard( newCard.jsonFileID, newCard.id );
+    await setCard( newCard.jsonFileID, newCard.cardID );
 
     return true;
   }

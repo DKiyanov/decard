@@ -216,6 +216,7 @@ class DataLoader {
         jsonFileID   : jsonFileID,
         cardKey      : cardKey,
         title        : card[TabCardHead.kTitle],
+        difficulty   : card[TabCardHead.kDifficulty],
         cardGroupKey : card[DjfCard.group],
         bodyCount    : bodyList.length,
       );

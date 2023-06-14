@@ -47,6 +47,7 @@ class Child {
     cardController = CardController(
       dbSource             : dbSource,
       processCardController: processCardController,
+      regulator            : regulator,
     );
   }
 }

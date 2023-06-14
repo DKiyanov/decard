@@ -258,6 +258,7 @@ class TabCardHead {
   static const String kJsonFileID    = TabJsonFile.kJsonFileID;
   static const String kCardKey       = 'cardKey'; // map from DjfCard.id
   static const String kTitle         = DjfCard.title;
+  static const String kDifficulty    = DjfCard.difficulty;
   static const String kGroup         = 'groupKey'; // map from DjfCard.group;
   static const String kBodyCount     = 'bodyCount'; // number of records in the DjfCard.bodyList
 
@@ -266,6 +267,7 @@ class TabCardHead {
       "$kJsonFileID  INTEGER,"
       "$kCardKey     TEXT,"  // Card identifier from a json file
       "$kTitle       TEXT,"
+      "$kDifficulty  INTEGER,"
       "$kGroup       TEXT,"
       "$kBodyCount   INTEGER"
       ")";
@@ -278,17 +280,19 @@ class TabCardHead {
   }
 
   Future<int> insertRow({
-    required int jsonFileID,
+    required int    jsonFileID,
     required String cardKey,
     required String title,
+    required int    difficulty,
     required String cardGroupKey,
-    required int bodyCount,
+    required int    bodyCount,
   }) async {
     final Map<String, Object?> row = {
       kJsonFileID : jsonFileID,
       kCardKey    : cardKey,
       kTitle      : title,
-      kGroup   : cardGroupKey,
+      kDifficulty : difficulty,
+      kGroup      : cardGroupKey,
       kBodyCount  : bodyCount,
     };
 

@@ -112,7 +112,7 @@ class AppState {
     childList.add(child);
   }
 
-  /// инициализирует детей каталоги которых есть на устройстве
+  /// Initializes children whose directories are on the device
   Future<void> _initChildren() async {
     final dir = Directory(_appDir);
     final fileList = dir.listSync();
@@ -125,7 +125,7 @@ class AppState {
     }
   }
 
-  /// Поиск новых детей на сервере и заведение их локально
+  /// Search for new children on the server and create them locally
   Future<void> _searchNewChildrenInServer() async {
     final serverChildList = await appState.serverConnect.getChildList();
 
@@ -196,11 +196,11 @@ class AppState {
     );
   }
 
-  /// тестирование и отладка алгоритма выбора карточек
+  /// testing and debugging the card selection algorithm
   Future<void> selfTest(Child child) async {
     const int daysCount = 100;
     const int maxCountTestPerDay = 100;
-    const int speed = 20; // колво показов для отличного запминания
+    const int speed = 20; // number of shows for great memory
 
     DateTime curDate = DateTime.now();
 
@@ -212,6 +212,7 @@ class AppState {
     final testCardController = CardController(
       dbSource: child.dbSource,
       processCardController: child.processCardController,
+      regulator: child.regulator,
     );
 
     print('tstres start');
@@ -229,7 +230,7 @@ class AppState {
         final rnd = random.nextInt(100);
         bool result = false;
 
-        // Вероятность правильного ответа ростёт по мере увеличения кол-ва тестов
+        // The probability of a correct answer increases as the number of tests increases
         if (testCardController.card!.stat.testsCount < speed) {
           result = rnd <= 100 * ( testCardController.card!.stat.testsCount / speed );
         } else {
@@ -251,7 +252,7 @@ class AppState {
 }
 
 class EarnController {
-  static const String _keyEarned         = 'earned';
+  static const String _keyEarnedSeconds = 'earned';
 
   static const String _keyAddEstimate = 'com.dkiyanov.learning_control.action.ADD_ESTIMATE';
   static const String _keyCoinTypeMinute = 'minute';
@@ -263,17 +264,17 @@ class EarnController {
 
   final onChangeEarn = SimpleEvent();
 
-  double _earned = 0;
-  double get earned => _earned;
+  double _earnedSeconds = 0;
+  double get earnedSeconds => _earnedSeconds;
 
   EarnController(this.prefs, this.packageInfo) {
-    _earned = prefs.getDouble(_keyEarned)??0;
+    _earnedSeconds = prefs.getDouble(_keyEarnedSeconds)??0;
     _coinSourceName = '${packageInfo.packageName}@${packageInfo.appName}';
   }
 
-  void addEarn(double earn){
-    _earned += earn;
-    prefs.setDouble(_keyEarned, _earned);
+  void addEarn(double earnSeconds){
+    _earnedSeconds += earnSeconds;
+    prefs.setDouble(_keyEarnedSeconds, _earnedSeconds);
     onChangeEarn.send();
   }
 
@@ -290,14 +291,14 @@ class EarnController {
     );
   }
 
-  /// Рассылка уведомлений о зароботке
+  /// Sending notifications of earnings
   Future<void> sendEarned() async {
-    final minuteCount = _earned.truncate();
+    final minuteCount = (_earnedSeconds / 60).truncate();
 
     _sendEstimateIntent(minuteCount);
 
-    _earned = _earned - minuteCount;
-    await prefs.setDouble(_keyEarned, _earned);
+    _earnedSeconds = _earnedSeconds - minuteCount * 60;
+    await prefs.setDouble(_keyEarnedSeconds, _earnedSeconds);
 
     onChangeEarn.send();
   }
