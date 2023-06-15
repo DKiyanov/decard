@@ -177,7 +177,14 @@ class RegSet {
 }
 
 class RegDifficulty {
-  final int level; // int, difficulty level, values 0 - 5
+  // int, difficulty level, values:
+  //   0 - for memorization
+  //   1 - very easy task
+  //   2 - easy task
+  //   3 - need to think
+  //   4 - difficult
+  //   5 - very difficult  
+  final int level; 
 
   // integer, the number of seconds earned if the answer is correct
   final int maxCost;
@@ -247,8 +254,7 @@ class Regulator {
     required this.difficultyList,
   }) {
     // fills missing levels with default values or proportionally from neighboring levels
-
-    //difficultyList.any((element) => false);
+    
     if (!difficultyList.any((difficulty) => difficulty.level == lowDifficultyLevel)) {
       difficultyList.add(RegDifficulty(
         level                     : lowDifficultyLevel,
