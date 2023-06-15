@@ -171,7 +171,7 @@ class _DeCardState extends State<DeCard> {
               ),
               borderRadius: const BorderRadius.all(Radius.circular(20))
           ),
-          child: Text(_getEarnedText()),
+          child: Text(getEarnedText(appState.earnController.earnedSeconds)),
         );
 
         if (appState.earnController.earnedSeconds > widget.child.regulator.options.minEarnTransferMinutes * 60 ) {
@@ -188,12 +188,6 @@ class _DeCardState extends State<DeCard> {
       },
       events: [appState.earnController.onChangeEarn],
     );
-  }
-
-  String _getEarnedText(){
-    final minutes = (appState.earnController.earnedSeconds / 60).truncate();
-    final seconds = (appState.earnController.earnedSeconds - minutes * 60).truncate();
-    return '$minutes:$seconds';
   }
 
   Widget _cardNavigator() {

@@ -152,7 +152,7 @@ class CardHead {
       cardKey    : json[TabCardHead.kCardKey],
       group      : json[TabCardHead.kGroup],
       title      : json[TabCardHead.kTitle],
-      difficulty : json[TabCardHead.kDifficulty],
+      difficulty : json[TabCardHead.kDifficulty]??0,
       bodyCount  : json[TabCardHead.kBodyCount],
     );
   }

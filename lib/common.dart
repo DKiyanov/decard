@@ -81,3 +81,9 @@ UrlType getUrlType(String url) {
   if (["http", "https"].contains(prefix)) return UrlType.httpUrl;
   return UrlType.localPath;
 }
+
+String getEarnedText(double earnedSeconds){
+  final minutes = (earnedSeconds / 60).truncate();
+  final seconds = (earnedSeconds - minutes * 60).truncate();
+  return '$minutes:$seconds';
+}

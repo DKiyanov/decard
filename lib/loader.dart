@@ -210,14 +210,16 @@ class DataLoader {
 
       cardKeyList.add(cardKey);
 
+      final groupKey = card[DjfCard.group]??cardKey;
+
       final bodyList = (card[DjfCard.bodyList]) as List;
 
       final cardID = await dbSource.tabCardHead.insertRow(
         jsonFileID   : jsonFileID,
         cardKey      : cardKey,
-        title        : card[TabCardHead.kTitle],
-        difficulty   : card[TabCardHead.kDifficulty],
-        cardGroupKey : card[DjfCard.group],
+        title        : card[DjfCard.title],
+        difficulty   : card[DjfCard.difficulty]??0,
+        cardGroupKey : groupKey,
         bodyCount    : bodyList.length,
       );
 
@@ -231,7 +233,7 @@ class DataLoader {
         jsonFileID : jsonFileID,
         cardID     : cardID,
         cardKey    : cardKey,
-        groupKey   : card[DjfCard.group],
+        groupKey   : groupKey,
         tagList    : card[DjfCard.tags] as List?,
       );
 

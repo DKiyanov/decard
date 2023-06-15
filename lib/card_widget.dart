@@ -133,6 +133,8 @@ class _CardWidgetState extends State<CardWidget> {
   void _onAnswer(bool tryResult) {
     _stopCostTimer();
 
+    if (widget.demoMode) return;
+
     if (tryResult) {
       widget.card.setResult(true, _costValue);
 
@@ -190,9 +192,13 @@ class _CardWidgetState extends State<CardWidget> {
   void _initCostTimer() {
     _stopCostTimer();
 
+    if (widget.demoMode) return;
+
     if (widget.card.duration == 0 || widget.card.cost == widget.card.lowCost) return;
 
     _costTimer = Timer.periodic( const Duration(milliseconds: 100), (timer){
+      if (!mounted) return;
+
       setState(() {
         final time = DateTime.now().difference(_startTime!).inMilliseconds;
 
@@ -268,7 +274,7 @@ class _CardWidgetState extends State<CardWidget> {
                   minHeight: 18,
                 ),
               ),
-              Text(_costValue.toStringAsFixed(1)),
+              Text(_costToStr(_costValue)),
             ]
         )),
         Container(width: 4),
@@ -288,14 +294,7 @@ class _CardWidgetState extends State<CardWidget> {
   }
 
   Widget _costBox(cost, Color color) {
-    String costStr = '';
-
-    if (cost is int) {
-      costStr = '$cost';
-    }
-    if (cost is double) {
-      costStr = cost.toStringAsFixed(1);
-    }
+    final costStr = _costToStr(cost);
 
     if (costStr.length <= 2) {
       return Container(
@@ -324,6 +323,14 @@ class _CardWidgetState extends State<CardWidget> {
       ),
       child: Text(costStr),
     );
+  }
+
+  String _costToStr(cost){
+    if (cost is double) {
+      return cost.truncate().toString();
+    }
+
+    return '$cost';
   }
 
   @override
@@ -488,7 +495,7 @@ class _CardWidgetState extends State<CardWidget> {
             ListView(
               children: widgetList,
             ),
-            if (widget.card.style.answerVariantMultiSel && _result == null) ...[
+            if (widget.card.style.answerVariantMultiSel && _result == null && !widget.demoMode) ...[
               Align(
                 alignment: Alignment.bottomRight,
                 child: ElevatedButton(
@@ -696,7 +703,9 @@ class _CardWidgetState extends State<CardWidget> {
         );
       }
     }
-    return Text(str);
+
+    // Serif - in this font, the letters "I" and "l" look different, it is important
+    return Text(str, style: const TextStyle(fontFamily: 'Serif'));
   }
 
   Widget _getButton(String value, AlignmentGeometry alignment){
