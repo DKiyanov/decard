@@ -6,8 +6,10 @@ class TextConst{
   static String txtSignIn         = 'Войти';
   static String txtInputAllParams = 'Нужно заполнить все поля';
   static String txtChildName      = 'Имя ребёнка';
+  static String txtDeviceName     = 'Имя устройства';
   static String txtInputChildName = 'Введите имя ребёнка';
   static String txtAddNewChild    = 'Добавить нового';
+  static String txtAddNewDevice   = 'Добавить новогое';
   static String txtEntryToOptions = 'Вход в настройку';
   static String errServerConnection1 = 'Соединение с сервером не настроено';
   static String txtAppTitle       = 'Карточник';

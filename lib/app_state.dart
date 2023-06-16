@@ -102,11 +102,11 @@ class AppState {
     synchronize();
   }
 
-  Future<void> addChild(String childName) async {
+  Future<void> addChild(String childName, String deviceName) async {
     final lowChildName = childName.toLowerCase();
     if (childList.any((child) => child.name.toLowerCase() == lowChildName)) return;
 
-    final child = Child(childName, _appDir);
+    final child = Child(childName, deviceName, _appDir);
     await child.init();
 
     childList.add(child);
@@ -118,26 +118,30 @@ class AppState {
     final fileList = dir.listSync();
     for (var file in fileList) {
       if (file is Directory) {
-        final childName = path_util.basename(file.path);
-        if (childName == 'flutter_assets') continue;
-        await addChild(childName);
+        final dirName = path_util.basename(file.path);
+        if (dirName == 'flutter_assets') continue;
+        final names = Child.getNamesFromDir(dirName);
+        await addChild(names.childName, names.deviceName);
       }
     }
   }
 
   /// Search for new children on the server and create them locally
   Future<void> _searchNewChildrenInServer() async {
-    final serverChildList = await appState.serverConnect.getChildList();
+    final serverChildMap = await appState.serverConnect.getChildDeviceMap();
 
-    for (var childName in serverChildList) {
-      await addChild(childName);
+    for (var childName in serverChildMap.keys) {
+      final deviceList = serverChildMap[childName]!;
+      for (var deviceName in deviceList) {
+        await addChild(childName, deviceName);
+      }
     }
   }
 
-  Future<void> setUsingMode(UsingMode newUsingMode, String childName) async {
+  Future<void> setUsingMode(UsingMode newUsingMode, String childName, String deviceName) async {
     if (newUsingMode == UsingMode.testing) {
-      final useChildName = await serverConnect.addChild(childName);
-      await addChild(useChildName);
+      final names = await serverConnect.addChildDevice(childName, deviceName);
+      await addChild(names.childName, names.deviceName);
     }
 
     prefs.setString(_kUsingMode, newUsingMode.name);
@@ -147,14 +151,20 @@ class AppState {
   }
 
   Future<void> synchronize() async {
-    final serverChildList = await serverConnect.getChildList();
-    for (var childName in serverChildList) {
+    final serverChildMap = await serverConnect.getChildDeviceMap();
+    for (var childName in serverChildMap.keys) {
       final lowChildName = childName.toLowerCase();
-      final child = childList.firstWhereOrNull((child) => child.name.toLowerCase() == lowChildName);
-      if (child == null) continue;
+      final deviceList = serverChildMap[childName]!;
 
-      await serverConnect.synchronizeChild(child, childName);
-      await _dataLoader.refreshDB(dirForScanList: [child.downloadDir], selfDir: child.cardsDir, dbSource: child.dbSource);
+      for (var deviceName in deviceList) {
+        final lowDeviceName = deviceName.toLowerCase();
+
+        final child = childList.firstWhereOrNull((child) => child.name.toLowerCase() == lowChildName && child.deviceName.toLowerCase() == lowDeviceName);
+        if (child == null) continue;
+
+        await serverConnect.synchronizeChild(child, childName, deviceName);
+        await _dataLoader.refreshDB(dirForScanList: [child.downloadDir], selfDir: child.cardsDir, dbSource: child.dbSource);
+      }
     }
   }
 

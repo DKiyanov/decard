@@ -15,7 +15,7 @@ class UsingModeSelector extends StatefulWidget {
 class _UsingModeSelectorState extends State<UsingModeSelector> {
   UsingMode? _usingMode;
   final _textControllerChildName  = TextEditingController();
-  late _childNameList = <String>[];
+  late List<String> _childNameList;
 
   final _textControllerDeviceName = TextEditingController();
   late Map<String, List<String>> _childDeviceMap;
@@ -121,10 +121,10 @@ class _UsingModeSelectorState extends State<UsingModeSelector> {
                       
                       // Child device name
                       TextField(
-                      controller: _textControllerChildDeviceName,
+                      controller: _textControllerDeviceName,
                       decoration: InputDecoration(
                         filled: true,
-                        labelText: TextConst.txtChildDeviceName,
+                        labelText: TextConst.txtDeviceName,
                         enabledBorder: OutlineInputBorder(
                           borderSide: const BorderSide(width: 3, color: Colors.blueGrey),
                           borderRadius: BorderRadius.circular(15),

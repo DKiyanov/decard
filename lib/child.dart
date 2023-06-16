@@ -7,9 +7,17 @@ import 'package:sqflite/sqflite.dart';
 import 'card_controller.dart';
 import 'db.dart';
 
+class ChildAndDeviceNames {
+  final String childName;
+  final String deviceName;
+  ChildAndDeviceNames(this.childName, this.deviceName);
+}
+
 class Child {
+  static String namesSeparator = '@';
   final String appDir;
   final String name;
+  final String deviceName;
 
   late DecardDB decardDB;
   late Database db;
@@ -21,16 +29,18 @@ class Child {
   late Regulator regulator;
   late String _regulatorPath;
 
+  late String rootDir;
   late String downloadDir;
   late String cardsDir;
 
-  Child(this.name, this.appDir);
+  Child(this.name, this.deviceName, this.appDir);
 
   Future<void> init() async {
-    final dbDir = await Directory( join(appDir, name, 'db') ).create(recursive : true);
+    rootDir = '$name$namesSeparator$deviceName';
+    final dbDir = await Directory( join(appDir, rootDir, 'db') ).create(recursive : true);
 
-    downloadDir = (await Directory( join(appDir, name, 'download') ).create()).path;
-    cardsDir    = (await Directory( join(appDir, name, 'cards') ).create()).path;
+    downloadDir = (await Directory( join(appDir, rootDir, 'download') ).create()).path;
+    cardsDir    = (await Directory( join(appDir, rootDir, 'cards') ).create()).path;
 
     decardDB = DecardDB(dbDir.path);
     await decardDB.init();
@@ -38,7 +48,7 @@ class Child {
     db = decardDB.database;
     dbSource = decardDB.source;
 
-    _regulatorPath = join(appDir, name, 'regulator.json' );
+    _regulatorPath = join(appDir, rootDir, 'regulator.json' );
     regulator = await Regulator.fromFile( _regulatorPath );
 
     processCardController = ProcessCardController(db, regulator, dbSource.tabCardStat, dbSource.tabCardHead);
@@ -49,5 +59,10 @@ class Child {
       processCardController: processCardController,
       regulator            : regulator,
     );
+  }
+
+  static ChildAndDeviceNames getNamesFromDir(String dirName){
+    final sub = dirName.split(namesSeparator);
+    return ChildAndDeviceNames(sub.first, sub.last);
   }
 }

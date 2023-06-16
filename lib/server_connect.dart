@@ -81,39 +81,56 @@ class ServerConnect {
     _password = map["password"]??"";
   }
 
-  Future<List<String>> getChildList() async {
+  Future<Map<String, List<String>>> getChildDeviceMap() async {
     final client = getClient();
+
+    final Map<String, List<String>> result = {};
 
     final fileList = await client.readDir('');
 
-    return fileList.where((webFile) => webFile.isDir == true).map((webFile) => webFile.name!).toList();
+    for (var webFile in fileList) {
+      if (webFile.isDir!) {
+        final subFileList = await client.readDir(webFile.path!);
+        final deviceDirList = subFileList.where((webSubFile) => webSubFile.isDir!).map((webSubFile) => webSubFile.name!).toList();
+        result[webFile.name!] = deviceDirList;
+      }
+    }
+
+    return result;
   }
 
-  Future<String> addChild(String childName) async {
+  Future<ChildAndDeviceNames> addChildDevice(String childName, String deviceName) async {
     final client = getClient();
 
     final fileList = await client.readDir('');
 
     final webFile = fileList.firstWhereOrNull((webFile) => webFile.name!.toLowerCase() == childName.toLowerCase());
-    if (webFile != null) return webFile.name!;
+    if (webFile != null) {
+      final subFileList = await client.readDir(webFile.path!);
+      final webSubFile = subFileList.firstWhereOrNull((webSubFile) => webSubFile.name!.toLowerCase() == deviceName.toLowerCase());
+      if (webSubFile != null) return ChildAndDeviceNames(webFile.name!, webSubFile.name!);
 
-    await client.mkdir(childName);
-    return childName;
+      await client.mkdir(path_util.join(webFile.path!, deviceName));
+      return ChildAndDeviceNames(webFile.name!, deviceName);
+    }
+
+    await client.mkdir(path_util.join(childName, deviceName));
+    return ChildAndDeviceNames(childName, deviceName);
   }
 
-  /// Синхронизирует содержимое каталогов ребёнка на сервере и на устройстве
-  /// отсутствующие каталоги, на сервере или устройстве - НЕ создаются
-  Future<void> synchronizeChild(Child child, String subDir) async {
+  /// Synchronizes the contents of the child's directories on the server and on the device
+  /// missing directories, on server or device - NOT created
+  Future<void> synchronizeChild(Child child, String childNameDir, String deviceNameDir) async {
     final client = getClient();
 
-    final fileList = await client.readDir(subDir);
+    final fileList = await client.readDir(path_util.join(childNameDir, deviceNameDir));
 
     for (var file in fileList) {
       if (getDecardFileType(file.path!) == DecardFileType.notDecardFile) continue;
 
       final fileName = path_util.basename(file.path!);
 
-      final netFilePath = '$serverURL/$subDir/$fileName';
+      final netFilePath = path_util.join(serverURL, childNameDir, deviceNameDir, fileName);
 
       if (!await child.dbSource.tabSourceFile.checkFileRegisteredEx(netFilePath, file.mTime!, file.size!)) {
         final filePath = path_util.join(child.downloadDir, fileName);
