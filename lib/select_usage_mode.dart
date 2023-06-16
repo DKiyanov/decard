@@ -15,8 +15,11 @@ class UsingModeSelector extends StatefulWidget {
 class _UsingModeSelectorState extends State<UsingModeSelector> {
   UsingMode? _usingMode;
   final _textControllerChildName  = TextEditingController();
-  final _childNameList = <String>[];
+  late _childNameList = <String>[];
 
+  final _textControllerDeviceName = TextEditingController();
+  late Map<String, List<String>> _childDeviceMap;
+  
   bool _isStarting = true;
 
   @override
@@ -29,10 +32,8 @@ class _UsingModeSelectorState extends State<UsingModeSelector> {
   }
 
   void _starting() async {
-    final childList = await appState.serverConnect.getChildList();
-    _childNameList.clear();
-    _childNameList.addAll(childList);
-    _childNameList.add(TextConst.txtAddNewChild);
+	  _childDeviceMap = await appState.serverConnect.getChildDeviceMap(); 
+	  _childNameList  = _childDeviceMap.keys.toList();
 
     setState(() {
       _isStarting = false;
@@ -50,6 +51,8 @@ class _UsingModeSelectorState extends State<UsingModeSelector> {
         body: const Center(child: CircularProgressIndicator()),
       );
     }
+    
+    final deviceNameList = _childDeviceMap[_textControllerChildName.text.toLowerCase()]??[];
 
     return Scaffold(
         appBar: AppBar(
@@ -82,6 +85,7 @@ class _UsingModeSelectorState extends State<UsingModeSelector> {
                     ),
 
                     if (_usingMode == UsingMode.testing) ...[
+                      // Child name
                       TextField(
                         controller: _textControllerChildName,
                         decoration: InputDecoration(
@@ -95,25 +99,59 @@ class _UsingModeSelectorState extends State<UsingModeSelector> {
                               borderSide: const BorderSide(width: 3, color: Colors.blue),
                               borderRadius: BorderRadius.circular(15),
                             ),
-                            suffixIcon: _childNameList.isNotEmpty?
-                            PopupMenuButton<String>(
-                              itemBuilder: (context) {
-                                return _childNameList.map<PopupMenuItem<String>>((childName) => PopupMenuItem<String>(
-                                  value: childName,
-                                  child: Text(childName),
-                                )).toList();
-                              },
-                              onSelected: (childName) {
-                                setState(() {
-                                  _textControllerChildName.text = childName != TextConst.txtAddNewChild?childName:'';
-                                });
-                              },
-                            ): null
+                            suffixIcon: _childNameList.isEmpty? null :
+                              PopupMenuButton<String>(
+                                itemBuilder: (context) {
+                                  return _childNameList.map<PopupMenuItem<String>>((childName) => PopupMenuItem<String>(
+                                    value: childName,
+                                    child: Text(childName),
+                                  )).toList();
+                                },
+                                onSelected: (childName) {
+                                  setState(() {
+                                    _textControllerChildName.text = childName != TextConst.txtAddNewChild?childName:'';
+                                  });
+                                },
+                              )
                         ),
                         onChanged: ((_) {
                           setState(() { });
                         }),
                       ),
+                      
+                      // Child device name
+                      TextField(
+                      controller: _textControllerChildDeviceName,
+                      decoration: InputDecoration(
+                        filled: true,
+                        labelText: TextConst.txtChildDeviceName,
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: const BorderSide(width: 3, color: Colors.blueGrey),
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: const BorderSide(width: 3, color: Colors.blue),
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        suffixIcon: deviceNameList.isEmpty? null :
+                          PopupMenuButton<String>(
+                            itemBuilder: (context) {
+                            return deviceNameList.map<PopupMenuItem<String>>((deviceName) => PopupMenuItem<String>(
+                              value: deviceName,
+                              child: Text(deviceName),
+                            )).toList();
+                            },
+                            onSelected: (deviceName) {
+                            setState(() {
+                              _textControllerDeviceName.text = deviceName != TextConst.txtAddNewDevice?deviceName:'';
+                            });
+                            },
+                          )
+                      ),
+                      onChanged: ((_) {
+                        setState(() { });
+                      }),
+                      ),                      
                     ],
 
                     ChoiceChip(
@@ -145,7 +183,7 @@ class _UsingModeSelectorState extends State<UsingModeSelector> {
     }
 
     try {
-      await appState.setUsingMode(_usingMode!, _textControllerChildName.text);
+      await appState.setUsingMode(_usingMode!, _textControllerChildName.text, _textControllerDeviceName.text);
       widget.onUsingModeSelectOk();
     } catch (e) {
       Fluttertoast.showToast(msg: e.toString());
