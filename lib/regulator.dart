@@ -1,8 +1,16 @@
 import 'dart:io';
 import 'dart:convert';
 
+/// Manage the selection and execution of cards on the child's device
+class DrfRegulator {
+  static const String options        = "options"; // options, mainly settings for the card selection mechanism
+  static const String setList        = "setList"; // array of sets, filtering and customizing cards
+  static const String difficultyList = "difficultyList"; // array of difficulty, card execution settings according to their difficulty
+}
+
+/// Options, mainly settings for the card selection mechanism
 class DrfOptions {
-  static const String hotDayCount = "hotDayCount";   // Number of days for which the stastistics are calculated
+  static const String hotDayCount = "hotDayCount";   // Number of days for which the statistics are calculated
 
   static const String hotCardQualityTopLimit = "hotCardQualityTopLimit"; // cards with lower quality are considered to be actively studied
   static const String maxCountHotCard = "maxCountHotCard";        // Maximum number of cards in active study
@@ -17,7 +25,7 @@ class DrfOptions {
 
   static const String lowGroupAvgQualityTopLimit = "lowGroupAvgQualityTopLimit"; // 
 
-  /// maximal number of groups in the beginer stage of the study,
+  /// maximal number of groups in the begin stage of the study,
   /// If the number is equal to the limit - the system selects cards from the groups already being studied
   static const String maxCountLowQualityGroup = "maxCountLowQualityGroup";
 
@@ -34,6 +42,7 @@ class DrfOptions {
   static const String minEarnTransferMinutes = 'minEarnTransferMinutes';
 }
 
+/// Filtering and customizing cards
 class DrfSet {
   static const String fileGUID = "fileGUID"; // GUID of decardj file
   static const String cards    = "cards";    // array of cardID or mask
@@ -46,6 +55,7 @@ class DrfSet {
   static const String style    = "style";    // body style
 }
 
+/// Card execution settings according to their difficulty
 class DrfDifficulty {
   static const String level                      = "level"; // int, difficulty level, values 0 - 5
 
@@ -71,7 +81,7 @@ class DrfDifficulty {
 }
 
 class RegOptions {
-  final int hotDayCount;   // Number of days for which the stastistics are calculated
+  final int hotDayCount;   // Number of days for which the statistics are calculated
 
   final int hotCardQualityTopLimit; // cards with lower quality are considered to be actively studied
   final int maxCountHotCard;        // Maximum number of cards in active study
@@ -84,9 +94,9 @@ class RegOptions {
   /// If the quantity is less than the limit - the system tries to select a card from the new group
   final int minCountHotQualityGroup;
 
-  final int lowGroupAvgQualityTopLimit; // the upper limit of average quality for beginer-quality groups
+  final int lowGroupAvgQualityTopLimit; // the upper limit of average quality for begin-quality groups
 
-  /// maximal number of beginer-quality groups,
+  /// maximal number of begin-quality groups,
   /// If the number is equal to the limit - the system selects cards from the groups already being studied
   final int maxCountLowQualityGroup;
 
@@ -128,10 +138,25 @@ class RegOptions {
         maxCountLowQualityGroup     : json[DrfOptions.maxCountLowQualityGroup   ],
         lowTryCount                 : json[DrfOptions.lowTryCount               ],
         lowDayCount                 : json[DrfOptions.lowDayCount               ],
+        minEarnTransferMinutes      : json[DrfOptions.minEarnTransferMinutes    ],
         negativeLastResultMaxQualityLimit : json[DrfOptions.negativeLastResultMaxQualityLimit],
-        minEarnTransferMinutes        : json[DrfOptions.minEarnTransferMinutes],
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    DrfOptions.hotDayCount                : hotDayCount,
+    DrfOptions.hotCardQualityTopLimit     : hotCardQualityTopLimit,
+    DrfOptions.maxCountHotCard            : maxCountHotCard,
+    DrfOptions.hotGroupMinQualityTopLimit : hotGroupMinQualityTopLimit,
+    DrfOptions.hotGroupAvgQualityTopLimit : hotGroupAvgQualityTopLimit,
+    DrfOptions.minCountHotQualityGroup    : minCountHotQualityGroup,
+    DrfOptions.lowGroupAvgQualityTopLimit : lowGroupAvgQualityTopLimit,
+    DrfOptions.maxCountLowQualityGroup    : maxCountLowQualityGroup,
+    DrfOptions.lowTryCount                : lowTryCount,
+    DrfOptions.lowDayCount                : lowDayCount,
+    DrfOptions.minEarnTransferMinutes     : minEarnTransferMinutes,
+    DrfOptions.negativeLastResultMaxQualityLimit : negativeLastResultMaxQualityLimit,
+  };
 }
 
 class RegSet {
@@ -158,22 +183,34 @@ class RegSet {
     this.style
   });
 
-  factory RegSet.fromMap(Map<String, dynamic> json){
+  factory RegSet.fromMap(Map<String, dynamic> json) {
     json[DrfSet.cards] != null ? List<String>.from(json[DrfSet.cards].map((x) => x)) : [];
 
     return RegSet(
-      fileGUID : json[DrfSet.fileGUID],
-      cards    : json[DrfSet.cards]   != null ? List<String>.from(json[DrfSet.cards].map((x)   => x)) : [],
-      groups   : json[DrfSet.groups]  != null ? List<String>.from(json[DrfSet.groups].map((x)  => x)) : [],
-      tags     : json[DrfSet.tags]    != null ? List<String>.from(json[DrfSet.tags].map((x)    => x)) : [],
-      andTags  : json[DrfSet.andTags] != null ? List<String>.from(json[DrfSet.andTags].map((x) => x)) : [],
+      fileGUID         : json[DrfSet.fileGUID],
+      cards            : json[DrfSet.cards   ] != null ? List<String>.from(json[DrfSet.cards].map((x)   => x)) : [],
+      groups           : json[DrfSet.groups  ] != null ? List<String>.from(json[DrfSet.groups].map((x)  => x)) : [],
+      tags             : json[DrfSet.tags    ] != null ? List<String>.from(json[DrfSet.tags].map((x)    => x)) : [],
+      andTags          : json[DrfSet.andTags ] != null ? List<String>.from(json[DrfSet.andTags].map((x) => x)) : [],
       difficultyLevels : json[DrfSet.difficultyLevels] != null ? List<int>.from(json[DrfSet.difficultyLevels].map((x) => x)) : [],
       
-      exclude  : json[DrfSet.exclude],
-      difficultyLevel : json[DrfSet.difficultyLevel],
-      style    : json[DrfSet.style],
+      exclude          : json[DrfSet.exclude],
+      difficultyLevel  : json[DrfSet.difficultyLevel],
+      style            : json[DrfSet.style],
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    DrfSet.fileGUID         : fileGUID,
+    DrfSet.cards            : cards,
+    DrfSet.groups           : groups,
+    DrfSet.tags             : tags,
+    DrfSet.andTags          : andTags,
+    DrfSet.difficultyLevels : difficultyLevels,
+    DrfSet.exclude          : exclude,
+    DrfSet.difficultyLevel  : difficultyLevel,
+    DrfSet.style            : style,
+  };
 }
 
 class RegDifficulty {
@@ -235,12 +272,23 @@ class RegDifficulty {
       minDurationLowCostPercent : json[DrfDifficulty.minDurationLowCostPercent],
     );
   }
+
+  Map<String, dynamic> toJson() => {
+      DrfDifficulty.level                     :level,
+      DrfDifficulty.maxCost                   :maxCost,
+      DrfDifficulty.minCost                   :minCost,
+      DrfDifficulty.maxPenalty                :maxPenalty,
+      DrfDifficulty.minPenalty                :minPenalty,
+      DrfDifficulty.maxTryCount               :maxTryCount,
+      DrfDifficulty.minTryCount               :minTryCount,
+      DrfDifficulty.maxDuration               :maxDuration,
+      DrfDifficulty.minDuration               :minDuration,
+      DrfDifficulty.maxDurationLowCostPercent :maxDurationLowCostPercent,
+      DrfDifficulty.minDurationLowCostPercent :minDurationLowCostPercent,
+  };
 }
 
 class Regulator {
-  static const String kOptions = "options";
-  static const String kSetList = "setList";
-  static const String kDifficultyList = "difficultyList";
   static const int lowDifficultyLevel  = 0;
   static const int highDifficultyLevel = 5;
 
@@ -338,11 +386,17 @@ class Regulator {
 
   factory Regulator.fromMap(Map<String, dynamic> json) {
     return Regulator(
-      options : RegOptions.fromMap(json[kOptions]),
-      setList : json[kSetList] != null ? List<RegSet>.from(json[kSetList].map((setJson) => RegSet.fromMap(setJson))) : [],
-      difficultyList: json[kDifficultyList] != null ? List<RegDifficulty>.from(json[kDifficultyList].map((difficultyJson) => RegDifficulty.fromMap(difficultyJson))) : [],
+      options : RegOptions.fromMap(json[DrfRegulator.options]),
+      setList : json[DrfRegulator.setList] != null ? List<RegSet>.from(json[DrfRegulator.setList].map((setJson) => RegSet.fromMap(setJson))) : [],
+      difficultyList: json[DrfRegulator.difficultyList] != null ? List<RegDifficulty>.from(json[DrfRegulator.difficultyList].map((difficultyJson) => RegDifficulty.fromMap(difficultyJson))) : [],
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    DrfRegulator.options        : options,
+    DrfRegulator.setList        : setList,
+    DrfRegulator.difficultyList : difficultyList,
+  };
 
   static Future<Regulator> fromFile(String filePath) async {
     final jsonFile = File(filePath);
@@ -354,5 +408,12 @@ class Regulator {
     final fileData = await jsonFile.readAsString();
     final json = jsonDecode(fileData); 
     return Regulator.fromMap(json);
+  }
+
+  Future<void> saveToFile(String filePath) async {
+    final fileData = jsonEncode(this);
+    final jsonFile = File(filePath);
+
+    jsonFile.writeAsString(fileData);
   }
 }

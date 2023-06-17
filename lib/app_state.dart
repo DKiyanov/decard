@@ -89,6 +89,7 @@ class AppState {
       earnController = EarnController(prefs, packageInfo);
 
       childList.first.cardController.onAddEarn.subscribe((listener, earn){
+        serverConnect.saveTestsResults(childList.first);
         earnController.addEarn(earn!);
       });
 
@@ -103,10 +104,9 @@ class AppState {
   }
 
   Future<void> addChild(String childName, String deviceName) async {
-    final lowChildName = childName.toLowerCase();
-    if (childList.any((child) => child.name.toLowerCase() == lowChildName)) return;
+    if (childList.any((child) => child.name == childName && child.deviceName == deviceName )) return;
 
-    final child = Child(childName, deviceName, _appDir);
+    final child = Child(childName, deviceName, _appDir, _dataLoader);
     await child.init();
 
     childList.add(child);
@@ -153,17 +153,13 @@ class AppState {
   Future<void> synchronize() async {
     final serverChildMap = await serverConnect.getChildDeviceMap();
     for (var childName in serverChildMap.keys) {
-      final lowChildName = childName.toLowerCase();
       final deviceList = serverChildMap[childName]!;
 
       for (var deviceName in deviceList) {
-        final lowDeviceName = deviceName.toLowerCase();
-
-        final child = childList.firstWhereOrNull((child) => child.name.toLowerCase() == lowChildName && child.deviceName.toLowerCase() == lowDeviceName);
+        final child = childList.firstWhereOrNull((child) => child.name == childName && child.deviceName == deviceName);
         if (child == null) continue;
 
-        await serverConnect.synchronizeChild(child, childName, deviceName);
-        await _dataLoader.refreshDB(dirForScanList: [child.downloadDir], selfDir: child.cardsDir, dbSource: child.dbSource);
+        await serverConnect.synchronizeChild(child);
       }
     }
   }

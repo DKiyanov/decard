@@ -73,6 +73,10 @@ int dateToInt(DateTime date){
   return date.year * 10000 + date.month * 100 + date.day;
 }
 
+int dateTimeToInt(DateTime date){
+  return date.year * 10000000000 + date.month * 100000000 + date.day * 1000000 + date.hour * 10000 + date.minute * 100 + date.second;
+}
+
 enum UrlType {
   httpUrl,
   localPath

@@ -6,6 +6,7 @@ import 'package:sqflite/sqflite.dart';
 
 import 'card_controller.dart';
 import 'db.dart';
+import 'loader.dart';
 
 class ChildAndDeviceNames {
   final String childName;
@@ -14,7 +15,9 @@ class ChildAndDeviceNames {
 }
 
 class Child {
+  static String regulatorFileName = 'regulator.json';
   static String namesSeparator = '@';
+
   final String appDir;
   final String name;
   final String deviceName;
@@ -26,21 +29,26 @@ class Child {
   late ProcessCardController processCardController;
   late CardController cardController;
 
-  late Regulator regulator;
-  late String _regulatorPath;
+  Regulator? _regulator;
+  Regulator get regulator => _regulator!;
+
+  late String regulatorPath;
 
   late String rootDir;
   late String downloadDir;
   late String cardsDir;
 
-  Child(this.name, this.deviceName, this.appDir);
+  DataLoader cardFileLoader;
+
+  Child(this.name, this.deviceName, this.appDir, this.cardFileLoader);
 
   Future<void> init() async {
-    rootDir = '$name$namesSeparator$deviceName';
-    final dbDir = await Directory( join(appDir, rootDir, 'db') ).create(recursive : true);
+    rootDir = join(appDir, '$name$namesSeparator$deviceName');
 
-    downloadDir = (await Directory( join(appDir, rootDir, 'download') ).create()).path;
-    cardsDir    = (await Directory( join(appDir, rootDir, 'cards') ).create()).path;
+    final dbDir = await Directory( join(rootDir, 'db') ).create(recursive : true);
+
+    downloadDir = (await Directory( join(rootDir, 'download') ).create()).path;
+    cardsDir    = (await Directory( join(rootDir, 'cards') ).create()).path;
 
     decardDB = DecardDB(dbDir.path);
     await decardDB.init();
@@ -48,8 +56,8 @@ class Child {
     db = decardDB.database;
     dbSource = decardDB.source;
 
-    _regulatorPath = join(appDir, rootDir, 'regulator.json' );
-    regulator = await Regulator.fromFile( _regulatorPath );
+    regulatorPath = join(rootDir, regulatorFileName );
+    _regulator = await Regulator.fromFile( regulatorPath );
 
     processCardController = ProcessCardController(db, regulator, dbSource.tabCardStat, dbSource.tabCardHead);
     await processCardController.init();
@@ -59,6 +67,15 @@ class Child {
       processCardController: processCardController,
       regulator            : regulator,
     );
+
+  }
+
+  Future<void> refreshRegulator() async {
+    _regulator = await Regulator.fromFile( regulatorPath );
+  }
+
+  Future<void> refreshCardsDB() async {
+    await cardFileLoader.refreshDB(dirForScanList: [downloadDir], selfDir: cardsDir, dbSource: dbSource);
   }
 
   static ChildAndDeviceNames getNamesFromDir(String dirName){

@@ -37,6 +37,7 @@ class _DeCardState extends State<DeCard> {
               icon: const Icon(Icons.menu),
               itemBuilder: (context) {
                 return [
+                  'save regulator',
                   // TextConst.txtOptions,
 
                   // if (appState.scanningOnProcess) ...[
@@ -68,6 +69,9 @@ class _DeCardState extends State<DeCard> {
                 )).toList();
               },
               onSelected: (value) async {
+                if (value == 'save regulator') {
+                  appState.childList.first.regulator.saveToFile(appState.childList.first.regulatorPath);
+                }
                 // if (value == TextConst.txtOptions) {
                 //   PasswordInput.navigatorPush(context);
                 // }

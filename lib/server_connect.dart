@@ -1,16 +1,19 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
 import 'package:decard/common.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webdav_client/webdav_client.dart' as webdav;
-import 'package:path/path.dart' as path_util;
+import 'package:path/path.dart' as path;
 
 import 'child.dart';
 import 'loader.dart';
 
 class ServerConnect {
+  static const String _statDirName = "stat";
+
   final SharedPreferences prefs;
 
   String serverURL = '';
@@ -110,35 +113,70 @@ class ServerConnect {
       final webSubFile = subFileList.firstWhereOrNull((webSubFile) => webSubFile.name!.toLowerCase() == deviceName.toLowerCase());
       if (webSubFile != null) return ChildAndDeviceNames(webFile.name!, webSubFile.name!);
 
-      await client.mkdir(path_util.join(webFile.path!, deviceName));
+      await client.mkdir(path.join(webFile.path!, deviceName));
+      await client.mkdir(path.join(webFile.path!, deviceName, _statDirName));
       return ChildAndDeviceNames(webFile.name!, deviceName);
     }
 
-    await client.mkdir(path_util.join(childName, deviceName));
+    await client.mkdir(path.join(childName, deviceName));
     return ChildAndDeviceNames(childName, deviceName);
   }
 
   /// Synchronizes the contents of the child's directories on the server and on the device
+  /// Server -> Child
   /// missing directories, on server or device - NOT created
-  Future<void> synchronizeChild(Child child, String childNameDir, String deviceNameDir) async {
+  Future<void> synchronizeChild(Child child) async {
     final client = getClient();
 
-    final fileList = await client.readDir(path_util.join(childNameDir, deviceNameDir));
+    final fileList = await client.readDir(path.join(child.name, child.deviceName));
 
     for (var file in fileList) {
-      if (getDecardFileType(file.path!) == DecardFileType.notDecardFile) continue;
+      if (file.isDir!) continue;
 
-      final fileName = path_util.basename(file.path!);
+      final fileName = path.basename(file.path!);
 
-      final netFilePath = path_util.join(serverURL, childNameDir, deviceNameDir, fileName);
+      late String downloadDir;
+      bool isRegulator = false;
+
+      if (fileName.toLowerCase() == Child.regulatorFileName) {
+        downloadDir = child.rootDir;
+        isRegulator = true;
+      } else {
+        if (getDecardFileType(fileName) == DecardFileType.notDecardFile) continue;
+        downloadDir = child.downloadDir;
+      }
+
+      final netFilePath = path.join(serverURL, child.name, child.deviceName, fileName);
 
       if (!await child.dbSource.tabSourceFile.checkFileRegisteredEx(netFilePath, file.mTime!, file.size!)) {
-        final filePath = path_util.join(child.downloadDir, fileName);
+        final filePath = path.join(downloadDir, fileName);
         final localFile = File(filePath);
         if (localFile.existsSync()) localFile.deleteSync();
         await client.read2File(file.path!, filePath);
         await child.dbSource.tabSourceFile.registerFileEx(netFilePath, file.mTime!, file.size!);
+
+        if (isRegulator) {
+          await child.refreshRegulator();
+        } else {
+          await child.refreshCardsDB();
+        }
       }
     }
+  }
+
+  /// saves tests results
+  Future<void> saveTestsResults(Child child) async {
+    final resultList = child.cardController.cardResultList;
+    if (resultList.isEmpty) return;
+
+    final fileName = 'stat-${resultList.first.dateTime}-${resultList.last.dateTime.toString().substring(8)}.json';
+
+    final jsonStr = jsonEncode(resultList);
+    final fileData = Uint8List.fromList(jsonStr.codeUnits);
+
+    final client = getClient();
+    await client.write(path.join(child.name, child.deviceName, _statDirName, fileName), fileData);
+
+    resultList.clear();
   }
 }

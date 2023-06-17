@@ -38,12 +38,15 @@ class CardController {
   CardStat?  _cardStat;
 
   RegDifficulty? _difficulty;
+  int _bodyNum = 0;
 
   CardData? _card;
   CardData? get card => _card;
 
   final onChange = SimpleEvent();
   final onAddEarn = SimpleEvent<double>();
+
+  final cardResultList = <CardResult>[];
 
   /// Sets the current card data
   Future<void> setCard(int jsonFileID, int cardID, {int? bodyNum, CardSetBody setBody = CardSetBody.random}) async {
@@ -104,6 +107,8 @@ class CardController {
   }
 
   Future<void> _setBodyNum(int bodyNum) async {
+    _bodyNum = bodyNum;
+
     final bodyData = await dbSource.tabCardBody.getRow(jsonFileID: _cardHead!.jsonFileID, cardID: _cardHead!.cardID, bodyNum: bodyNum );
     _cardBody = CardBody.fromMap(bodyData!);
 
@@ -143,10 +148,24 @@ class CardController {
     return true;
   }
 
-  void _onCardResult(bool result, double earn){
+  Future<void> _onCardResult(bool result, double earn) async {
     if (appState.appMode == AppMode.demo) return;
 
-    processCardController.registerResult(_cardHead!.jsonFileID, _cardHead!.cardID, result);
+    final newStat = await processCardController.registerResult(_cardHead!.jsonFileID, _cardHead!.cardID, result);
+
+    cardResultList.add(CardResult(
+        fileGuid      : _pacInfo!.guid,
+        fileVersion   : _pacInfo!.version,
+        cardID        : _cardHead!.cardKey,
+        bodyNum       : _bodyNum,
+        result        : result,
+        earned        : earn,
+        dateTime      : dateTimeToInt(DateTime.now()),
+        qualityBefore : _cardStat!.quality,
+        qualityAfter  : newStat.quality,
+        difficulty    : _cardHead!.difficulty
+    ));
+
     onAddEarn.send(earn);
   }
 }
@@ -545,4 +564,70 @@ class ProcessCardController {
     final newStatData = await tabCardStat.getRow(cardID);
     return newStatData;
   }
+}
+
+/// For card result log
+class CardResult {
+  static const String _kFileGuid      = "fileGuid";
+  static const String _kFileVersion   = "fileVersion";
+  static const String _kCardID        = "cardID";
+  static const String _kBodyNum       = "bodyNum";
+  static const String _kResult        = "result";
+  static const String _kEarned        = "earned";
+  static const String _kDateTime      = "dateTime";
+  static const String _kQualityBefore = "qualityBefore";
+  static const String _kQualityAfter  = "qualityAfter";
+  static const String _kDifficulty    = "difficulty";
+
+  final String fileGuid;
+  final int    fileVersion;
+  final String cardID;
+  final int    bodyNum;
+  final bool   result;
+  final double earned;
+  final int    dateTime;
+  final int    qualityBefore;
+  final int    qualityAfter;
+  final int    difficulty;
+
+  CardResult({
+    required this.fileGuid,
+    required this.fileVersion,
+    required this.cardID,
+    required this.bodyNum,
+    required this.result,
+    required this.earned,
+    required this.dateTime,
+    required this.qualityBefore,
+    required this.qualityAfter,
+    required this.difficulty,
+  });
+
+  factory CardResult.fromMap(Map<String, dynamic> json) {
+    return CardResult(
+      fileGuid      : json[_kFileGuid     ],
+      fileVersion   : json[_kFileVersion  ],
+      cardID        : json[_kCardID       ],
+      bodyNum       : json[_kBodyNum      ],
+      result        : json[_kResult       ],
+      earned        : json[_kEarned       ],
+      dateTime      : json[_kDateTime     ],
+      qualityBefore : json[_kQualityBefore],
+      qualityAfter  : json[_kQualityAfter ],
+      difficulty    : json[_kDifficulty   ],
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    _kFileGuid      : fileGuid,
+    _kFileVersion   : fileVersion,
+    _kCardID        : cardID,
+    _kBodyNum       : bodyNum,
+    _kResult        : result,
+    _kEarned        : earned,
+    _kDateTime      : dateTime,
+    _kQualityBefore : qualityBefore,
+    _kQualityAfter  : qualityAfter,
+    _kDifficulty    : difficulty,
+  };
 }
