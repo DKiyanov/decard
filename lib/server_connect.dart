@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webdav_client/webdav_client.dart' as webdav;
 import 'package:path/path.dart' as path;
 
+import 'card_controller.dart';
 import 'child.dart';
 import 'loader.dart';
 
@@ -178,5 +179,24 @@ class ServerConnect {
     await client.write(path.join(child.name, child.deviceName, _statDirName, fileName), fileData);
 
     resultList.clear();
+  }
+
+  /// sends regulator data to the server
+  /// manager -> server
+  Future<void> putRegulatorToServer(Child child) async {
+    // TODO sends regulator data to the server
+  }
+
+  /// sends file to the server
+  /// manager -> server
+  Future<void> putFileToServer(Child child, String fileName) async {
+    // TODO sends file to the server
+  }
+
+  /// Returns test results for a period
+  /// server -> manager
+  Future<List<CardResult>> getTestsResultsFromServer(DateTime from, DateTime to) async {
+    return [];
+    // TODO Returns test results for a period
   }
 }

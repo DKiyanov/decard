@@ -97,6 +97,7 @@ class AppState {
     }
 
     if (usingMode == UsingMode.manager) {
+      appMode = AppMode.demo;
       await _searchNewChildrenInServer();
     }
 
@@ -124,6 +125,8 @@ class AppState {
         await addChild(names.childName, names.deviceName);
       }
     }
+
+    childList.sort((a, b) => a.name.compareTo(b.name));
   }
 
   /// Search for new children on the server and create them locally

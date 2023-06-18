@@ -9,6 +9,10 @@ import 'child.dart';
 import 'common.dart';
 
 class DeCard extends StatefulWidget {
+  static Future<Object?> navigatorPush(BuildContext context, Child child) async {
+    return Navigator.push(context, MaterialPageRoute(builder: (_) => DeCard(child: child)));
+  }
+
   final Child child;
   const DeCard({required this.child, Key? key}) : super(key: key);
 
@@ -37,19 +41,6 @@ class _DeCardState extends State<DeCard> {
               icon: const Icon(Icons.menu),
               itemBuilder: (context) {
                 return [
-                  'save regulator',
-                  // TextConst.txtOptions,
-
-                  // if (appState.scanningOnProcess) ...[
-                  //   TextConst.txtDownloadingInProgress,
-                  // ] else ...[
-                  //   TextConst.txtDownloadNewFiles,
-                  // ],
-                  //
-                  // if (appState.scanErrList.isNotEmpty) ...[
-                  //   TextConst.txtLastDownloadError
-                  // ],
-
                   if (appState.appMode == AppMode.testing) ...[
                     TextConst.txtDemo,
                   ],
@@ -58,49 +49,12 @@ class _DeCardState extends State<DeCard> {
                     TextConst.txtTesting,
                   ],
 
-                  // TextConst.txtStartTest,
-
-                  // TextConst.txtInitDirList,
-                  // TextConst.txtClearDB,
-                  // TextConst.txtDeleteDB,
                 ].map<PopupMenuItem<String>>((value) => PopupMenuItem<String>(
                   value: value,
                   child: Text(value),
                 )).toList();
               },
               onSelected: (value) async {
-                if (value == 'save regulator') {
-                  appState.childList.first.regulator.saveToFile(appState.childList.first.regulatorPath);
-                }
-                // if (value == TextConst.txtOptions) {
-                //   PasswordInput.navigatorPush(context);
-                // }
-
-                // if (value == TextConst.txtDownloadNewFiles) {
-                //   await appState.scanFileSourceList();
-                //   if (mounted) {
-                //     appState.scanErrorsDialog(context);
-                //   }
-                // }
-
-                // if (value == TextConst.txtLastDownloadError) {
-                //   if (mounted) appState.scanErrorsDialog(context);
-                // }
-                //
-                // if (value == TextConst.txtInitDirList){
-                //   appState.initFileSourceList();
-                // }
-                // if (value == TextConst.txtDeleteDB){
-                //   _deleteDB();
-                // }
-                // if (value == TextConst.txtClearDB){
-                //   _clearDB();
-                // }
-
-                // if (value == TextConst.txtStartTest) {
-                //   appState.selfTest();
-                // }
-
                 if (value == TextConst.txtDemo) {
                   setState(() {
                     appState.appMode = AppMode.demo;
@@ -119,21 +73,6 @@ class _DeCardState extends State<DeCard> {
         body: _body( )
     );
   }
-
-  // Future<void> _deleteDB() async {
-  //   await DecardDB.db.deleteDB();
-  // }
-  //
-  // Future<void> _clearDB() async {
-  //   final db = await DecardDB.db.database;
-  //   await db!.delete(TabSourceFile.tabName);
-  //   await db.delete(TabJsonFile.tabName);
-  //   await db.delete(TabCardStyle.tabName);
-  //   await db.delete(TabCardHead.tabName);
-  //   await db.delete(TabCardBody.tabName);
-  //   await db.delete(TabCardTag.tabName);
-  //   await db.delete(TabCardStat.tabName);
-  // }
 
   Future<void> _selectNextCard() async {
     final ok = await widget.child.cardController.selectNextCard();
@@ -157,6 +96,8 @@ class _DeCardState extends State<DeCard> {
   }
 
   Widget _earnedBoxWidget() {
+    if (appState.appMode == AppMode.demo) return Container();
+
     return EventReceiverWidget(
       builder: (_) {
         Color? color;

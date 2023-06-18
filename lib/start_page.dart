@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'app_state.dart';
 import 'card_testing.dart';
+import 'child_list.dart';
 import 'common.dart';
 import 'login.dart';
 
@@ -55,7 +56,7 @@ class _StartPageState extends State<StartPage> {
     }
 
     if (appState.usingMode == UsingMode.manager) {
-      // TODO return child list
+      return const ChildList();
     }
 
     return Container();

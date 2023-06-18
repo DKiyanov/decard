@@ -151,11 +151,13 @@ class _UsingModeSelectorState extends State<UsingModeSelector> {
                       onChanged: ((_) {
                         setState(() { });
                       }),
-                      ),                      
+                      ),
+
+                      Container(height: 20),
                     ],
 
                     ChoiceChip(
-                      label: Text(TextConst.txtUsingModeCardEdit),
+                      label: Text(TextConst.txtManagement),
                       selected: _usingMode == UsingMode.manager,
                       onSelected: (value){
                         setState(() {

@@ -16,6 +16,7 @@ class DjfFile{ // top json file structure
 	static const String site             = "site";             // site
 	static const String email            = "email";            // email address
 	static const String license          = "license";          // license
+	static const String thumbnail        = "thumbnail";        // TODO for decardz - link to image to represent the file
 
 	static const String cardStyleList    = "cardStyleList";    // array of DjfCardStyle
 	static const String qualityLevelList = "qualityLevelList"; // array of DjfQualityLevel
