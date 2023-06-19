@@ -5,7 +5,9 @@ import 'child.dart';
 
 class CardNavigator extends StatefulWidget {
   final Child child;
-  const CardNavigator({required this.child, Key? key}) : super(key: key);
+  final String fileGuid;
+  final bool   onlyThatFile;
+  const CardNavigator({required this.child, this.fileGuid = '', this.onlyThatFile = false, Key? key}) : super(key: key);
 
   @override
   State<CardNavigator> createState() => _CardNavigatorState();
@@ -43,6 +45,11 @@ class _CardNavigatorState extends State<CardNavigator> {
     if (fileRows.isEmpty) return;
 
     _fileList = fileRows.map((row) => PacInfo.fromMap(row)).toList();
+
+    if (widget.onlyThatFile) {
+      _fileList.removeWhere((file) => file.guid != widget.fileGuid);
+    }
+
     _fileList.sort((a, b) => a.jsonFileID.compareTo(b.jsonFileID));
 
     final cardRows = await widget.child.dbSource.tabCardHead.getAllRows();
@@ -51,7 +58,13 @@ class _CardNavigatorState extends State<CardNavigator> {
     _cardList = cardRows.map((row) => CardHead.fromMap(row)).toList();
     _cardList.sort((a, b) => a.cardID.compareTo(b.cardID));
 
-    setSelFile(_fileList.first);
+    if (widget.fileGuid.isNotEmpty) {
+      final file = _fileList.firstWhere((file) => file.guid == widget.fileGuid);
+      setSelFile(file);
+    } else {
+      setSelFile(_fileList.first);
+    }
+
     setFirstCard();
   }
 

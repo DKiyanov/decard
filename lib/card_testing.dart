@@ -3,7 +3,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:simple_events/simple_events.dart';
 
 import 'app_state.dart';
-import 'card_navigator.dart';
+import 'card_demo.dart';
 import 'card_widget.dart';
 import 'child.dart';
 import 'common.dart';
@@ -41,30 +41,13 @@ class _DeCardState extends State<DeCard> {
               icon: const Icon(Icons.menu),
               itemBuilder: (context) {
                 return [
-                  if (appState.appMode == AppMode.testing) ...[
-                    TextConst.txtDemo,
-                  ],
-
-                  if (appState.appMode == AppMode.demo) ...[
-                    TextConst.txtTesting,
-                  ],
-
-                ].map<PopupMenuItem<String>>((value) => PopupMenuItem<String>(
-                  value: value,
-                  child: Text(value),
-                )).toList();
-              },
-              onSelected: (value) async {
-                if (value == TextConst.txtDemo) {
-                  setState(() {
-                    appState.appMode = AppMode.demo;
-                  });
-                }
-
-                if (value == TextConst.txtTesting) {
-                  appState.appMode = AppMode.testing;
-                  _startFirstTest();
-                }
+                  PopupMenuItem<String>(
+                    child: Text(TextConst.txtDemo),
+                    onTap: () {
+                      DeCardDemo.navigatorPush(context, widget.child).then((value) => _startFirstTest());
+                    },
+                  )
+                ];
               },
             ),
           ],
@@ -135,18 +118,7 @@ class _DeCardState extends State<DeCard> {
     );
   }
 
-  Widget _cardNavigator() {
-    return CardNavigator(child: widget.child,);
-  }
-
   Widget _body( ) {
-    if (appState.appMode == AppMode.demo) {
-      return Column(children: [
-        _cardNavigator(),
-        Expanded(child: _cardWidget()),
-      ]);
-    }
-
     if (widget.child.cardController.card == null) {
       return Center(
         child: ElevatedButton(
@@ -169,7 +141,7 @@ class _DeCardState extends State<DeCard> {
         return CardWidget(
           card                  : widget.child.cardController.card!,
           onPressSelectNextCard : _selectNextCard,
-          demoMode              : appState.appMode == AppMode.demo,
+          demoMode              : false,
         );
       },
       events: [widget.child.cardController.onChange],

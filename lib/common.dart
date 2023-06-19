@@ -69,6 +69,8 @@ class TextConst{
   static String txtLastDownloadError = 'Ошибки последней завершонной загрузки';
   static String txtManagement = 'Управление';
   static String txtSelectFile = 'Выбор файлов';
+  static String txtAvailableFiles = 'Доступные файлы';
+  static String txtFileSources = 'Источники файлов';
 }
 
 int dateToInt(DateTime date){

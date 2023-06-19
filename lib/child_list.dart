@@ -1,7 +1,7 @@
 import 'package:decard/app_state.dart';
 import 'package:flutter/material.dart';
 
-import 'card_testing.dart';
+import 'card_demo.dart';
 import 'common.dart';
 
 class ChildList extends StatefulWidget {
@@ -39,7 +39,7 @@ class _ChildListState extends State<ChildList> {
         children: appState.childList.map((child) => ListTile(
           title: Text('${child.name} ${child.deviceName}'),
           onTap: (){
-            DeCard.navigatorPush(context, child);
+            DeCardDemo.navigatorPush(context, child);
           },
           trailing: Row( mainAxisSize: MainAxisSize.min, children: [
             IconButton(

@@ -32,7 +32,9 @@ enum AppMode {
 final appState = AppState();
 
 class AppState {
-  static const String _kUsingMode = 'usingMode';
+  static const String _kUsingMode               = 'usingMode';
+  static const String _kViewFileChildName       = 'fileViewer';
+  static const String _kViewFileChildDeviceName = 'this';
 
   static final AppState _instance = AppState._();
 
@@ -55,6 +57,9 @@ class AppState {
   late EarnController earnController;
 
   late AppMode appMode;
+
+  late Child viewFileChild;
+  late FileSources fileSources;
 
   factory AppState() {
     return _instance;
@@ -99,6 +104,8 @@ class AppState {
     if (usingMode == UsingMode.manager) {
       appMode = AppMode.demo;
       await _searchNewChildrenInServer();
+
+      fileSources = FileSources(prefs);
     }
 
     synchronize();
@@ -124,6 +131,14 @@ class AppState {
         final names = Child.getNamesFromDir(dirName);
         await addChild(names.childName, names.deviceName);
       }
+    }
+
+    final specChild = childList.firstWhereOrNull((child) => child.name == _kViewFileChildName && child.deviceName == _kViewFileChildDeviceName );
+    if (specChild != null) {
+      childList.remove(specChild);
+      viewFileChild = specChild;
+    } else {
+      viewFileChild = Child(_kViewFileChildName, _kViewFileChildDeviceName, _appDir, _dataLoader);
     }
 
     childList.sort((a, b) => a.name.compareTo(b.name));
@@ -310,5 +325,75 @@ class EarnController {
     await prefs.setDouble(_keyEarnedSeconds, _earnedSeconds);
 
     onChangeEarn.send();
+  }
+}
+
+class FileSources {
+  static const String _kFileSourceList = 'fileSourceList';
+
+  final SharedPreferences prefs;
+
+  final items = <String>[];
+  bool permission = false;
+
+  FileSources(this.prefs) {
+    items.clear();
+
+    final fileSourceList = prefs.getStringList(_kFileSourceList);
+    if (fileSourceList != null) {
+      items.addAll(fileSourceList);
+    } else {
+      _initFileSourceList();
+    }
+
+    if (items.isNotEmpty) {
+      checkStoragePermission();
+    }
+  }
+
+  Future<void> _initFileSourceList() async {
+    items.clear();
+
+    // https://stackoverflow.com/questions/72530115/flutter-download-a-file-from-url-automatically-to-downloads-directory
+
+    if (!await checkStoragePermission()) {
+      final downloadDirList = await getExternalStorageDirectories();
+      if (downloadDirList == null || downloadDirList.isEmpty) return;
+
+      for (var dir in downloadDirList) {
+        final path = dir.path;
+        final pos = path.indexOf('Android/data');
+        if (pos < 0) continue;
+
+        final downloadPath = '${path.substring(0, pos)}Download';
+        if (items.contains(downloadPath)) continue;
+
+        final downloadDir = Directory(downloadPath);
+        if (!await downloadDir.exists()) continue;
+
+        items.add(downloadPath);
+      }
+    }
+
+    _saveFileSourceList();
+  }
+
+  Future<bool> checkStoragePermission() async {
+    final status = await Permission.storage.status;
+    if (status != PermissionStatus.granted) {
+      final result = await Permission.storage.request();
+      if (result != PermissionStatus.granted) {
+
+        permission = false;
+        return false;
+      }
+    }
+
+    permission = true;
+    return true;
+  }
+
+  Future<void> _saveFileSourceList() async {
+    await prefs.setStringList(_kFileSourceList, items);
   }
 }
