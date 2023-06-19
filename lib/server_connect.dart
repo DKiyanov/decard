@@ -14,6 +14,7 @@ import 'loader.dart';
 
 class ServerConnect {
   static const String _statDirName = "stat";
+  static const String _statFilePrefix = "stat-";
 
   final SharedPreferences prefs;
 
@@ -170,7 +171,7 @@ class ServerConnect {
     final resultList = child.cardController.cardResultList;
     if (resultList.isEmpty) return;
 
-    final fileName = 'stat-${resultList.first.dateTime}-${resultList.last.dateTime.toString().substring(8)}.json';
+    final fileName = '$_statFilePrefix${resultList.first.dateTime}-${resultList.last.dateTime.toString().substring(8)}.json';
 
     final jsonStr = jsonEncode(resultList);
     final fileData = Uint8List.fromList(jsonStr.codeUnits);
@@ -184,19 +185,56 @@ class ServerConnect {
   /// sends regulator data to the server
   /// manager -> server
   Future<void> putRegulatorToServer(Child child) async {
-    // TODO sends regulator data to the server
+    final jsonStr = jsonEncode(child.regulator);
+    final fileData = Uint8List.fromList(jsonStr.codeUnits);
+
+    final client = getClient();
+    await client.write(path.join(child.name, child.deviceName, Child.regulatorFileName), fileData);	
   }
 
   /// sends file to the server
   /// manager -> server
-  Future<void> putFileToServer(Child child, String fileName) async {
-    // TODO sends file to the server
+  Future<void> putFileToServer(Child child, String fileName) async {	
+    final client = getClient();
+    await client.writeFromFile(path.join(child.downloadDir, fileName), path.join(child.name, child.deviceName, fileName));		
   }
 
   /// Returns test results for a period
   /// server -> manager
   Future<List<CardResult>> getTestsResultsFromServer(DateTime from, DateTime to) async {
-    return [];
-    // TODO Returns test results for a period
+	final result = <CardResult>[];
+	
+    final client = getClient();
+
+    final fileList = await client.readDir(path.join(child.name, child.deviceName, _statDirName));	
+	
+	final intFrom = dateTimeToInt(from);
+	final intTo   = dateTimeToInt(to);
+	
+    for (var file in fileList) {
+      if (file.isDir!) continue;
+	  
+      final fileName = file.name!;
+
+      if (fileName.substring(0,5).tolLowerCase() != _statFilePrefix) continue;
+
+      final fileFrom = int.parse(fileName.substring(5,19));
+      if (fileFrom > intTo) continue;
+
+      final fileTo   = int.parse('{ fileName.substring(5,13) }${ fileName.substring(21,29) }');
+      if (fileTo < intFrom) continue;
+
+      final fileData = await client.read(file.path!);
+      final jsonStr = utf8.decode(fileData);
+      final jsonDataList = jsonDecode(jsonStr) as List;
+
+      for (var row in jsonDataList) {
+        final cardResult = CardResult.fromMap(row);
+        if (cardResult.dateTime < intFrom || cardResult.dateTime > intTo) continue;
+        result.add(cardResult);
+      }
+    }
+
+	  return result;
   }
 }
