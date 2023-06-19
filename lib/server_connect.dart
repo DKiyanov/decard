@@ -201,27 +201,27 @@ class ServerConnect {
 
   /// Returns test results for a period
   /// server -> manager
-  Future<List<CardResult>> getTestsResultsFromServer(DateTime from, DateTime to) async {
+  Future<List<CardResult>> getTestsResultsFromServer(Child child, DateTime from, DateTime to) async {
 	final result = <CardResult>[];
 	
     final client = getClient();
 
     final fileList = await client.readDir(path.join(child.name, child.deviceName, _statDirName));	
 	
-	final intFrom = dateTimeToInt(from);
-	final intTo   = dateTimeToInt(to);
+	  final intFrom = dateTimeToInt(from);
+	  final intTo   = dateTimeToInt(to);
 	
     for (var file in fileList) {
       if (file.isDir!) continue;
 	  
       final fileName = file.name!;
 
-      if (fileName.substring(0,5).tolLowerCase() != _statFilePrefix) continue;
+      if (fileName.substring(0,5).toLowerCase() != _statFilePrefix) continue;
 
       final fileFrom = int.parse(fileName.substring(5,19));
       if (fileFrom > intTo) continue;
 
-      final fileTo   = int.parse('{ fileName.substring(5,13) }${ fileName.substring(21,29) }');
+      final fileTo   = int.parse('${ fileName.substring(5,13) }${ fileName.substring(21,29) }');
       if (fileTo < intFrom) continue;
 
       final fileData = await client.read(file.path!);
