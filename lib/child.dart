@@ -74,8 +74,9 @@ class Child {
     _regulator = await Regulator.fromFile( regulatorPath );
   }
 
-  Future<void> refreshCardsDB() async {
-    await cardFileLoader.refreshDB(dirForScanList: [downloadDir], selfDir: cardsDir, dbSource: dbSource);
+  Future<void> refreshCardsDB([List<String>? dirForScanList]) async {
+    dirForScanList ??= [downloadDir];
+    await cardFileLoader.refreshDB(dirForScanList: dirForScanList, selfDir: cardsDir, dbSource: dbSource);
   }
 
   static ChildAndDeviceNames getNamesFromDir(String dirName){

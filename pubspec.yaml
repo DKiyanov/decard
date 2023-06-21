@@ -54,6 +54,7 @@ dependencies:
   package_info_plus: ^1.4.2
   audioplayers: ^2.0.0
   dio: ^4.0.6
+  filesystem_picker: ^3.1.0
   simple_events:
     path: ../simple_events
 

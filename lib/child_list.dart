@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'card_demo.dart';
 import 'common.dart';
+import 'manager_file_list.dart';
 
 class ChildList extends StatefulWidget {
   const ChildList({Key? key}) : super(key: key);
@@ -24,12 +25,16 @@ class _ChildListState extends State<ChildList> {
             itemBuilder: (context) {
               return [
                 PopupMenuItem<String>(
+                  value: TextConst.txtSelectFile,
                   child: Text(TextConst.txtSelectFile),
-                  onTap: () {
-                    // TODO select files for view anl then load to child
-                  },
                 )
               ];
+            },
+            onSelected: (value){
+              if (value == TextConst.txtSelectFile) {
+                FileList.navigatorPush(context);
+                setState(() {});
+              }
             },
           ),
         ],

@@ -71,6 +71,7 @@ class TextConst{
   static String txtSelectFile = 'Выбор файлов';
   static String txtAvailableFiles = 'Доступные файлы';
   static String txtFileSources = 'Источники файлов';
+  static String txtRefreshFileList = 'Обновить список файлов';
 }
 
 int dateToInt(DateTime date){

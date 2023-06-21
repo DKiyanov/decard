@@ -5,8 +5,12 @@ import 'card_demo.dart';
 import 'card_model.dart';
 import 'child.dart';
 import 'common.dart';
+import 'file_sources.dart';
 
 class FileList extends StatefulWidget {
+  static Future<Object?> navigatorPush(BuildContext context) async {
+    return Navigator.push(context, MaterialPageRoute(builder: (_) => const FileList() ));
+  }
   const FileList({Key? key}) : super(key: key);
 
   @override
@@ -30,6 +34,7 @@ class _FileListState extends State<FileList> {
 
   void _starting() async {
     _child = appState.viewFileChild;
+    await scanFileSources();
     await getDbInfo();
 
     setState(() {
@@ -39,7 +44,10 @@ class _FileListState extends State<FileList> {
 
   Future<void> getDbInfo() async {
     final fileRows = await _child.dbSource.tabJsonFile.getAllRows();
-    if (fileRows.isEmpty) return;
+    if (fileRows.isEmpty) {
+      _fileList = [];
+      return;
+    }
 
     _fileList = fileRows.map((row) => PacInfo.fromMap(row)).toList();
     _fileList.sort((a, b) => a.jsonFileID.compareTo(b.jsonFileID));
@@ -67,12 +75,25 @@ class _FileListState extends State<FileList> {
             itemBuilder: (context) {
               return [
                 PopupMenuItem<String>(
-                  child: Text(TextConst.txtFileSources),
-                  onTap: () {
-                    // TODO open file source list editor
-                  },
+                  value: TextConst.txtRefreshFileList,
+                  child: Text(TextConst.txtRefreshFileList)
+                ),
+                PopupMenuItem(
+                  value: TextConst.txtFileSources,
+                  child: Text(TextConst.txtFileSources)
                 )
               ];
+            },
+            onSelected: (value) async {
+              if (value == TextConst.txtRefreshFileList) {
+                scanFileSources();
+              }
+
+              if (value == TextConst.txtFileSources) {
+                if (await appState.fileSources.edit(context)) {
+                  scanFileSources();
+                }
+              }
             },
           ),
         ],
@@ -89,6 +110,13 @@ class _FileListState extends State<FileList> {
         }).toList(),
       )),
     );
+  }
 
+  Future<void> scanFileSources() async {
+    if (appState.fileSources.items.isNotEmpty) {
+      if (await LocalStorage.checkPermission()) {
+        await appState.viewFileChild.refreshCardsDB(appState.fileSources.items);
+      }
+    }
   }
 }
