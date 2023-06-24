@@ -38,7 +38,7 @@ class LocalStorage {
   }
 
   static Future<bool> checkPermission() async {
-    final status = await Permission.storage.status;
+    final status = await Permission.storage.request(); //status;
     if (status != PermissionStatus.granted) {
       final result = await Permission.storage.request();
       if (result != PermissionStatus.granted) {

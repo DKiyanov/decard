@@ -72,6 +72,9 @@ class TextConst{
   static String txtAvailableFiles = 'Доступные файлы';
   static String txtFileSources = 'Источники файлов';
   static String txtRefreshFileList = 'Обновить список файлов';
+  static String txtUploadFileToChild = 'Загрузить файл детям';
+  static String txtWarning = 'Предупреждение';
+  static String txtDeleteFile = 'Удалить файл?';
 }
 
 int dateToInt(DateTime date){

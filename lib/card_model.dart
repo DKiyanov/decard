@@ -266,6 +266,7 @@ class CardStat {
 
 class PacInfo {
   final int    jsonFileID;
+  final int    sourceFileID;
   final String path;
   final String filename;
   final String title;
@@ -278,6 +279,7 @@ class PacInfo {
 
   PacInfo({
     required this.jsonFileID,
+    required this.sourceFileID,
     required this.path,
     required this.filename,
     required this.title,
@@ -291,16 +293,17 @@ class PacInfo {
 
   factory PacInfo.fromMap(Map<String, dynamic> json){
     return PacInfo(
-      jsonFileID : json[TabJsonFile.kJsonFileID],
-      path       : json[TabJsonFile.kPath],
-      filename   : json[TabJsonFile.kFilename],
-      title      : json[TabJsonFile.kTitle],
-      guid       : json[TabJsonFile.kGuid],
-      version    : json[TabJsonFile.kVersion],
-      author     : json[TabJsonFile.kAuthor],
-      site       : json[TabJsonFile.kSite],
-      email      : json[TabJsonFile.kEmail],
-      license    : json[TabJsonFile.kLicense],
+      jsonFileID   : json[TabJsonFile.kJsonFileID],
+      sourceFileID : json[TabJsonFile.kSourceFileID],
+      path         : json[TabJsonFile.kPath],
+      filename     : json[TabJsonFile.kFilename],
+      title        : json[TabJsonFile.kTitle],
+      guid         : json[TabJsonFile.kGuid],
+      version      : json[TabJsonFile.kVersion],
+      author       : json[TabJsonFile.kAuthor],
+      site         : json[TabJsonFile.kSite],
+      email        : json[TabJsonFile.kEmail],
+      license      : json[TabJsonFile.kLicense],
     );
   }
 }

@@ -51,8 +51,12 @@ class DataLoader {
   Future<bool> _scanDir(String dir, {bool regFiles = false}) async {
     bool result = false;
 
+    // in API 33 problem with receive file list on external storage
+    // need permission MANAGE_EXTERNAL_STORAGE
+    // https://android-tools.ru/coding/poluchaem-razreshenie-manage_external_storage-dlya-prilozheniya/
     final fileList = Directory(dir).listSync( recursive: true);
-    for (var object in fileList) { 
+
+    for (var object in fileList) {
       if (object is File){
         final File file = object;
         final fileType = getDecardFileType(file.path);
@@ -313,5 +317,8 @@ class DataLoader {
     await dbSource.tabCardHead.deleteJsonFile(jsonFileID);
     await dbSource.tabCardBody.deleteJsonFile(jsonFileID);
     await dbSource.tabCardTag.deleteJsonFile(jsonFileID);
+    await dbSource.tabCardLink.deleteJsonFile(jsonFileID);
+    await dbSource.tabCardLinkTag.deleteJsonFile(jsonFileID);
+    await dbSource.tabQualityLevel.deleteJsonFile(jsonFileID);
   }
 }

@@ -6,7 +6,7 @@ import 'package:collection/collection.dart';
 import 'package:decard/common.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webdav_client/webdav_client.dart' as webdav;
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as path_util;
 
 import 'card_controller.dart';
 import 'child.dart';
@@ -115,12 +115,12 @@ class ServerConnect {
       final webSubFile = subFileList.firstWhereOrNull((webSubFile) => webSubFile.name!.toLowerCase() == deviceName.toLowerCase());
       if (webSubFile != null) return ChildAndDeviceNames(webFile.name!, webSubFile.name!);
 
-      await client.mkdir(path.join(webFile.path!, deviceName));
-      await client.mkdir(path.join(webFile.path!, deviceName, _statDirName));
+      await client.mkdir(path_util.join(webFile.path!, deviceName));
+      await client.mkdir(path_util.join(webFile.path!, deviceName, _statDirName));
       return ChildAndDeviceNames(webFile.name!, deviceName);
     }
 
-    await client.mkdir(path.join(childName, deviceName));
+    await client.mkdir(path_util.join(childName, deviceName));
     return ChildAndDeviceNames(childName, deviceName);
   }
 
@@ -130,12 +130,12 @@ class ServerConnect {
   Future<void> synchronizeChild(Child child) async {
     final client = getClient();
 
-    final fileList = await client.readDir(path.join(child.name, child.deviceName));
+    final fileList = await client.readDir(path_util.join(child.name, child.deviceName));
 
     for (var file in fileList) {
       if (file.isDir!) continue;
 
-      final fileName = path.basename(file.path!);
+      final fileName = path_util.basename(file.path!);
 
       late String downloadDir;
       bool isRegulator = false;
@@ -148,10 +148,10 @@ class ServerConnect {
         downloadDir = child.downloadDir;
       }
 
-      final netFilePath = path.join(serverURL, child.name, child.deviceName, fileName);
+      final netFilePath = path_util.join(serverURL, child.name, child.deviceName, fileName);
 
       if (!await child.dbSource.tabSourceFile.checkFileRegisteredEx(netFilePath, file.mTime!, file.size!)) {
-        final filePath = path.join(downloadDir, fileName);
+        final filePath = path_util.join(downloadDir, fileName);
         final localFile = File(filePath);
         if (localFile.existsSync()) localFile.deleteSync();
         await client.read2File(file.path!, filePath);
@@ -177,7 +177,7 @@ class ServerConnect {
     final fileData = Uint8List.fromList(jsonStr.codeUnits);
 
     final client = getClient();
-    await client.write(path.join(child.name, child.deviceName, _statDirName, fileName), fileData);
+    await client.write(path_util.join(child.name, child.deviceName, _statDirName, fileName), fileData);
 
     resultList.clear();
   }
@@ -189,14 +189,15 @@ class ServerConnect {
     final fileData = Uint8List.fromList(jsonStr.codeUnits);
 
     final client = getClient();
-    await client.write(path.join(child.name, child.deviceName, Child.regulatorFileName), fileData);	
+    await client.write(path_util.join(child.name, child.deviceName, Child.regulatorFileName), fileData);
   }
 
   /// sends file to the server
   /// manager -> server
-  Future<void> putFileToServer(Child child, String fileName) async {	
+  Future<void> putFileToServer(Child child, String path) async {
     final client = getClient();
-    await client.writeFromFile(path.join(child.downloadDir, fileName), path.join(child.name, child.deviceName, fileName));		
+    final fileName = path_util.basename(path);
+    await client.writeFromFile(path, path_util.join(child.name, child.deviceName, fileName));
   }
 
   /// Returns test results for a period
@@ -206,7 +207,7 @@ class ServerConnect {
 	
     final client = getClient();
 
-    final fileList = await client.readDir(path.join(child.name, child.deviceName, _statDirName));	
+    final fileList = await client.readDir(path_util.join(child.name, child.deviceName, _statDirName));
 	
 	  final intFrom = dateTimeToInt(from);
 	  final intTo   = dateTimeToInt(to);

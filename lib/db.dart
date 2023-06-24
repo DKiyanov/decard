@@ -53,6 +53,28 @@ class TabSourceFile {
     return fileID;
   }
 
+  Future<Map<String, dynamic>?> getRow({ required int sourceFileID}) async {
+    final rows = await db.query(tabName,
+        where     : '$kSourceFileID = ?',
+        whereArgs : [sourceFileID]
+    );
+
+    if (rows.isEmpty) return null;
+
+    final row = rows[0];
+    return row;
+  }
+
+  Future<void> deleteJsonFile(int jsonFileID) async {
+    await db.rawDelete(
+      '''DELETE FROM $tabName WHERE $kSourceFileID IN (
+       SELECT ${TabJsonFile.kSourceFileID}
+         FROM ${TabJsonFile.tabName}
+        WHERE ${TabJsonFile.kJsonFileID} = ?) 
+      ''',
+      [jsonFileID]
+    );
+  }
 }
 
 /// Loaded json files
@@ -161,6 +183,10 @@ class TabJsonFile {
   Future<List<Map<String, Object?>>> getAllRows() async {
     final rows = await db.query(tabName);
     return rows;
+  }
+
+  Future<void> deleteJsonFile(int jsonFileID) async {
+    await db.delete(tabName, where: '$kJsonFileID = ?', whereArgs: [jsonFileID]);
   }
 }
 
@@ -659,6 +685,18 @@ class DbSource {
     tabQualityLevel = TabQualityLevel(db);
     tabCardStat     = TabCardStat(db);
   }
+
+   Future<void> deleteJsonFile(int jsonFileID) async {
+     await tabSourceFile.deleteJsonFile(jsonFileID);
+     await tabJsonFile.deleteJsonFile(jsonFileID);
+     await tabCardHead.deleteJsonFile(jsonFileID);
+     await tabCardTag.deleteJsonFile(jsonFileID);
+     await tabCardLink.deleteJsonFile(jsonFileID);
+     await tabCardLinkTag.deleteJsonFile(jsonFileID);
+     await tabCardBody.deleteJsonFile(jsonFileID);
+     await tabCardStyle.deleteJsonFile(jsonFileID);
+     await tabQualityLevel.deleteJsonFile(jsonFileID);
+   }
 }
 
 class DecardDB {
