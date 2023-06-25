@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:core';
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:decard/regulator.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
@@ -124,6 +125,28 @@ class TabJsonFile {
   String? get site         => _row[kSite         ] as String?;
   String? get email        => _row[kEmail        ] as String?;
   String? get license      => _row[kLicense      ] as String?;
+
+  final Map<int, String> _jsonFileIdToGuidMap = {};
+
+  String jsonFileIdToFileGuid(int jsonFileId) => _jsonFileIdToGuidMap[jsonFileId]!;
+
+  int? fileGuidToJsonFileId(String guid) {
+    for (var element in _jsonFileIdToGuidMap.entries) {
+      if (element.value == guid) return element.key;
+    }
+
+    return null;
+  }
+
+  Future<void> init() async {
+    final rows = await db.query(tabName, columns: [kJsonFileID, kGuid]);
+
+    for (var row in rows) {
+      final jsonFileID = row[kJsonFileID] as int;
+      final fileGuid   = row[kGuid] as String;
+      _jsonFileIdToGuidMap[jsonFileID] = fileGuid;
+    }
+  }
 
   /// returns the file record to the specified guid
   Future<bool> getRowByGuid(String guid) async {
@@ -580,7 +603,7 @@ class TabCardStat {
   static const String kJsonFileID      = TabJsonFile.kJsonFileID;
   static const String kCardID          = TabCardHead.kCardID;
   static const String kCardKey         = 'cardKey';         // Card identifier from a json file
-  static const String kCardGroupKey    = 'cardGroupKey';
+  static const String kCardGroupKey    = 'cardGroupKey';    // Card group from a json file
   static const String kQuality         = 'quality';         // quality of study, 100 - the card is completely studied; 0 - minimal degree of study.
   static const String kQualityFromDate = 'qualityFromDate'; // the first date taken into account when calculating quality
   static const String kStartDate       = 'startDate';       // starting date of study
@@ -682,6 +705,11 @@ class TabCardStat {
   Future<void> clear() async {
     db.delete(tabName);
   }
+
+  Future<List<Map<String, Object?>>> getAllRows() async {
+    final rows = await db.query(tabName);
+    return rows;
+  }
 }
 
 class DbSource {
@@ -708,6 +736,10 @@ class DbSource {
     tabCardStyle    = TabCardStyle(db);
     tabQualityLevel = TabQualityLevel(db);
     tabCardStat     = TabCardStat(db);
+  }
+
+  Future<void> init() async {
+    await tabJsonFile.init();
   }
 
    Future<void> deleteJsonFile(int jsonFileID) async {
@@ -739,6 +771,7 @@ class DecardDB {
     });
 
     source = DbSource(database);
+    await source.init();
   }
 
   _createTables(Database db) async {

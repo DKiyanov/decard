@@ -103,6 +103,7 @@ class CardController {
         stat       : _cardStat!,
         pacInfo    : _pacInfo!,
         difficulty : _difficulty!,
+        regSet     : _regSet,
         onResult   : _onCardResult
     );
 

@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
 import 'package:decard/common.dart';
+import 'package:decard/db.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webdav_client/webdav_client.dart' as webdav;
 import 'package:path/path.dart' as path_util;
@@ -15,6 +16,9 @@ import 'loader.dart';
 class ServerConnect {
   static const String _statDirName = "stat";
   static const String _statFilePrefix = "stat-";
+
+  static const String kLastChildSynchronize = "lastChildSynchronize";
+  DateTime? lastChildSynchronize;
 
   final SharedPreferences prefs;
 
@@ -84,6 +88,11 @@ class ServerConnect {
     serverURL = map["url"]??"";
     login     = map["login"]??"";
     _password = map["password"]??"";
+
+    final lastChildSynchronizeInt = prefs.getInt(kLastChildSynchronize);
+    if (lastChildSynchronizeInt != null) {
+      lastChildSynchronize = DateTime.fromMicrosecondsSinceEpoch(lastChildSynchronizeInt);
+    }
   }
 
   Future<Map<String, List<String>>> getChildDeviceMap() async {
@@ -164,9 +173,31 @@ class ServerConnect {
         }
       }
     }
+
+    final now = DateTime.now();
+
+    if (lastChildSynchronize == null || dateToInt(now) > dateToInt(lastChildSynchronize!) ) {
+
+    }
+
+    prefs.setInt(kLastChildSynchronize, now.millisecondsSinceEpoch);
+  }
+
+  /// saves stat info
+  /// child -> server
+  Future<void> saveStat(Child child) async {
+    final rows = await child.dbSource.tabCardStat.getAllRows();
+
+    for (var row in rows) {
+      final jsonFileID = row[TabJsonFile.kJsonFileID] as int;
+      final jsonFileGuid = child.dbSource.tabJsonFile.jsonFileIdToFileGuid(jsonFileID);
+
+    }
+
   }
 
   /// saves tests results
+  /// child -> server
   Future<void> saveTestsResults(Child child) async {
     final resultList = child.cardController.cardResultList;
     if (resultList.isEmpty) return;

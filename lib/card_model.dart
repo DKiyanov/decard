@@ -23,13 +23,17 @@ class CardData {
   late int duration;
   late int lowCost;
 
+  RegSet?  regSet;
+
   bool?  _result;
   bool? get result => _result;
 
   double _earned = 0;
   double get earned => _earned;
 
-  CardData({ required this.head, required this.style, required this.body, required this.stat, required this.pacInfo, required this.difficulty, this.onResult}) {
+  bool get exclude => regSet != null && regSet!.exclude;
+
+  CardData({ required this.head, required this.style, required this.body, required this.stat, required this.pacInfo, required this.difficulty, this.regSet, this.onResult}) {
     cost     = _getValueForQuality(difficulty.maxCost,     difficulty.minCost,     stat.quality);
     penalty  = _getValueForQuality(difficulty.minPenalty,  difficulty.maxPenalty,  stat.quality); // penalty moves in the opposite direction to all others
     tryCount = _getValueForQuality(difficulty.maxTryCount, difficulty.minTryCount, stat.quality);

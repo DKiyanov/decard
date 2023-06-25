@@ -169,7 +169,7 @@ class RegSet {
   final List<String>? andTags;  // array of tags join trough and
   final List<int>? difficultyLevels; // array of difficulty levels
   
-  final bool? exclude;          // bool - exclude card from studying
+  final bool exclude;          // bool - exclude card from studying
   final int?  difficultyLevel;  // int - difficulty level
   final Map<String, dynamic>? style; // body style
 
@@ -180,7 +180,7 @@ class RegSet {
     this.tags,
     this.andTags,
     this.difficultyLevels,
-    this.exclude,
+    this.exclude = false,
     this.difficultyLevel,
     this.style
   });
@@ -196,7 +196,7 @@ class RegSet {
       andTags          : json[DrfSet.andTags ] != null ? List<String>.from(json[DrfSet.andTags].map((x) => x)) : [],
       difficultyLevels : json[DrfSet.difficultyLevels] != null ? List<int>.from(json[DrfSet.difficultyLevels].map((x) => x)) : [],
       
-      exclude          : json[DrfSet.exclude],
+      exclude          : json[DrfSet.exclude]??false,
       difficultyLevel  : json[DrfSet.difficultyLevel],
       style            : json[DrfSet.style],
     );
@@ -489,7 +489,7 @@ class Regulator {
       final cardID = row.values.first as int;
       dbSource.tabCardHead.setRegulatorPatchOnCard(
         cardID            : cardID,
-        exclude           : set.exclude??false,
+        exclude           : set.exclude,
         regulatorSetIndex : setIndex,
       );
     }

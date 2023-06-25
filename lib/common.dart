@@ -76,6 +76,7 @@ class TextConst{
   static String txtWarning = 'Предупреждение';
   static String txtDeleteFile = 'Удалить файл?';
   static String txtPackInfo = 'Общая информация о пакете';
+  static String txtCardExcluded = 'Карточка исключена из использования';
 
   static String djfFormatVersion = "Версия формата";
   static String djfTitle         = "Заголовок";

@@ -1,3 +1,4 @@
+import 'package:decard/common.dart';
 import 'package:flutter/material.dart';
 
 import 'card_model.dart';
@@ -203,8 +204,8 @@ class _CardNavigatorState extends State<CardNavigator> {
           ),
         ]),
 
+        // select body
         if (_selCard != null && _selCard!.bodyCount > 1) ...[
-          // select body
           Row(children: [
             ElevatedButton(
               onPressed: ()=> setBodyNumDirect(-1),
@@ -239,6 +240,21 @@ class _CardNavigatorState extends State<CardNavigator> {
               child: const Icon( Icons.arrow_right),
             ),
           ]),          
+        ],
+
+        // The card is excluded from use
+        if (widget.child.cardController.card!.exclude) ...[
+          Container(
+            color: Colors.grey,
+            child: Padding(
+              padding: const EdgeInsets.all(4.0),
+              child: Row(
+                children: [
+                  Text(TextConst.txtCardExcluded),
+                ],
+              ),
+            ),
+          ),
         ],
         
       ]),
