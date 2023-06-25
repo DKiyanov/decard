@@ -135,6 +135,8 @@ class CardHead {
   final int    difficulty;
   final int    bodyCount;
 
+  final int?    regulatorSetIndex;
+
   const CardHead({
     required this.cardID,
     required this.jsonFileID,
@@ -143,6 +145,7 @@ class CardHead {
     required this.title,
     required this.difficulty,
     required this.bodyCount,
+    required this.regulatorSetIndex
   });
 
   factory CardHead.fromMap(Map<String, dynamic> json) {
@@ -154,6 +157,7 @@ class CardHead {
       title      : json[TabCardHead.kTitle],
       difficulty : json[TabCardHead.kDifficulty]??0,
       bodyCount  : json[TabCardHead.kBodyCount],
+      regulatorSetIndex : json[TabCardHead.kRegulatorSetIndex],
     );
   }
 }

@@ -72,6 +72,7 @@ class Child {
 
   Future<void> refreshRegulator() async {
     _regulator = await Regulator.fromFile( regulatorPath );
+    _regulator!.applySetListToDB(dbSource);
   }
 
   Future<void> refreshCardsDB([List<String>? dirForScanList]) async {

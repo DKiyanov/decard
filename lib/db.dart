@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:core';
 import 'dart:io';
 
+import 'package:decard/regulator.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -288,14 +289,19 @@ class TabCardHead {
   static const String kGroup         = 'groupKey'; // map from DjfCard.group;
   static const String kBodyCount     = 'bodyCount'; // number of records in the DjfCard.bodyList
 
+  static const String kExclude       = DrfSet.exclude; // Exclusion of a card from study, set through the regulator filter
+  static const String kRegulatorSetIndex   = 'regulatorSetIndex'; // index of set in Regulator.setList
+
   static const String createQuery = "CREATE TABLE $tabName ("
-      "$kCardID      INTEGER PRIMARY KEY AUTOINCREMENT,"
-      "$kJsonFileID  INTEGER,"
-      "$kCardKey     TEXT,"  // Card identifier from a json file
-      "$kTitle       TEXT,"
-      "$kDifficulty  INTEGER,"
-      "$kGroup       TEXT,"
-      "$kBodyCount   INTEGER"
+      "$kCardID        INTEGER PRIMARY KEY AUTOINCREMENT,"
+      "$kJsonFileID    INTEGER,"
+      "$kCardKey       TEXT,"  // Card identifier from a json file
+      "$kTitle         TEXT,"
+      "$kDifficulty    INTEGER,"
+      "$kGroup         TEXT,"
+      "$kBodyCount     INTEGER,"
+      "$kExclude       INTEGER,"
+      "$kRegulatorSetIndex INTEGER"
       ")";
 
   final Database db;
@@ -320,6 +326,7 @@ class TabCardHead {
       kDifficulty : difficulty,
       kGroup      : cardGroupKey,
       kBodyCount  : bodyCount,
+      kExclude    : 0,
     };
 
     final id = await db.insert(tabName, row);
@@ -352,6 +359,23 @@ class TabCardHead {
   Future<List<Map<String, Object?>>> getAllRows() async {
     final rows = await db.query(tabName);
     return rows;
+  }
+
+  Future<void> clearRegulatorPatchOnAllRow() async {
+    final Map<String, dynamic> updateRow = {
+      kRegulatorSetIndex : null,
+      kExclude           : 0,
+    };
+    await db.update(tabName, updateRow);
+  }
+
+  Future<void> setRegulatorPatchOnCard({required int cardID, required int regulatorSetIndex, required bool exclude}) async {
+    final Map<String, dynamic> updateRow = {
+      kRegulatorSetIndex : regulatorSetIndex,
+      kExclude           : exclude,
+    };
+
+    await db.update(tabName, updateRow, where: '$kCardID = ?', whereArgs: [cardID]);
   }
 }
 

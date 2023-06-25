@@ -37,6 +37,8 @@ class CardController {
   CardStyle? _cardStyle;
   CardStat?  _cardStat;
 
+  RegSet?    _regSet;
+
   RegDifficulty? _difficulty;
   int _bodyNum = 0;
 
@@ -55,9 +57,14 @@ class CardController {
     _cardBody  = null;
     _cardStyle = null;
     _cardStat  = null;
+    _regSet    = null;
 
     final headData = await dbSource.tabCardHead.getRow(cardID);
     _cardHead = CardHead.fromMap(headData!);
+
+    if (_cardHead!.regulatorSetIndex != null) {
+      _regSet = regulator.setList[_cardHead!.regulatorSetIndex!];
+    }
 
     if (bodyNum != null) {
       await _setBodyNum(bodyNum);
@@ -83,7 +90,11 @@ class CardController {
     final pacData = await dbSource.tabJsonFile.getRow(jsonFileID: jsonFileID);
     _pacInfo = PacInfo.fromMap(pacData!);
 
-    _difficulty = regulator.getDifficulty(_cardHead!.difficulty);
+    if (_regSet != null && _regSet!.difficultyLevel != null) {
+      _difficulty = regulator.getDifficulty(_regSet!.difficultyLevel!);
+    } else {
+      _difficulty = regulator.getDifficulty(_cardHead!.difficulty);
+    }
 
     _card = CardData(
         head       : _cardHead!,
@@ -119,6 +130,10 @@ class CardController {
     }
 
     styleMap.addEntries(_cardBody!.styleMap.entries.where((element) => element.value != null));
+
+    if (_regSet != null && _regSet!.style != null) {
+      styleMap.addEntries(_regSet!.style!.entries.where((element) => element.value != null));
+    }
 
     _cardStyle = CardStyle.fromMap(styleMap);
   }
@@ -434,7 +449,9 @@ class ProcessCardController {
       min( mainCard.${TabCardHead.kCardID} ) AS ${TabCardHead.kCardID}
     FROM ${TabCardHead.tabName} as mainCard
     
-    WHERE NOT EXISTS ( --selecting cards that have not yet been studied
+    WHERE ${TabCardHead.kExclude} = 0 
+     
+    AND NOT EXISTS ( --selecting cards that have not yet been studied
         SELECT 1
           FROM ${TabCardStat.tabName} as sub1
          WHERE sub1.${TabCardStat.kJsonFileID} = mainCard.${TabCardHead.kJsonFileID}

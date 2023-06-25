@@ -75,6 +75,17 @@ class TextConst{
   static String txtUploadFileToChild = 'Загрузить файл детям';
   static String txtWarning = 'Предупреждение';
   static String txtDeleteFile = 'Удалить файл?';
+  static String txtPackInfo = 'Общая информация о пакете';
+
+  static String djfFormatVersion = "Версия формата";
+  static String djfTitle         = "Заголовок";
+  static String djfGuid          = "Идентификатор";
+  static String djfVersion       = "Версия";
+  static String djfAuthor        = "Автор";
+  static String djfSite          = "Сайт";
+  static String djfEmail         = "E-mail";
+  static String djfLicense       = "Лицензия";
+
 }
 
 int dateToInt(DateTime date){
