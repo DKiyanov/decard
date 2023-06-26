@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:core';
 import 'dart:io';
 
-import 'package:collection/collection.dart';
 import 'package:decard/regulator.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
@@ -697,7 +696,7 @@ class TabCardStat {
       kJson            : '',
     };
 
-    final id = await db.insert(TabCardStat.tabName, row);
+    final id = await db.insert(tabName, row);
     return id;
   }
 
@@ -709,6 +708,120 @@ class TabCardStat {
   Future<List<Map<String, Object?>>> getAllRows() async {
     final rows = await db.query(tabName);
     return rows;
+  }
+}
+
+/// For card result log
+class TestResult {
+  final String fileGuid;
+  final int    fileVersion;
+  final String cardID;  // == json Card.id
+  final int    bodyNum;
+  final bool   result;
+  final double earned;
+  final int    dateTime;
+  final int    qualityBefore;
+  final int    qualityAfter;
+  final int    difficulty;
+
+  TestResult({
+    required this.fileGuid,
+    required this.fileVersion,
+    required this.cardID,
+    required this.bodyNum,
+    required this.result,
+    required this.earned,
+    required this.dateTime,
+    required this.qualityBefore,
+    required this.qualityAfter,
+    required this.difficulty,
+  });
+
+  factory TestResult.fromMap(Map<String, dynamic> json) {
+    return TestResult(
+      fileGuid      : json[TabTestResult.kFileGuid     ],
+      fileVersion   : json[TabTestResult.kFileVersion  ],
+      cardID        : json[TabTestResult.kCardID       ],
+      bodyNum       : json[TabTestResult.kBodyNum      ],
+      result        : json[TabTestResult.kResult       ],
+      earned        : json[TabTestResult.kEarned       ],
+      dateTime      : json[TabTestResult.kDateTime     ],
+      qualityBefore : json[TabTestResult.kQualityBefore],
+      qualityAfter  : json[TabTestResult.kQualityAfter ],
+      difficulty    : json[TabTestResult.kDifficulty   ],
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    TabTestResult.kFileGuid      : fileGuid,
+    TabTestResult.kFileVersion   : fileVersion,
+    TabTestResult.kCardID        : cardID,
+    TabTestResult.kBodyNum       : bodyNum,
+    TabTestResult.kResult        : result,
+    TabTestResult.kEarned        : earned,
+    TabTestResult.kDateTime      : dateTime,
+    TabTestResult.kQualityBefore : qualityBefore,
+    TabTestResult.kQualityAfter  : qualityAfter,
+    TabTestResult.kDifficulty    : difficulty,
+  };
+}
+
+class TabTestResult {
+  static const String tabName = 'TestResult';
+
+  static const String kID            = 'id';
+  static const String kFileGuid      = "fileGuid";
+  static const String kFileVersion   = "fileVersion";
+  static const String kCardID        = "cardID";
+  static const String kBodyNum       = "bodyNum";
+  static const String kResult        = "result";
+  static const String kEarned        = "earned";
+  static const String kDateTime      = "dateTime";
+  static const String kQualityBefore = "qualityBefore";
+  static const String kQualityAfter  = "qualityAfter";
+  static const String kDifficulty    = "difficulty";
+
+
+  static const String createQuery = "CREATE TABLE $tabName ("
+      "$kID            INTEGER PRIMARY KEY AUTOINCREMENT,"
+      "$kFileGuid      TEXT,"
+      "$kFileVersion   INTEGER,"
+      "$kCardID        TEXT,"
+      "$kBodyNum       INTEGER,"
+      "$kResult        INTEGER,"
+      "$kEarned        INTEGER,"
+      "$kDateTime      INTEGER,"
+      "$kQualityBefore INTEGER,"
+      "$kQualityAfter  INTEGER,"
+      "$kDifficulty    INTEGER"
+      ")";
+
+  final Database db;
+
+  TabTestResult(this.db);
+
+  Future<int> insertRow(TestResult testResult) async {
+    Map<String, Object> row = {
+      kFileGuid      : testResult.fileGuid,
+      kFileVersion   : testResult.fileVersion,
+      kCardID        : testResult.cardID,
+      kBodyNum       : testResult.bodyNum,
+      kResult        : testResult.result,
+      kEarned        : testResult.earned,
+      kDateTime      : testResult.dateTime,
+      kQualityBefore : testResult.qualityBefore,
+      kQualityAfter  : testResult.qualityAfter,
+      kDifficulty    : testResult.difficulty,
+    };
+
+    final id = await db.insert(tabName, row);
+    return id;
+  }
+
+  Future<int> getLastTime() async {
+    final rows = await db.rawQuery('SELECT MAX($kDateTime) as dateTime FROM $tabName');
+    if (rows.isEmpty) return 0;
+    return rows.first.values.first as int;
   }
 }
 
@@ -724,6 +837,7 @@ class DbSource {
   late TabCardStyle    tabCardStyle;
   late TabQualityLevel tabQualityLevel;
   late TabCardStat     tabCardStat;
+  late TabTestResult   tabTestResult;
 
   DbSource(this.db){
     tabSourceFile   = TabSourceFile(db);
@@ -736,6 +850,7 @@ class DbSource {
     tabCardStyle    = TabCardStyle(db);
     tabQualityLevel = TabQualityLevel(db);
     tabCardStat     = TabCardStat(db);
+    tabTestResult   = TabTestResult(db);
   }
 
   Future<void> init() async {

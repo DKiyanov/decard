@@ -4,13 +4,12 @@ import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
 import 'package:decard/common.dart';
-import 'package:decard/db.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webdav_client/webdav_client.dart' as webdav;
 import 'package:path/path.dart' as path_util;
 
-import 'card_controller.dart';
 import 'child.dart';
+import 'db.dart';
 import 'loader.dart';
 
 class ServerConnect {
@@ -183,19 +182,6 @@ class ServerConnect {
     prefs.setInt(kLastChildSynchronize, now.millisecondsSinceEpoch);
   }
 
-  /// saves stat info
-  /// child -> server
-  Future<void> saveStat(Child child) async {
-    final rows = await child.dbSource.tabCardStat.getAllRows();
-
-    for (var row in rows) {
-      final jsonFileID = row[TabJsonFile.kJsonFileID] as int;
-      final jsonFileGuid = child.dbSource.tabJsonFile.jsonFileIdToFileGuid(jsonFileID);
-
-    }
-
-  }
-
   /// saves tests results
   /// child -> server
   Future<void> saveTestsResults(Child child) async {
@@ -233,15 +219,12 @@ class ServerConnect {
 
   /// Returns test results for a period
   /// server -> manager
-  Future<List<CardResult>> getTestsResultsFromServer(Child child, DateTime from, DateTime to) async {
-	final result = <CardResult>[];
+  Future<List<TestResult>> getTestsResultsFromServer(Child child, int from, int to) async {
+	final result = <TestResult>[];
 	
     final client = getClient();
 
     final fileList = await client.readDir(path_util.join(child.name, child.deviceName, _statDirName));
-	
-	  final intFrom = dateTimeToInt(from);
-	  final intTo   = dateTimeToInt(to);
 	
     for (var file in fileList) {
       if (file.isDir!) continue;
@@ -251,18 +234,18 @@ class ServerConnect {
       if (fileName.substring(0,5).toLowerCase() != _statFilePrefix) continue;
 
       final fileFrom = int.parse(fileName.substring(5,19));
-      if (fileFrom > intTo) continue;
+      if (fileFrom > to) continue;
 
       final fileTo   = int.parse('${ fileName.substring(5,13) }${ fileName.substring(21,29) }');
-      if (fileTo < intFrom) continue;
+      if (fileTo < from) continue;
 
       final fileData = await client.read(file.path!);
       final jsonStr = utf8.decode(fileData);
       final jsonDataList = jsonDecode(jsonStr) as List;
 
       for (var row in jsonDataList) {
-        final cardResult = CardResult.fromMap(row);
-        if (cardResult.dateTime < intFrom || cardResult.dateTime > intTo) continue;
+        final cardResult = TestResult.fromMap(row);
+        if (cardResult.dateTime < from || cardResult.dateTime > to) continue;
         result.add(cardResult);
       }
     }

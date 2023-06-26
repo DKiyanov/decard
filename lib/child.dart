@@ -1,10 +1,12 @@
 import 'dart:io';
 
 import 'package:decard/regulator.dart';
+import 'package:decard/server_connect.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
 import 'card_controller.dart';
+import 'common.dart';
 import 'db.dart';
 import 'loader.dart';
 
@@ -78,6 +80,18 @@ class Child {
   Future<void> refreshCardsDB([List<String>? dirForScanList]) async {
     dirForScanList ??= [downloadDir];
     await cardFileLoader.refreshDB(dirForScanList: dirForScanList, selfDir: cardsDir, dbSource: dbSource);
+  }
+
+  /// load last test results from server
+  Future<void> updateTestResultFromServer(ServerConnect serverConnect) async {
+    final from = await dbSource.tabTestResult.getLastTime();
+    final to   = dateTimeToInt(DateTime.now());
+
+    final testResultList = await serverConnect.getTestsResultsFromServer(this, from, to);
+
+    for (var testResult in testResultList) {
+      dbSource.tabTestResult.insertRow(testResult);
+    }
   }
 
   static ChildAndDeviceNames getNamesFromDir(String dirName){
