@@ -170,7 +170,7 @@ class _FileListState extends State<FileList> {
 
   Future<void> setFileToChild(Child child, PacInfo file) async {
     await appState.serverConnect.putFileToServer(child, _pathMap[file]!);
-    await appState.serverConnect.synchronizeChild(child);
+    await child.synchronize(appState.serverConnect);
   }
 
   Future<void> setFileToChildWithDialog(BuildContext context, PacInfo file) async {

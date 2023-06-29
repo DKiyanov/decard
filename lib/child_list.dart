@@ -2,6 +2,7 @@ import 'package:decard/app_state.dart';
 import 'package:flutter/material.dart';
 
 import 'card_demo.dart';
+import 'child_statistics.dart';
 import 'common.dart';
 import 'manager_file_list.dart';
 
@@ -47,16 +48,41 @@ class _ChildListState extends State<ChildList> {
             DeCardDemo.navigatorPush(context, child);
           },
           trailing: Row( mainAxisSize: MainAxisSize.min, children: [
-            IconButton(
-                onPressed: (){
-                  // TODO Regulator.options tuning
-                },
-                icon: const Icon(Icons.tune)
+            PopupMenuButton<VoidCallback>(
+              icon: const Icon(Icons.tune),
+              itemBuilder: (context) {
+                return [
+                  PopupMenuItem<VoidCallback>(
+                    value: () {
+
+                    },
+                    child: Text(TextConst.txtRegOptions),
+                  ),
+
+                  PopupMenuItem<VoidCallback>(
+                    value: () {
+                      ChildStatistics.navigatorPush(context, child, appState.prefs);
+                    },
+                    child: Text(TextConst.txtRegCardSet),
+                  ),
+
+                  PopupMenuItem<VoidCallback>(
+                    value: () {
+
+                    },
+                    child: Text(TextConst.txtRegDifficultyLevelsTuning),
+                  ),
+
+                ];
+              },
+              onSelected: (value){
+                value.call();
+              },
             ),
 
             IconButton(
                 onPressed: (){
-                  // TODO statistics analysis
+                  ChildStatistics.navigatorPush(context, child, appState.prefs);
                 },
                 icon: const Icon(Icons.multiline_chart)
             ),

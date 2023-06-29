@@ -77,6 +77,10 @@ class TextConst{
   static String txtDeleteFile = 'Удалить файл?';
   static String txtPackInfo = 'Общая информация о пакете';
   static String txtCardExcluded = 'Карточка исключена из использования';
+  static String txtRegOptions = 'Параметры';
+  static String txtRegCardSet = 'Настройка карточек';
+  static String txtRegDifficultyLevelsTuning = 'Настройка уровней сложности';
+  static String txtRegDifficultyTuning = 'Настройка уровнея сложности';
 
   static String djfFormatVersion = "Версия формата";
   static String djfTitle         = "Заголовок";
@@ -87,6 +91,13 @@ class TextConst{
   static String djfEmail         = "E-mail";
   static String djfLicense       = "Лицензия";
 
+
+  static String drfDifficultyLevel    = "Уровень сложности";
+  static String drfDifficultyCost     = "Стоимость";
+  static String drfDifficultyPenalty  = "Штраф";
+  static String drfDifficultyTryCount = "Кол-о попыток";
+  static String drfDifficultyDuration = "Длительность";
+  static String drfDifficultyDurationLowCostPercent = "Процент снижения стоимости";
 }
 
 int dateToInt(DateTime date){

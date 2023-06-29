@@ -302,7 +302,9 @@ class Regulator {
     required this.options,
     required this.setList,
     required this.difficultyList,
-  }) {
+  });
+
+  void fillDifficultyLevels([bool onlyExtreme = false]) {
     // fills missing levels with default values or proportionally from neighboring levels
     
     if (!difficultyList.any((difficulty) => difficulty.level == lowDifficultyLevel)) {
@@ -336,6 +338,8 @@ class Regulator {
         minDurationLowCostPercent : 15,
       ));
     }
+
+    if (onlyExtreme) return;
     
     final absTop    = difficultyList.firstWhere((difficulty)=> difficulty.level == lowDifficultyLevel);
     final absBottom = difficultyList.firstWhere((difficulty)=> difficulty.level == highDifficultyLevel);  

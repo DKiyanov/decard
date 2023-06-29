@@ -4,6 +4,7 @@ import 'package:decard/regulator.dart';
 import 'package:decard/server_connect.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart' as path_util;
 
 import 'card_controller.dart';
 import 'common.dart';
@@ -60,6 +61,7 @@ class Child {
 
     regulatorPath = join(rootDir, regulatorFileName );
     _regulator = await Regulator.fromFile( regulatorPath );
+    _regulator!.fillDifficultyLevels();
 
     processCardController = ProcessCardController(db, regulator, dbSource.tabCardStat, dbSource.tabCardHead);
     await processCardController.init();
@@ -80,6 +82,24 @@ class Child {
   Future<void> refreshCardsDB([List<String>? dirForScanList]) async {
     dirForScanList ??= [downloadDir];
     await cardFileLoader.refreshDB(dirForScanList: dirForScanList, selfDir: cardsDir, dbSource: dbSource);
+  }
+
+  /// Synchronizes the contents of the child's directories on the server and on the device
+  /// Server -> Child
+  /// missing directories, on server or device - NOT created
+  Future<void> synchronize(ServerConnect serverConnect) async {
+    final fileList = await serverConnect.synchronizeChild(this);
+    
+    if (fileList.contains(regulatorFileName)) {
+      final regFile = File(path_util.join(downloadDir, regulatorFileName));
+      regFile.renameSync(path_util.join(rootDir, regulatorFileName));
+      await refreshRegulator();
+      fileList.remove(regulatorFileName);
+    }
+
+    if (fileList.isNotEmpty) {
+      await refreshCardsDB();
+    }
   }
 
   /// load last test results from server

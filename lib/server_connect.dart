@@ -10,14 +10,10 @@ import 'package:path/path.dart' as path_util;
 
 import 'child.dart';
 import 'db.dart';
-import 'loader.dart';
 
 class ServerConnect {
   static const String _statDirName = "stat";
   static const String _statFilePrefix = "stat-";
-
-  static const String kLastChildSynchronize = "lastChildSynchronize";
-  DateTime? lastChildSynchronize;
 
   final SharedPreferences prefs;
 
@@ -87,11 +83,6 @@ class ServerConnect {
     serverURL = map["url"]??"";
     login     = map["login"]??"";
     _password = map["password"]??"";
-
-    final lastChildSynchronizeInt = prefs.getInt(kLastChildSynchronize);
-    if (lastChildSynchronizeInt != null) {
-      lastChildSynchronize = DateTime.fromMicrosecondsSinceEpoch(lastChildSynchronizeInt);
-    }
   }
 
   Future<Map<String, List<String>>> getChildDeviceMap() async {
@@ -135,51 +126,30 @@ class ServerConnect {
   /// Synchronizes the contents of the child's directories on the server and on the device
   /// Server -> Child
   /// missing directories, on server or device - NOT created
-  Future<void> synchronizeChild(Child child) async {
+  Future<List<String>> synchronizeChild(Child child) async {
     final client = getClient();
 
     final fileList = await client.readDir(path_util.join(child.name, child.deviceName));
+    final newFileList = <String>[];
 
     for (var file in fileList) {
       if (file.isDir!) continue;
 
       final fileName = path_util.basename(file.path!);
-
-      late String downloadDir;
-      bool isRegulator = false;
-
-      if (fileName.toLowerCase() == Child.regulatorFileName) {
-        downloadDir = child.rootDir;
-        isRegulator = true;
-      } else {
-        if (getDecardFileType(fileName) == DecardFileType.notDecardFile) continue;
-        downloadDir = child.downloadDir;
-      }
-
       final netFilePath = path_util.join(serverURL, child.name, child.deviceName, fileName);
 
       if (!await child.dbSource.tabSourceFile.checkFileRegisteredEx(netFilePath, file.mTime!, file.size!)) {
-        final filePath = path_util.join(downloadDir, fileName);
+        final filePath = path_util.join(child.downloadDir, fileName);
         final localFile = File(filePath);
         if (localFile.existsSync()) localFile.deleteSync();
         await client.read2File(file.path!, filePath);
         await child.dbSource.tabSourceFile.registerFileEx(netFilePath, file.mTime!, file.size!);
 
-        if (isRegulator) {
-          await child.refreshRegulator();
-        } else {
-          await child.refreshCardsDB();
-        }
+        newFileList.add(fileName);
       }
     }
 
-    final now = DateTime.now();
-
-    if (lastChildSynchronize == null || dateToInt(now) > dateToInt(lastChildSynchronize!) ) {
-
-    }
-
-    prefs.setInt(kLastChildSynchronize, now.millisecondsSinceEpoch);
+    return newFileList;
   }
 
   /// saves tests results

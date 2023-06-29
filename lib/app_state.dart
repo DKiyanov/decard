@@ -179,7 +179,7 @@ class AppState {
         final child = childList.firstWhereOrNull((child) => child.name == childName && child.deviceName == deviceName);
         if (child == null) continue;
 
-        await serverConnect.synchronizeChild(child);
+        await child.synchronize(serverConnect);
       }
     }
   }
