@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'card_demo.dart';
 import 'child_statistics.dart';
 import 'common.dart';
+import 'difficulty_list.dart';
 import 'manager_file_list.dart';
 
 class ChildList extends StatefulWidget {
@@ -67,8 +68,11 @@ class _ChildListState extends State<ChildList> {
                   ),
 
                   PopupMenuItem<VoidCallback>(
-                    value: () {
-
+                    value: () async {
+                      final result = await DifficultyList.navigatorPush(context, child);
+                      if (result != null && result) {
+                        child.refreshRegulator();
+                      }
                     },
                     child: Text(TextConst.txtRegDifficultyLevelsTuning),
                   ),

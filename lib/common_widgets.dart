@@ -4,6 +4,7 @@ Widget intFiled(TextEditingController tec) {
   return TextField (
     controller: tec,
     keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: false),
+    textAlign: TextAlign.right,
     decoration: InputDecoration(
       filled: true,
       enabledBorder: OutlineInputBorder(

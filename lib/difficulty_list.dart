@@ -6,8 +6,8 @@ import 'common.dart';
 import 'difficulty_editor.dart';
 
 class DifficultyList extends StatefulWidget {
-  static Future<Object?> navigatorPush(BuildContext context, Child child) async {
-    return Navigator.push(context, MaterialPageRoute( builder: (_) => DifficultyList(child: child)));
+  static Future<bool?> navigatorPush(BuildContext context, Child child) async {
+    return Navigator.push<bool>(context, MaterialPageRoute( builder: (_) => DifficultyList(child: child)));
   }
 
   final Child child;
@@ -22,7 +22,7 @@ class _DifficultyListState extends State<DifficultyList> {
   bool _isStarting = true;
   late Regulator _regulator;
 
-  RegDifficulty? editItem;
+  bool _changed = false;
 
   @override
   void initState() {
@@ -57,7 +57,7 @@ class _DifficultyListState extends State<DifficultyList> {
     return Scaffold(
         appBar: AppBar(
           leading: IconButton(icon: const Icon(Icons.cancel_outlined, color: Colors.deepOrangeAccent), onPressed: (){
-            Navigator.pop(context);
+            Navigator.pop(context, false);
           }),
           centerTitle: true,
           title: Text(TextConst.txtRegDifficultyLevelsTuning),
@@ -97,8 +97,8 @@ class _DifficultyListState extends State<DifficultyList> {
       title: Column(children: [
         Row(
           children: [
-            Text(TextConst.drfDifficultyLevel),
-            Text(item.level.toString()),
+            Expanded(child: Text(TextConst.drfDifficultyLevel, style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold) )),
+            Expanded(child: Text(item.level.toString(), textAlign: TextAlign.right, style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold))),
           ],
         ),
 
@@ -116,11 +116,13 @@ class _DifficultyListState extends State<DifficultyList> {
   }
 
   Widget _viewParam(String title, int valueMin, int valueMax) {
-    return Row( children: [
-      Text(title),
-      Text(valueMin.toString()),
-      Text(valueMax.toString()),
-    ]);
+    return Card(
+      child: Row( children: [
+        Expanded(flex: 2, child: Text(title)),
+        Expanded(child: Text(valueMin.toString(), textAlign: TextAlign.right)),
+        Expanded(child: Text(valueMax.toString(), textAlign: TextAlign.right)),
+      ]),
+    );
   }
 
   Future<void> _editDifficulty([RegDifficulty? item]) async {
@@ -133,12 +135,22 @@ class _DifficultyListState extends State<DifficultyList> {
         _regulator.difficultyList.remove(item);
       }
 
+      _regulator.difficultyList.removeWhere((difficulty) => difficulty.level == newDifficulty.level);
+
       _regulator.difficultyList.add(newDifficulty);
+
+      _regulator.difficultyList.sort((a, b) => a.level.compareTo(b.level));
+
+      _changed = true;
     });
   }
 
-  void _saveAndExit() {
-
+  Future<void> _saveAndExit() async {
+    if (_changed) {
+      await _regulator.saveToFile(widget.child.regulatorPath);
+    }
+    if (!mounted) return;
+    Navigator.pop(context, true);
   }
 
 }

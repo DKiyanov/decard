@@ -45,7 +45,16 @@ class _DifficultyEditorState extends State<DifficultyEditor> {
   void initState() {
     super.initState();
 
-    if (widget.difficulty == null) return;
+    if (widget.difficulty == null) {
+      for (int testLevel = Regulator.lowDifficultyLevel; testLevel <= Regulator.highDifficultyLevel; testLevel++) {
+        if (!widget.busyLevelList.contains(testLevel)) {
+          level = testLevel;
+          break;
+        }
+      }
+
+      return;
+    }
 
     level = widget.difficulty!.level;
 
@@ -82,35 +91,38 @@ class _DifficultyEditorState extends State<DifficultyEditor> {
   }
 
   Widget _body() {
-    return Column(children: [
-      _levelSelector(),
-      _editParam(TextConst.drfDifficultyCost    , minCost,     maxCost),
-      _editParam(TextConst.drfDifficultyPenalty , minPenalty,  maxPenalty),
-      _editParam(TextConst.drfDifficultyTryCount, minTryCount, maxTryCount),
-      _editParam(TextConst.drfDifficultyDuration, minDuration, maxDuration),
-      _editParam(TextConst.drfDifficultyDurationLowCostPercent, minDurationLowCostPercent, maxDurationLowCostPercent),
-    ]);
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Column(children: [
+        _levelSelector(),
+        _editParam(TextConst.drfDifficultyCost    , minCost,     maxCost),
+        _editParam(TextConst.drfDifficultyPenalty , minPenalty,  maxPenalty),
+        _editParam(TextConst.drfDifficultyTryCount, minTryCount, maxTryCount),
+        _editParam(TextConst.drfDifficultyDuration, minDuration, maxDuration),
+        _editParam(TextConst.drfDifficultyDurationLowCostPercent, minDurationLowCostPercent, maxDurationLowCostPercent),
+      ]),
+    );
   }
 
   Widget _editParam(String title, TextEditingController tecValueMin, TextEditingController tecValueMax) {
-    return Column(
-      children: [
-        Text(title),
-        Row( children: [
-          intFiled(tecValueMin),
-          intFiled(tecValueMax),
-        ]),
-      ],
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Row( children: [
+        Expanded(child: Text(title)),
+        Expanded(child: intFiled(tecValueMin)),
+        Container(width: 6),
+        Expanded(child: intFiled(tecValueMax)),
+      ]),
     );
   }
 
   Widget _levelSelector(){
     final items = <DropdownMenuItem<int>>[];
 
-    for (int level = Regulator.lowDifficultyLevel + 1; level < Regulator.highDifficultyLevel; level++) {
-      Color? color;
+    for (int level = Regulator.lowDifficultyLevel; level <= Regulator.highDifficultyLevel; level++) {
+      Color color = Colors.white;
 
-      if (widget.difficulty!.level == level) {
+      if (widget.difficulty != null && widget.difficulty!.level == level) {
         color = Colors.green;
       } else {
         if (widget.busyLevelList.contains(level)) {
@@ -120,13 +132,26 @@ class _DifficultyEditorState extends State<DifficultyEditor> {
 
       items.add(DropdownMenuItem<int>(
         value: level,
-        child: Container(color: color, child: Text(level.toString())),
+        child: Container(
+            width: 25,
+            height: 25,
+            decoration: BoxDecoration(
+              color: color,
+              border: Border.all(
+                color: color,
+              ),
+              shape: BoxShape.circle,
+            ),
+
+            child: Align(child: Text(level.toString()))
+        ),
       ));
     }
 
     return Row(
       children: [
-        Text(TextConst.drfDifficultyLevel),
+        Text(TextConst.drfDifficultyLevel, style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+        Container(width: 10),
         DropdownButton<int>(
           value: level,
           icon: const Icon(Icons.arrow_drop_down),
