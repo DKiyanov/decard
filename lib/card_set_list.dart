@@ -33,6 +33,8 @@ class _CardSetListState extends State<CardSetList> {
   final _selFileTagList     = <String>[];
   final _selDifficultyList  = <String>[];
 
+  bool _changed = false;
+
   @override
   void initState() {
     super.initState();
@@ -67,6 +69,13 @@ class _CardSetListState extends State<CardSetList> {
   }
 
   Future<void> _setSelFile(PacInfo file) async {
+    if (_selFile != null && _selFile!.guid == file.guid) return;
+
+    if (_selFile != null) {
+      _regulator.cardSetList.removeWhere((testFile) => testFile.fileGUID == _selFile!.guid);
+      _regulator.cardSetList.addAll(_cardSetList);
+    }
+
     _selFile = file;
 
     _cardSetList.clear();
@@ -121,6 +130,7 @@ class _CardSetListState extends State<CardSetList> {
                     }
                     final item = _cardSetList.removeAt(oldIndex);
                     _cardSetList.insert(newIndex, item);
+                    _changed = true;
                   });
                 },
                 children: _body(),
@@ -149,7 +159,7 @@ class _CardSetListState extends State<CardSetList> {
           icon: const Icon(Icons.arrow_drop_down),
           onChanged: (value) {
             setState(() {
-              _selFile = value;
+              _setSelFile(value!);
             });
           },
           items: _fileList.map((file) => DropdownMenuItem<PacInfo>(
@@ -179,6 +189,7 @@ class _CardSetListState extends State<CardSetList> {
           allDifficulties : _selDifficultyList,
           onChange        : (newCardSet) {
             setState(() {
+              _changed = true;
               final index = _cardSetList.indexOf(item);
               _cardSetList.removeAt(index);
               _cardSetList.insert(index, newCardSet);
@@ -196,6 +207,7 @@ class _CardSetListState extends State<CardSetList> {
           },
           onDelete: () {
             setState(() {
+              _changed = true;
               _cardSetList.remove(item);
             });
           },
@@ -208,6 +220,7 @@ class _CardSetListState extends State<CardSetList> {
 
   void _addCardSet() {
     setState((){
+      _changed = true;
       final newCardSet = RegCardSet(fileGUID : _selFile!.guid);
       _newCardSetList.add(newCardSet);
       _cardSetList.add(newCardSet);
@@ -215,6 +228,10 @@ class _CardSetListState extends State<CardSetList> {
   }
 
   Future<void> _saveAndExit() async {
-
+    if (_changed) {
+      await _regulator.saveToFile(widget.child.regulatorPath);
+    }
+    if (!mounted) return;
+    Navigator.pop(context, true);
   }
 }
