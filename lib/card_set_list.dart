@@ -7,13 +7,15 @@ import 'child.dart';
 import 'common.dart';
 
 class CardSetList extends StatefulWidget {
-  static Future<bool?> navigatorPush(BuildContext context, Child child) async {
-    return Navigator.push<bool>(context, MaterialPageRoute( builder: (_) => CardSetList(child: child)));
+  static Future<bool?> navigatorPush(BuildContext context, Child child, [String fileGuid = '', bool onlyThatFile = false]) async {
+    return Navigator.push<bool>(context, MaterialPageRoute( builder: (_) => CardSetList(child: child, fileGuid: fileGuid, onlyThatFile: onlyThatFile)));
   }
 
   final Child child;
+  final String fileGuid;
+  final bool   onlyThatFile;
 
-  const CardSetList({required this.child, Key? key}) : super(key: key);
+  const CardSetList({required this.child, this.fileGuid = '', this.onlyThatFile = false, Key? key}) : super(key: key);
 
   @override
   State<CardSetList> createState() => _CardSetListState();
@@ -52,7 +54,12 @@ class _CardSetListState extends State<CardSetList> {
     _regulator = await Regulator.fromFile( widget.child.regulatorPath );
     await _getChildFileList();
 
-    _setSelFile(_fileList.first);
+    if (widget.fileGuid.isNotEmpty) {
+      final file = _fileList.firstWhere((file) => file.guid == widget.fileGuid);
+      _setSelFile(file);
+    } else {
+      _setSelFile(_fileList.first);
+    }
 
     setState(() {
       _isStarting = false;
@@ -154,19 +161,27 @@ class _CardSetListState extends State<CardSetList> {
       children: [
         Text(TextConst.txtFile, style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
         Container(width: 10),
-        DropdownButton<PacInfo>(
-          value: _selFile,
-          icon: const Icon(Icons.arrow_drop_down),
-          onChanged: (value) {
-            setState(() {
-              _setSelFile(value!);
-            });
-          },
-          items: _fileList.map((file) => DropdownMenuItem<PacInfo>(
-            value: file,
-            child: Text(file.title),
-          )).toList(),
-        ),
+
+        if (widget.onlyThatFile) ...[
+          Text(_selFile!.title),
+        ],
+
+        if (!widget.onlyThatFile) ...[
+          DropdownButton<PacInfo>(
+            value: _selFile,
+            icon: const Icon(Icons.arrow_drop_down),
+            onChanged: (value) {
+              setState(() {
+                _setSelFile(value!);
+              });
+            },
+            items: _fileList.map((file) => DropdownMenuItem<PacInfo>(
+              value: file,
+              child: Text(file.title),
+            )).toList(),
+          ),
+        ],
+
       ],
     );
   }
