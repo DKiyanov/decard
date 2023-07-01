@@ -86,13 +86,13 @@ class _DifficultyListState extends State<DifficultyList> {
     final result = <Widget>[];
 
     for (var item in _regulator.difficultyList) {
-      result.add(getIemWidget(item));
+      result.add(_getItemWidget(item));
     }
 
     return result;
   }
 
-  Widget getIemWidget(RegDifficulty item) {
+  Widget _getItemWidget(RegDifficulty item) {
     return ListTile(
       title: Column(children: [
         Row(

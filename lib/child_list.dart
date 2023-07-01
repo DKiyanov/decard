@@ -1,6 +1,7 @@
 import 'package:decard/app_state.dart';
 import 'package:flutter/material.dart';
 
+import 'card_set_list.dart';
 import 'card_demo.dart';
 import 'child_statistics.dart';
 import 'common.dart';
@@ -62,7 +63,7 @@ class _ChildListState extends State<ChildList> {
 
                   PopupMenuItem<VoidCallback>(
                     value: () {
-                      ChildStatistics.navigatorPush(context, child, appState.prefs);
+                      CardSetList.navigatorPush(context, child);
                     },
                     child: Text(TextConst.txtRegCardSet),
                   ),

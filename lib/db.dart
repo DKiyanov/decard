@@ -311,7 +311,7 @@ class TabCardHead {
   static const String kGroup         = 'groupKey'; // map from DjfCard.group;
   static const String kBodyCount     = 'bodyCount'; // number of records in the DjfCard.bodyList
 
-  static const String kExclude       = DrfSet.exclude; // Exclusion of a card from study, set through the regulator filter
+  static const String kExclude       = DrfCardSet.exclude; // Exclusion of a card from study, set through the regulator filter
   static const String kRegulatorSetIndex   = 'regulatorSetIndex'; // index of set in Regulator.setList
 
   static const String createQuery = "CREATE TABLE $tabName ("
@@ -399,6 +399,28 @@ class TabCardHead {
 
     await db.update(tabName, updateRow, where: '$kCardID = ?', whereArgs: [cardID]);
   }
+
+  Future<List<String>> getFileCardKeyList({ required int jsonFileID }) async {
+    final rows = await db.query(tabName, distinct: true,
+      columns   : [kCardKey],
+      where     : '$kJsonFileID = ?',
+      whereArgs : [jsonFileID]
+    );
+
+    final result = rows.map((row) => row.values.first as String).toList();
+    return result;
+  }
+
+  Future<List<String>> getFileGroupList({ required int jsonFileID }) async {
+    final rows = await db.query(tabName, distinct: true,
+        columns   : [kGroup],
+        where     : '$kJsonFileID = ?',
+        whereArgs : [jsonFileID]
+    );
+
+    final result = rows.map((row) => row.values.first as String).toList();
+    return result;
+  }
 }
 
 class TabCardTag {
@@ -442,7 +464,19 @@ class TabCardTag {
 
     return rows.map((row) => row.values.first as String).toList();
   }
+
+  Future<List<String>> getFileTagList({ required int jsonFileID }) async {
+    final rows = await db.query(tabName, distinct: true,
+        columns   : [kTag],
+        where     : '$kJsonFileID = ?',
+        whereArgs : [jsonFileID]
+    );
+
+    final result = rows.map((row) => row.values.first as String).toList();
+    return result;
+  }
 }
+
 class TabCardLink {
   static const String tabName         = 'CardLink';
 

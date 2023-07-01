@@ -45,7 +45,7 @@ class DrfOptions {
 }
 
 /// Filtering and customizing cards
-class DrfSet {
+class DrfCardSet {
   static const String fileGUID = "fileGUID"; // GUID of decardj file
   static const String cards    = "cards";    // array of cardID or mask
   static const String groups   = "groups";   // array of cards group or mask
@@ -161,7 +161,7 @@ class RegOptions {
   };
 }
 
-class RegSet {
+class RegCardSet {
   final String fileGUID;        // GUID of decardj file
   final List<String>? cards;    // array of cardID or mask
   final List<String>? groups;   // array of cards group or mask
@@ -173,7 +173,7 @@ class RegSet {
   final int?  difficultyLevel;  // int - difficulty level
   final Map<String, dynamic>? style; // body style
 
-  RegSet({
+  RegCardSet({
     required this.fileGUID,
     this.cards,
     this.groups,
@@ -185,33 +185,33 @@ class RegSet {
     this.style
   });
 
-  factory RegSet.fromMap(Map<String, dynamic> json) {
-    json[DrfSet.cards] != null ? List<String>.from(json[DrfSet.cards].map((x) => x)) : [];
+  factory RegCardSet.fromMap(Map<String, dynamic> json) {
+    json[DrfCardSet.cards] != null ? List<String>.from(json[DrfCardSet.cards].map((x) => x)) : [];
 
-    return RegSet(
-      fileGUID         : json[DrfSet.fileGUID],
-      cards            : json[DrfSet.cards   ] != null ? List<String>.from(json[DrfSet.cards].map((x)   => x)) : [],
-      groups           : json[DrfSet.groups  ] != null ? List<String>.from(json[DrfSet.groups].map((x)  => x)) : [],
-      tags             : json[DrfSet.tags    ] != null ? List<String>.from(json[DrfSet.tags].map((x)    => x)) : [],
-      andTags          : json[DrfSet.andTags ] != null ? List<String>.from(json[DrfSet.andTags].map((x) => x)) : [],
-      difficultyLevels : json[DrfSet.difficultyLevels] != null ? List<int>.from(json[DrfSet.difficultyLevels].map((x) => x)) : [],
+    return RegCardSet(
+      fileGUID         : json[DrfCardSet.fileGUID],
+      cards            : json[DrfCardSet.cards   ] != null ? List<String>.from(json[DrfCardSet.cards].map((x)   => x)) : [],
+      groups           : json[DrfCardSet.groups  ] != null ? List<String>.from(json[DrfCardSet.groups].map((x)  => x)) : [],
+      tags             : json[DrfCardSet.tags    ] != null ? List<String>.from(json[DrfCardSet.tags].map((x)    => x)) : [],
+      andTags          : json[DrfCardSet.andTags ] != null ? List<String>.from(json[DrfCardSet.andTags].map((x) => x)) : [],
+      difficultyLevels : json[DrfCardSet.difficultyLevels] != null ? List<int>.from(json[DrfCardSet.difficultyLevels].map((x) => x)) : [],
       
-      exclude          : json[DrfSet.exclude]??false,
-      difficultyLevel  : json[DrfSet.difficultyLevel],
-      style            : json[DrfSet.style],
+      exclude          : json[DrfCardSet.exclude]??false,
+      difficultyLevel  : json[DrfCardSet.difficultyLevel],
+      style            : json[DrfCardSet.style],
     );
   }
 
   Map<String, dynamic> toJson() => {
-    DrfSet.fileGUID         : fileGUID,
-    DrfSet.cards            : cards,
-    DrfSet.groups           : groups,
-    DrfSet.tags             : tags,
-    DrfSet.andTags          : andTags,
-    DrfSet.difficultyLevels : difficultyLevels,
-    DrfSet.exclude          : exclude,
-    DrfSet.difficultyLevel  : difficultyLevel,
-    DrfSet.style            : style,
+    DrfCardSet.fileGUID         : fileGUID,
+    DrfCardSet.cards            : cards,
+    DrfCardSet.groups           : groups,
+    DrfCardSet.tags             : tags,
+    DrfCardSet.andTags          : andTags,
+    DrfCardSet.difficultyLevels : difficultyLevels,
+    DrfCardSet.exclude          : exclude,
+    DrfCardSet.difficultyLevel  : difficultyLevel,
+    DrfCardSet.style            : style,
   };
 }
 
@@ -295,12 +295,12 @@ class Regulator {
   static const int highDifficultyLevel = 5;
 
   final RegOptions options;
-  final List<RegSet> setList;
+  final List<RegCardSet> cardSetList;
   final List<RegDifficulty> difficultyList;
 
   Regulator({
     required this.options,
-    required this.setList,
+    required this.cardSetList,
     required this.difficultyList,
   });
 
@@ -393,14 +393,14 @@ class Regulator {
   factory Regulator.fromMap(Map<String, dynamic> json) {
     return Regulator(
       options : RegOptions.fromMap(json[DrfRegulator.options]),
-      setList : json[DrfRegulator.setList] != null ? List<RegSet>.from(json[DrfRegulator.setList].map((setJson) => RegSet.fromMap(setJson))) : [],
+      cardSetList : json[DrfRegulator.setList] != null ? List<RegCardSet>.from(json[DrfRegulator.setList].map((setJson) => RegCardSet.fromMap(setJson))) : [],
       difficultyList: json[DrfRegulator.difficultyList] != null ? List<RegDifficulty>.from(json[DrfRegulator.difficultyList].map((difficultyJson) => RegDifficulty.fromMap(difficultyJson))) : [],
     );
   }
 
   Map<String, dynamic> toJson() => {
     DrfRegulator.options        : options,
-    DrfRegulator.setList        : setList,
+    DrfRegulator.setList        : cardSetList,
     DrfRegulator.difficultyList : difficultyList,
   };
 
@@ -408,7 +408,7 @@ class Regulator {
     final jsonFile = File(filePath);
 
     if (! await jsonFile.exists()) {
-      return Regulator(options: RegOptions(), setList: [], difficultyList: []);
+      return Regulator(options: RegOptions(), cardSetList: [], difficultyList: []);
     }
 
     final fileData = await jsonFile.readAsString();
@@ -426,13 +426,13 @@ class Regulator {
   Future<void> applySetListToDB(DbSource dbSource) async {
     await dbSource.tabCardHead.clearRegulatorPatchOnAllRow();
 
-    for (int setIndex = 0; setIndex < setList.length; setIndex++) {
-      final setItem = setList[setIndex];
+    for (int setIndex = 0; setIndex < cardSetList.length; setIndex++) {
+      final setItem = cardSetList[setIndex];
       _applySetItemToDB(dbSource, setItem, setIndex);
     }
   }
 
-  Future<void> _applySetItemToDB(DbSource dbSource, RegSet set, int setIndex) async {
+  Future<void> _applySetItemToDB(DbSource dbSource, RegCardSet set, int setIndex) async {
     if (!await dbSource.tabJsonFile.getRowByGuid(set.fileGUID)) return;
 
     final andList = <String>[];

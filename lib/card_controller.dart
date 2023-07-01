@@ -37,7 +37,7 @@ class CardController {
   CardStyle? _cardStyle;
   CardStat?  _cardStat;
 
-  RegSet?    _regSet;
+  RegCardSet?    _regSet;
 
   RegDifficulty? _difficulty;
   int _bodyNum = 0;
@@ -63,7 +63,7 @@ class CardController {
     _cardHead = CardHead.fromMap(headData!);
 
     if (_cardHead!.regulatorSetIndex != null) {
-      _regSet = regulator.setList[_cardHead!.regulatorSetIndex!];
+      _regSet = regulator.cardSetList[_cardHead!.regulatorSetIndex!];
     }
 
     if (bodyNum != null) {

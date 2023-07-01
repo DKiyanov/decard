@@ -81,6 +81,8 @@ class TextConst{
   static String txtRegCardSet = 'Настройка карточек';
   static String txtRegDifficultyLevelsTuning = 'Настройка уровней сложности';
   static String txtRegDifficultyTuning = 'Настройка уровнея сложности';
+  static String txtCardSetTuning = "Настройка карточек";
+  static String txtFile           = "Файл";
 
   static String djfFormatVersion = "Версия формата";
   static String djfTitle         = "Заголовок";
@@ -95,9 +97,18 @@ class TextConst{
   static String drfDifficultyLevel    = "Уровень сложности";
   static String drfDifficultyCost     = "Стоимость";
   static String drfDifficultyPenalty  = "Штраф";
-  static String drfDifficultyTryCount = "Кол-о попыток";
+  static String drfDifficultyTryCount = "Кол-во попыток";
   static String drfDifficultyDuration = "Длительность";
   static String drfDifficultyDurationLowCostPercent = "Процент снижения стоимости";
+
+  static String drfCardSetCards   = "Идентификаторы карточек";
+  static String drfCardSetGroups  = "Группы";
+  static String drfCardSetTags    = "Теги";
+  static String drfCardSetAndTags = "Теги через И";
+  static String drfDifficulties   = "Сложность";
+
+  static String drfExclude        = "Исключить";
+  static String drfDifficulty     = "Сложность";
 }
 
 int dateToInt(DateTime date){

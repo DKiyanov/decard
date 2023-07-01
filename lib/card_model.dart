@@ -23,7 +23,7 @@ class CardData {
   late int duration;
   late int lowCost;
 
-  RegSet?  regSet;
+  RegCardSet?  regSet;
 
   bool?  _result;
   bool? get result => _result;
