@@ -83,6 +83,7 @@ class TextConst{
   static String txtRegDifficultyTuning = 'Настройка уровнея сложности';
   static String txtCardSetTuning = "Настройка карточек";
   static String txtFile           = "Файл";
+  static String txtStatistics = "Статистика";
 
   static String djfFormatVersion = "Версия формата";
   static String djfTitle         = "Заголовок";

@@ -7,15 +7,16 @@ import 'child.dart';
 import 'common.dart';
 
 class CardSetList extends StatefulWidget {
-  static Future<bool?> navigatorPush(BuildContext context, Child child, [String fileGuid = '', bool onlyThatFile = false]) async {
-    return Navigator.push<bool>(context, MaterialPageRoute( builder: (_) => CardSetList(child: child, fileGuid: fileGuid, onlyThatFile: onlyThatFile)));
+  static Future<bool?> navigatorPush(BuildContext context, Child child, {String fileGuid = '', bool onlyThatFile = false, CardData? card}) async {
+    return Navigator.push<bool>(context, MaterialPageRoute( builder: (_) => CardSetList(child: child, fileGuid: fileGuid, onlyThatFile: onlyThatFile, card: card )));
   }
 
   final Child child;
   final String fileGuid;
   final bool   onlyThatFile;
+  final CardData? card;
 
-  const CardSetList({required this.child, this.fileGuid = '', this.onlyThatFile = false, Key? key}) : super(key: key);
+  const CardSetList({required this.child, this.fileGuid = '', this.onlyThatFile = false, this.card, Key? key}) : super(key: key);
 
   @override
   State<CardSetList> createState() => _CardSetListState();

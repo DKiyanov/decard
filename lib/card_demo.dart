@@ -1,3 +1,4 @@
+import 'package:decard/card_set_list.dart';
 import 'package:flutter/material.dart';
 import 'package:simple_events/simple_events.dart';
 
@@ -30,16 +31,29 @@ class DeCardDemo extends StatefulWidget {
 class _DeCardDemoState extends State<DeCardDemo> {
   @override
   Widget build(BuildContext context) {
+    final card = widget.child.cardController.card;
+
     return Scaffold(
         appBar: AppBar(
           title: Text(TextConst.txtAppTitle),
           actions: [
-            IconButton(
-                onPressed: ()=>packInfoDisplay(context, widget.child.cardController.card!.pacInfo),
-                icon: const Icon(Icons.info_outline)),
+            if (card != null) ...[
+              IconButton(
+                  onPressed: (){
+                    CardSetList.navigatorPush(context, widget.child, fileGuid: card.pacInfo.guid, onlyThatFile: true, card: card);
+                  },
+                  icon: const Icon(Icons.tune)
+              ),
+
+              IconButton(
+                  onPressed: ()=>packInfoDisplay(context, card.pacInfo),
+                  icon: const Icon(Icons.info_outline)
+              ),
+            ]
           ],
         ),
-        body: _body());
+        body: _body()
+    );
   }
 
   Widget _body() {

@@ -67,6 +67,7 @@ class _CardNavigatorState extends State<CardNavigator> {
     }
 
     setFirstCard();
+    setSelected();
   }
 
   void setSelFile(PacInfo file){
@@ -243,7 +244,7 @@ class _CardNavigatorState extends State<CardNavigator> {
         ],
 
         // The card is excluded from use
-        if (widget.child.cardController.card!.exclude) ...[
+        if (widget.child.cardController.card != null && widget.child.cardController.card!.exclude) ...[
           Container(
             color: Colors.grey,
             child: Padding(

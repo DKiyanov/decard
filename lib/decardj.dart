@@ -1,9 +1,14 @@
 ///Two types of files with appropriate extensions are supported:
 ///".decardj" - a text file in utf8 format containing data in json format as described below.
 
-///".decardz" - a zip archive containing one or more files with the extension ".decardj" and media files
+///".decardz" - a zip archive containing one file with the extension ".decardj" in the root and media files
 ///all of which can be arranged in subdirectories within the archive
 ///The ".decardz" file (archive) cannot contain other ".decardz" files
+///The following optional filenames int the root of archive are reserved:
+///  thumbnail.png - picture to represent the file
+///  icon.png - small picture to represent the file
+///  license.txt - full text of the license, used if the license is not standard
+///  readme.md - detailed description of the package
 
 ///The json file has the following format:
 
@@ -16,8 +21,6 @@ class DjfFile{ // top json file structure
 	static const String site             = "site";             // site
 	static const String email            = "email";            // email address
 	static const String license          = "license";          // license
-	static const String thumbnail        = "thumbnail";        // TODO for decardz - link to image to represent the file
-	static const String icon             = "icon";             // TODO for decardz - link to image to represent the file
 
 	static const String cardStyleList    = "cardStyleList";    // array of DjfCardStyle
 	static const String qualityLevelList = "qualityLevelList"; // array of DjfQualityLevel
