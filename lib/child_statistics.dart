@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:decard/app_state.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -7,6 +10,7 @@ import 'package:collection/collection.dart';
 
 import 'child.dart';
 import 'common.dart';
+import 'db.dart';
 
 class ChildStatistics extends StatefulWidget {
   static Future<Object?> navigatorPush(BuildContext context, Child child, SharedPreferences prefs) async {
@@ -23,7 +27,14 @@ class ChildStatistics extends StatefulWidget {
 }
 
 class _ChildStatisticsState extends State<ChildStatistics> {
+  static const int _startDayCount = 10;
+
   bool _isStarting = true;
+
+  int _fromDate = 0;
+  int _toDate = 0;
+
+  final _resultList = <TestResult>[];
 
   final points = getPricePoints();
 
@@ -37,15 +48,36 @@ class _ChildStatisticsState extends State<ChildStatistics> {
   }
 
   void _starting() async {
-    await getDbInfo();
+    _initParam();
+    await widget.child.updateTestResultFromServer(appState.serverConnect);
+    await refreshDbInfo();
 
     setState(() {
       _isStarting = false;
     });
   }
 
-  Future<void> getDbInfo() async {
+  void _initParam() {
+    final now = DateTime.now();
+    final prev = now.add(const Duration(days: - _startDayCount));
+    final next = now.add(const Duration(days: 1));
+    final cur  = DateTime(next.year, next.year, next.day).add(const Duration(seconds: - 1));
 
+    _fromDate = dateTimeToInt(DateTime(prev.year, prev.month, prev.day));
+    _toDate   = dateTimeToInt(cur); // for end of current day
+  }
+
+  Future<void> refreshDbInfo() async {
+    _resultList.clear();
+    _resultList.addAll( await widget.child.dbSource.tabTestResult.getForPeriod(_fromDate, _toDate) );
+  }
+
+  void collectG1() {
+    // Кол-во: новых, активных, изученых - соотв.  текуще кол-во на конец дня
+
+    for (var test in _resultList) {
+
+    }
   }
 
   @override

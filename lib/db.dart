@@ -852,6 +852,21 @@ class TabTestResult {
     return id;
   }
 
+  Future<List<TestResult>> getForPeriod(int fromDate, int toDate) async {
+    final resultList = <TestResult>[];
+
+    final rows = await db.query(tabName,
+        where     : '$kDateTime >= ? and $kDateTime <= ?',
+        whereArgs : [fromDate, toDate]
+    );
+
+    for (var row in rows) {
+      resultList.add(TestResult.fromMap(row));
+    }
+
+    return resultList;
+  }
+
   Future<int> getLastTime() async {
     final rows = await db.rawQuery('SELECT MAX($kDateTime) as dateTime FROM $tabName');
     if (rows.isEmpty) return 0;
