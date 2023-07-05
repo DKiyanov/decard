@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:decard/app_state.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +9,14 @@ import 'package:collection/collection.dart';
 import 'child.dart';
 import 'common.dart';
 import 'db.dart';
+
+class GroupData {
+  final int x;
+  final String xTitle;
+  final List<int> rodValueList;
+
+  GroupData({required this.x, required this.xTitle, required this.rodValueList});
+}
 
 class ChildStatistics extends StatefulWidget {
   static Future<Object?> navigatorPush(BuildContext context, Child child, SharedPreferences prefs) async {
@@ -36,7 +42,8 @@ class _ChildStatisticsState extends State<ChildStatistics> {
 
   final _resultList = <TestResult>[];
 
-  final points = getPricePoints();
+  final _rodColorList  = <Color>[];
+  final _groupDataList = <GroupData>[];
 
   @override
   void initState() {
@@ -49,8 +56,9 @@ class _ChildStatisticsState extends State<ChildStatistics> {
 
   void _starting() async {
     _initParam();
-    await widget.child.updateTestResultFromServer(appState.serverConnect);
-    await refreshDbInfo();
+//    await widget.child.updateTestResultFromServer(appState.serverConnect);
+//    await refreshDbInfo();
+    _initRandomData();
 
     setState(() {
       _isStarting = false;
@@ -72,12 +80,43 @@ class _ChildStatisticsState extends State<ChildStatistics> {
     _resultList.addAll( await widget.child.dbSource.tabTestResult.getForPeriod(_fromDate, _toDate) );
   }
 
-  void collectG1() {
-    // Кол-во: новых, активных, изученых - соотв.  текуще кол-во на конец дня
+  // void collectG1() {
+  //   // Кол-во: новых, активных, изученых - соотв.  текуще кол-во на конец дня
+  //
+  //   for (var test in _resultList) {
+  //
+  //   }
+  // }
 
-    for (var test in _resultList) {
+  void _initRandomData() {
+    _rodColorList.clear();
+    _groupDataList.clear();
 
+    _rodColorList.addAll([Colors.green, Colors.blue]);
+
+    _groupDataList.addAll(_getRandomGroupData());
+  }
+
+  List<GroupData> _getRandomGroupData() {
+    final Random random = Random();
+
+    final resultList = <GroupData>[];
+
+    for (var x = 0; x <= 11; x++) {
+      final rodValueList = <int>[];
+
+      for (var r = 0; r < _rodColorList.length; r++) {
+        rodValueList.add(random.nextInt(100));
+      }
+
+      resultList.add(GroupData(
+        x            : x,
+        xTitle       : x.toString(),
+        rodValueList : rodValueList,
+      ));
     }
+
+    return resultList;
   }
 
   @override
@@ -123,66 +162,34 @@ class _ChildStatisticsState extends State<ChildStatistics> {
   }
 
   List<BarChartGroupData> _chartGroups() {
-    return points.map((point) =>
-        BarChartGroupData(
-            x: point.x.toInt(),
-            barRods: [
-              BarChartRodData(
-                  toY: point.y
-              )
-            ]
-        )
+    final resultList = <BarChartGroupData>[];
 
-    ).toList();
+    for (var groupData in _groupDataList) {
+      final rodList = <BarChartRodData>[];
+
+      for (var rodIndex = 0; rodIndex < groupData.rodValueList.length; rodIndex++) {
+        rodList.add( BarChartRodData(
+          toY: groupData.rodValueList[rodIndex].toDouble(),
+          color: _rodColorList[rodIndex],
+        ));
+      }
+
+      resultList.add( BarChartGroupData(
+        x: groupData.x,
+        barRods: rodList
+      ));
+    }
+
+    return resultList;
   }
 
   SideTitles _getBottomTitles() {
     return SideTitles(
       showTitles: true,
       getTitlesWidget: (value, meta) {
-        String text = '';
-        switch (value.toInt()) {
-          case 0:
-            text = 'Jan';
-            break;
-          case 2:
-            text = 'Mar';
-            break;
-          case 4:
-            text = 'May';
-            break;
-          case 6:
-            text = 'Jul';
-            break;
-          case 8:
-            text = 'Sep';
-            break;
-          case 10:
-            text = 'Nov';
-            break;
-        }
-
-        return Text(text);
+        final groupData = _groupDataList.firstWhere((groupData) => groupData.x == value);
+        return Text(groupData.xTitle);
       },
     );
   }
-
-}
-
-class PricePoint {
-  final double x;
-  final double y;
-
-  PricePoint({required this.x, required this.y});
-}
-
-List<PricePoint> getPricePoints() {
-  final Random random = Random();
-  final randomNumbers = <double>[];
-
-  for (var i = 0; i <= 11; i++) {
-    randomNumbers.add(random.nextDouble());
-  }
-
-  return randomNumbers.mapIndexed((index, element) => PricePoint(x: index.toDouble(), y: element)).toList();
 }
