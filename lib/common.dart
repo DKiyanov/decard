@@ -84,6 +84,11 @@ class TextConst{
   static String txtCardSetTuning = "Настройка карточек";
   static String txtFile           = "Файл";
   static String txtStatistics = "Статистика";
+  static String txtChartCountCardByStudyGroups = "Кол-во карточек по группам изучености";
+  static String txtRodCardStudyGroupNew = "Новые";
+  static String txtRodCardStudyGroupActive = "Активные";
+  static String txtRodCardStudyGroupStudied = "Изученные";
+
 
   static String djfFormatVersion = "Версия формата";
   static String djfTitle         = "Заголовок";

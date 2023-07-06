@@ -6,17 +6,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math';
 import 'package:collection/collection.dart';
 
+import 'bar_chart.dart';
 import 'child.dart';
 import 'common.dart';
 import 'db.dart';
-
-class GroupData {
-  final int x;
-  final String xTitle;
-  final List<int> rodValueList;
-
-  GroupData({required this.x, required this.xTitle, required this.rodValueList});
-}
 
 class ChildStatistics extends StatefulWidget {
   static Future<Object?> navigatorPush(BuildContext context, Child child, SharedPreferences prefs) async {
@@ -41,9 +34,7 @@ class _ChildStatisticsState extends State<ChildStatistics> {
   int _toDate = 0;
 
   final _resultList = <TestResult>[];
-
-  final _rodColorList  = <Color>[];
-  final _groupDataList = <GroupData>[];
+  final _chartList = <Widget>[];
 
   @override
   void initState() {
@@ -57,8 +48,7 @@ class _ChildStatisticsState extends State<ChildStatistics> {
   void _starting() async {
     _initParam();
 //    await widget.child.updateTestResultFromServer(appState.serverConnect);
-//    await refreshDbInfo();
-    _initRandomData();
+    await _refreshDbInfo();
 
     setState(() {
       _isStarting = false;
@@ -75,48 +65,18 @@ class _ChildStatisticsState extends State<ChildStatistics> {
     _toDate   = dateTimeToInt(cur); // for end of current day
   }
 
-  Future<void> refreshDbInfo() async {
+  Future<void> _refreshDbInfo() async {
     _resultList.clear();
-    _resultList.addAll( await widget.child.dbSource.tabTestResult.getForPeriod(_fromDate, _toDate) );
+//    _resultList.addAll( await widget.child.dbSource.tabTestResult.getForPeriod(_fromDate, _toDate) );
+    _refreshChartList();
   }
 
-  // void collectG1() {
-  //   // Кол-во: новых, активных, изученых - соотв.  текуще кол-во на конец дня
-  //
-  //   for (var test in _resultList) {
-  //
-  //   }
-  // }
-
-  void _initRandomData() {
-    _rodColorList.clear();
-    _groupDataList.clear();
-
-    _rodColorList.addAll([Colors.green, Colors.blue]);
-
-    _groupDataList.addAll(_getRandomGroupData());
-  }
-
-  List<GroupData> _getRandomGroupData() {
-    final Random random = Random();
-
-    final resultList = <GroupData>[];
-
-    for (var x = 0; x <= 11; x++) {
-      final rodValueList = <int>[];
-
-      for (var r = 0; r < _rodColorList.length; r++) {
-        rodValueList.add(random.nextInt(100));
-      }
-
-      resultList.add(GroupData(
-        x            : x,
-        xTitle       : x.toString(),
-        rodValueList : rodValueList,
-      ));
-    }
-
-    return resultList;
+  void _refreshChartList() {
+    _chartList.clear();
+    _chartList.addAll([
+      _randomBarChart(),
+      _randomBarChart(),
+    ]);
   }
 
   @override
@@ -141,55 +101,63 @@ class _ChildStatisticsState extends State<ChildStatistics> {
   }
 
   Widget _body() {
-    return AspectRatio(
-      aspectRatio: 2,
-      child: BarChart(
-        BarChartData(
-          barGroups: _chartGroups(),
-          borderData: FlBorderData(
-            border: const Border(bottom: BorderSide(), left: BorderSide())
-          ),
-          gridData: FlGridData(show: false),
-          titlesData: FlTitlesData(
-            bottomTitles : AxisTitles(sideTitles: _getBottomTitles()),
-            leftTitles   : AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            topTitles    : AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            rightTitles  : AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          ),
-        ),
-      ),
+    return ListView(
+      children: _chartList,
     );
   }
 
-  List<BarChartGroupData> _chartGroups() {
-    final resultList = <BarChartGroupData>[];
+  Widget _randomBarChart() {
+    const title = 'randomBarChart';
 
-    for (var groupData in _groupDataList) {
-      final rodList = <BarChartRodData>[];
+    final groupDataList = <GroupData>[];
 
-      for (var rodIndex = 0; rodIndex < groupData.rodValueList.length; rodIndex++) {
-        rodList.add( BarChartRodData(
-          toY: groupData.rodValueList[rodIndex].toDouble(),
-          color: _rodColorList[rodIndex],
-        ));
+    final rodDataList = <RodData>[
+      RodData(Colors.green, 'green'),
+      RodData(Colors.blue, 'blue'),
+    ];
+
+    final Random random = Random();
+
+    for (var x = 0; x <= 11; x++) {
+      final rodValueList = <int>[];
+
+      for (var r = 0; r < rodDataList.length; r++) {
+        rodValueList.add(random.nextInt(100));
       }
 
-      resultList.add( BarChartGroupData(
-        x: groupData.x,
-        barRods: rodList
+      groupDataList.add(GroupData(
+        x            : x,
+        xTitle       : x.toString(),
+        rodValueList : rodValueList,
       ));
     }
 
-    return resultList;
+    final chartData = MyBarChartData(rodDataList, groupDataList, title);
+
+    return MyBarChart(chartData: chartData);
   }
 
-  SideTitles _getBottomTitles() {
-    return SideTitles(
-      showTitles: true,
-      getTitlesWidget: (value, meta) {
-        final groupData = _groupDataList.firstWhere((groupData) => groupData.x == value);
-        return Text(groupData.xTitle);
-      },
-    );
+  Widget _chartCountCardByGroups() {
+    // Кол-во: новых, активных, изученых - соотв.  текуще кол-во на конец дня
+
+    final title = TextConst.txtChartCountCardByStudyGroups;
+
+    final groupDataList = <GroupData>[];
+
+    final rodDataList = <RodData>[
+      RodData(Colors.red    , TextConst.txtRodCardStudyGroupNew),
+      RodData(Colors.yellow , TextConst.txtRodCardStudyGroupActive),
+      RodData(Colors.grey   , TextConst.txtRodCardStudyGroupStudied),
+    ];
+
+
+    for (var testResult in _resultList) {
+
+    }
+
+
+    final chartData = MyBarChartData(rodDataList, groupDataList, title);
+
+    return MyBarChart(chartData: chartData);
   }
 }
