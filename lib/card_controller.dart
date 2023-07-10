@@ -167,6 +167,12 @@ class CardController {
   Future<void> _onCardResult(bool result, double earn) async {
     if (appState.appMode == AppMode.demo) return;
 
+    await setCardResult(
+      result: result,
+      earn: earn,
+    );
+  }
+  Future<void> setCardResult({required bool result, double earn = 0.0}) async {
     final newStat = await processCardController.registerResult(_cardHead!.jsonFileID, _cardHead!.cardID, result);
 
     final testResult = TestResult(
@@ -249,8 +255,6 @@ class ProcessCardController {
   /// quality >= 99 - the card is completely studied;
   /// quality >= 0 - study started
   /// quality = -1 - study not started
-
-  static const int maxQuality         = 100; // Maximum learning quality
 
   final Database db;
 
@@ -346,17 +350,17 @@ class ProcessCardController {
 
     double f = 0;
     for (var dayResult in dayResultList) {
-      f += ( maxQuality * dayResult.countOk ) / dayResult.countTotal;
+      f += ( Regulator.maxQuality * dayResult.countOk ) / dayResult.countTotal;
     }
 
    var quality = f ~/ dayResultList.length;
 
    if (dayResult.countTotal <= _options.lowTryCount || dayResultList.length <= _options.lowDayCount) {
-     final xQuality = (maxQuality * dayResult.countTotal * dayResultList.length) ~/ (_options.lowTryCount * _options.lowDayCount);
+     final xQuality = (Regulator.maxQuality * dayResult.countTotal * dayResultList.length) ~/ (_options.lowTryCount * _options.lowDayCount);
      if (quality > xQuality) quality = xQuality;
    }
 
-   if (quality >= maxQuality) quality = maxQuality - 1;
+   if (quality >= Regulator.maxQuality) quality = Regulator.completelyStudiedQuality;
 
     row[TabCardStat.kQuality] = quality;
 
@@ -536,7 +540,7 @@ class ProcessCardController {
     int totalNQuality = 0;
 
     for (var stat in cardStatList) {
-      totalNQuality += (maxQuality - _actQuality(stat));
+      totalNQuality += (Regulator.maxQuality - _actQuality(stat));
     }
 
     final selNQuality = _random.nextInt(totalNQuality + 1);
@@ -546,8 +550,8 @@ class ProcessCardController {
     for (int i = 0; i < cardStatList.length; i++){
       final stat = cardStatList[i];
 
-      if (_actQuality(stat) < maxQuality) {
-        curNQuality += (maxQuality - _actQuality(stat));
+      if (_actQuality(stat) < Regulator.maxQuality) {
+        curNQuality += (Regulator.maxQuality - _actQuality(stat));
         if (curNQuality > selNQuality) {
           selIndex = i;
           break;

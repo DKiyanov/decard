@@ -94,8 +94,11 @@ class AppState {
     if (usingMode == UsingMode.testing) {
       earnController = EarnController(prefs, packageInfo);
 
-      childList.first.cardController.onAddEarn.subscribe((listener, earn){
+      earnController.onSendEarn.subscribe((listener, data) {
         serverConnect.saveTestsResults(childList.first);
+      });
+
+      childList.first.cardController.onAddEarn.subscribe((listener, earn){
         earnController.addEarn(earn!);
       });
 
@@ -263,7 +266,7 @@ class AppState {
           result = rnd <= 98;
         }
 
-        await child.processCardController.registerResult(testCardController.card!.head.jsonFileID, testCardController.card!.head.cardID, result);
+        await testCardController.setCardResult(result: result);
 
         final statData = await child.processCardController.getStatData(testCardController.card!.head.cardID);
         final cardStat = CardStat.fromMap(statData!);
@@ -271,6 +274,7 @@ class AppState {
         print('tstres; date ; ${dateToInt(curDate)}; cardKey ; ${testCardController.card!.head.cardKey}; result ; $result; testsCount ; ${cardStat.testsCount}; quality ; ${cardStat.quality}');
       }
 
+      serverConnect.saveTestsResults(child);
     }
 
     print('tstres finish');
@@ -289,6 +293,7 @@ class EarnController {
   final PackageInfo packageInfo;
 
   final onChangeEarn = SimpleEvent();
+  final onSendEarn = SimpleEvent();
 
   double _earnedSeconds = 0;
   double get earnedSeconds => _earnedSeconds;
@@ -322,6 +327,8 @@ class EarnController {
     final minuteCount = (_earnedSeconds / 60).truncate();
 
     _sendEstimateIntent(minuteCount);
+
+    onSendEarn.send();
 
     _earnedSeconds = _earnedSeconds - minuteCount * 60;
     await prefs.setDouble(_keyEarnedSeconds, _earnedSeconds);

@@ -206,8 +206,8 @@ class ServerConnect {
       final fileFrom = int.parse(fileName.substring(5,19));
       if (fileFrom > to) continue;
 
-      final fileTo   = int.parse('${ fileName.substring(5,13) }${ fileName.substring(21,29) }');
-      if (fileTo < from) continue;
+      final fileTo   = int.parse('${ fileName.substring(5,13) }${ fileName.substring(20,26) }');
+      if (fileTo <= from) continue;
 
       final fileData = await client.read(file.path!);
       final jsonStr = utf8.decode(fileData);

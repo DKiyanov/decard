@@ -46,7 +46,15 @@ class _DeCardState extends State<DeCard> {
                     onTap: () {
                       DeCardDemo.navigatorPush(context, widget.child).then((value) => _startFirstTest());
                     },
+                  ),
+
+                  PopupMenuItem<String>(
+                    child: Text(TextConst.txtAutoTest),
+                    onTap: () {
+                      appState.selfTest(appState.childList.first);
+                    },
                   )
+
                 ];
               },
             ),

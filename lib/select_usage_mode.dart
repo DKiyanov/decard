@@ -52,7 +52,7 @@ class _UsingModeSelectorState extends State<UsingModeSelector> {
       );
     }
     
-    final deviceNameList = _childDeviceMap[_textControllerChildName.text.toLowerCase()]??[];
+    final deviceNameList = _childDeviceMap[_textControllerChildName.text]??[];
 
     return Scaffold(
         appBar: AppBar(
@@ -118,6 +118,8 @@ class _UsingModeSelectorState extends State<UsingModeSelector> {
                           setState(() { });
                         }),
                       ),
+
+                      Container(height: 6),
                       
                       // Child device name
                       TextField(

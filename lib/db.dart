@@ -777,7 +777,7 @@ class TestResult {
       fileVersion   : json[TabTestResult.kFileVersion  ],
       cardID        : json[TabTestResult.kCardID       ],
       bodyNum       : json[TabTestResult.kBodyNum      ],
-      result        : json[TabTestResult.kResult       ],
+      result        : json[TabTestResult.kResult       ] == 1,
       earned        : json[TabTestResult.kEarned       ],
       dateTime      : json[TabTestResult.kDateTime     ],
       qualityBefore : json[TabTestResult.kQualityBefore],
@@ -867,10 +867,16 @@ class TabTestResult {
     return resultList;
   }
 
+  Future<int> getFirstTime() async {
+    final rows = await db.rawQuery('SELECT MIN($kDateTime) as dateTime FROM $tabName');
+    if (rows.isEmpty) return 0;
+    return (rows.first.values.first??0) as int;
+  }
+
   Future<int> getLastTime() async {
     final rows = await db.rawQuery('SELECT MAX($kDateTime) as dateTime FROM $tabName');
     if (rows.isEmpty) return 0;
-    return rows.first.values.first as int;
+    return (rows.first.values.first??0) as int;
   }
 }
 
@@ -949,6 +955,7 @@ class DecardDB {
     await db.execute(TabCardLinkTag .createQuery);
     await db.execute(TabCardBody.createQuery);
     await db.execute(TabCardStat.createQuery);
+    await db.execute(TabTestResult.createQuery);
   }
 
   deleteDB( ) async {

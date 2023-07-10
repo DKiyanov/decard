@@ -291,6 +291,10 @@ class RegDifficulty {
 }
 
 class Regulator {
+  static const int maxQuality               = 100; // Maximum learning quality
+  static const int completelyStudiedQuality = 99;
+  static const int studyNotStartedQuality   = -1;
+
   static const int lowDifficultyLevel  = 0;
   static const int highDifficultyLevel = 5;
 

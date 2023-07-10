@@ -85,9 +85,9 @@ class TextConst{
   static String txtFile           = "Файл";
   static String txtStatistics = "Статистика";
   static String txtChartCountCardByStudyGroups = "Кол-во карточек по группам изучености";
-  static String txtRodCardStudyGroupNew = "Новые";
   static String txtRodCardStudyGroupActive = "Активные";
   static String txtRodCardStudyGroupStudied = "Изученные";
+  static String txtAutoTest = "Автоматическое тестирование";
 
 
   static String djfFormatVersion = "Версия формата";
@@ -123,6 +123,28 @@ int dateToInt(DateTime date){
 
 int dateTimeToInt(DateTime date){
   return date.year * 10000000000 + date.month * 100000000 + date.day * 1000000 + date.hour * 10000 + date.minute * 100 + date.second;
+}
+
+DateTime intDateTimeToDateTime(int intDateTime){
+  final intDate = intDateTime ~/ 1000000;
+  final year    = intDate     ~/ 10000;
+  final rest    = intDate      % 10000;
+  final month   = rest        ~/ 100;
+  final day     = rest         % 100;
+
+  final intTime  = intDateTime % 1000000;
+  final hour     = intTime    ~/ 10000;
+  final timeRest = intTime     % 10000;
+  final minute   = timeRest   ~/ 100;
+  final second   = timeRest    % 100;
+
+  return DateTime(year, month, day, hour, minute, second);
+}
+
+String dateToStr(DateTime date){
+  // конечно нужно использовать intl, но пока так сделаем
+  return
+    '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
 }
 
 enum UrlType {
