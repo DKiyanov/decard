@@ -7,6 +7,7 @@ import 'child_statistics.dart';
 import 'common.dart';
 import 'difficulty_list.dart';
 import 'manager_file_list.dart';
+import 'options_editor.dart';
 
 class ChildList extends StatefulWidget {
   const ChildList({Key? key}) : super(key: key);
@@ -55,15 +56,21 @@ class _ChildListState extends State<ChildList> {
               itemBuilder: (context) {
                 return [
                   PopupMenuItem<VoidCallback>(
-                    value: () {
-
+                    value: () async {
+                      final result = await OptionsEditor.navigatorPush(context, child);
+                      if (result != null && result) {
+                        child.refreshRegulator();
+                      }
                     },
                     child: Text(TextConst.txtRegOptions),
                   ),
 
                   PopupMenuItem<VoidCallback>(
-                    value: () {
-                      CardSetList.navigatorPush(context, child);
+                    value: () async {
+                      final result = await CardSetList.navigatorPush(context, child);
+                      if (result != null && result) {
+                        child.refreshRegulator();
+                      }
                     },
                     child: Text(TextConst.txtRegCardSet),
                   ),

@@ -80,6 +80,7 @@ class TextConst{
   static String txtRegOptions = 'Параметры';
   static String txtRegCardSet = 'Настройка карточек';
   static String txtRegDifficultyLevelsTuning = 'Настройка уровней сложности';
+  static String txtRegOptionsTuning = 'Настройка параметров';
   static String txtRegDifficultyTuning = 'Настройка уровнея сложности';
   static String txtCardSetTuning = "Настройка карточек";
   static String txtFile           = "Файл";
@@ -115,6 +116,33 @@ class TextConst{
 
   static String drfExclude        = "Исключить";
   static String drfDifficulty     = "Сложность";
+
+//---------------
+  static String drfOptionHotDayCount = 'Количество дней, за которые рассчитывается статистика';
+
+  static String drfOptionHotCardQualityTopLimit = 'Карточки более низкого качества считаются активно изучаемыми';
+  static String drfOptionMaxCountHotCard = 'Максимальное количество карточек в активном изучении';
+
+  static String drfOptionHotGroupDetermine = 'Лимиты, определяющие активность группы';
+  static String drfOptionHotGroupMinQualityTopLimit = 'Минимальное качество для карточек, входящих в группу';
+  static String drfOptionHotGroupAvgQualityTopLimit = 'Среднее качество карточек, входящих в группу';
+
+  static String drfOptionMinCountHotQualityGroup = 'Mинимальное количество активно изучаемых групп карточек';
+  static String drfOptionMinCountHotQualityGroupHelp = 'Если количество активно изучаемых групп меньше лимита - система пытается выбрать карту из новой группы';
+
+  static String drfOptionLowGroupAvgQualityTopLimit = 'Верхний предел среднего качества для групп начального уровня качества';
+
+  static String drfOptionMaxCountLowQualityGroup = 'Максимальное количество групп начального уровня качества';
+  static String drfOptionMaxCountLowQualityGroupHelp = 'Если количество групп с начальным уровнем качества равно лимиту - система выбирает карточки из уже изучаемых групп';
+
+  static String drfOptionLowHelp = 'Уменьшает качество, при маолом количестве статистики, если новая карта имеет очень хорошие результаты с самого начала,эти параметры не позволят качеству расти слишком быстро';
+  static String drfOptionLowTryCount = 'Минимальное количество тестов';
+  static String drfOptionLowDayCount = 'Минимальное количество дней';
+
+  static String drfOptionNegativeLastResultMaxQualityLimitHelp = 'Если последний ответ по карточке был не правильный - качество устанавливается в это значение';
+  static String drfOptionNegativeLastResultMaxQualityLimit = 'Максимально возможное качество с отрицательным последним результатом';
+
+  static String drfOptionMinEarnTransferMinutes = 'Минимальное количество заработанного времени которое может быть зафиксировано';
 }
 
 int dateToInt(DateTime date){
