@@ -22,8 +22,6 @@ class _OptionsEditorState extends State<OptionsEditor> {
   bool _isStarting = true;
   late Regulator _regulator;
 
-  bool _changed = false;
-
   final hotDayCount = TextEditingController();   // Number of days for which the statistics are calculated
 
   final hotCardQualityTopLimit = TextEditingController(); // cards with lower quality are considered to be actively studied
@@ -65,7 +63,19 @@ class _OptionsEditorState extends State<OptionsEditor> {
 
   void _starting() async {
     _regulator = await Regulator.fromFile( widget.child.regulatorPath );
-    _regulator.fillDifficultyLevels(true);
+
+    hotDayCount.text                       = _regulator.options.hotDayCount.toString();
+    hotCardQualityTopLimit.text            = _regulator.options.hotCardQualityTopLimit.toString();
+    maxCountHotCard.text                   = _regulator.options.maxCountHotCard.toString();
+    hotGroupMinQualityTopLimit.text        = _regulator.options.hotGroupMinQualityTopLimit.toString();
+    hotGroupAvgQualityTopLimit.text        = _regulator.options.hotGroupAvgQualityTopLimit.toString();
+    minCountHotQualityGroup.text           = _regulator.options.minCountHotQualityGroup.toString();
+    lowGroupAvgQualityTopLimit.text        = _regulator.options.lowGroupAvgQualityTopLimit.toString();
+    maxCountLowQualityGroup.text           = _regulator.options.maxCountLowQualityGroup.toString();
+    lowTryCount.text                       = _regulator.options.lowTryCount.toString();
+    lowDayCount.text                       = _regulator.options.lowDayCount.toString();
+    negativeLastResultMaxQualityLimit.text = _regulator.options.negativeLastResultMaxQualityLimit.toString();
+    minEarnTransferMinutes.text            = _regulator.options.minEarnTransferMinutes.toString();
 
     setState(() {
       _isStarting = false;
@@ -109,26 +119,96 @@ class _OptionsEditorState extends State<OptionsEditor> {
     final result = <Widget>[];
 
     result.addAll([
-      _editParam(TextConst.drfOptionHotDayCount, hotDayCount),
+      _editParam(TextConst.drfOptionHotDayCount                      , hotDayCount),
+      _editParam(TextConst.drfOptionHotCardQualityTopLimit           , hotCardQualityTopLimit),
+      _editParam(TextConst.drfOptionMaxCountHotCard                  , maxCountHotCard),
+      _editParam(TextConst.drfOptionHotGroupMinQualityTopLimit       , hotGroupMinQualityTopLimit,        TextConst.drfOptionHotGroupDetermine),
+      _editParam(TextConst.drfOptionHotGroupAvgQualityTopLimit       , hotGroupAvgQualityTopLimit,        TextConst.drfOptionHotGroupDetermine),
+      _editParam(TextConst.drfOptionMinCountHotQualityGroup          , minCountHotQualityGroup,           TextConst.drfOptionMinCountHotQualityGroupHelp),
+      _editParam(TextConst.drfOptionLowGroupAvgQualityTopLimit       , lowGroupAvgQualityTopLimit),
+      _editParam(TextConst.drfOptionMaxCountLowQualityGroup          , maxCountLowQualityGroup,           TextConst.drfOptionMaxCountLowQualityGroupHelp),
+      _editParam(TextConst.drfOptionLowTryCount                      , lowTryCount,                       TextConst.drfOptionLowHelp),
+      _editParam(TextConst.drfOptionLowDayCount                      , lowDayCount,                       TextConst.drfOptionLowHelp),
+      _editParam(TextConst.drfOptionNegativeLastResultMaxQualityLimit, negativeLastResultMaxQualityLimit, TextConst.drfOptionNegativeLastResultMaxQualityLimitHelp),
+      _editParam(TextConst.drfOptionMinEarnTransferMinutes           , minEarnTransferMinutes),
     ]);
 
     return result;
   }
 
-  Widget _editParam(String title, TextEditingController tecValue) {
+  Widget _editParam(String title, TextEditingController tecValue, [String? paramHelp]) {
+    Widget paramTitle;
+    if (paramHelp == null) {
+      paramTitle = Text(title);
+    } else {
+      paramTitle = GestureDetector(
+        child: Container(color: Colors.yellowAccent, child: Text(title)),
+        onTap: () {
+          _showParamHelp(paramHelp);
+        },
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.only(top: 6),
       child: Row( children: [
-        Expanded(child: Text(title)),
+        Expanded(flex: 3,
+            child: paramTitle
+        ),
         Expanded(child: intFiled(tecValue)),
       ]),
     );
   }
 
+  void _showParamHelp(String paramHelp){
+    showDialog(context: context, builder: (BuildContext context){
+      return AlertDialog(
+        content: Text(paramHelp),
+        backgroundColor: Colors.yellowAccent,
+      );
+    });
+  }
+
   Future<void> _saveAndExit() async {
-    if (_changed) {
-      await _regulator.saveToFile(widget.child.regulatorPath);
+
+    final options = RegOptions(
+        hotDayCount                       : int.tryParse(hotDayCount.text)??0,
+        hotCardQualityTopLimit            : int.tryParse(hotCardQualityTopLimit.text)??0,
+        maxCountHotCard                   : int.tryParse(maxCountHotCard.text)??0,
+        hotGroupMinQualityTopLimit        : int.tryParse(hotGroupMinQualityTopLimit.text)??0,
+        hotGroupAvgQualityTopLimit        : int.tryParse(hotGroupAvgQualityTopLimit.text)??0,
+        minCountHotQualityGroup           : int.tryParse(minCountHotQualityGroup.text)??0,
+        lowGroupAvgQualityTopLimit        : int.tryParse(lowGroupAvgQualityTopLimit.text)??0,
+        maxCountLowQualityGroup           : int.tryParse(maxCountLowQualityGroup.text)??0,
+        lowTryCount                       : int.tryParse(lowTryCount.text)??0,
+        lowDayCount                       : int.tryParse(lowDayCount.text)??0,
+        minEarnTransferMinutes            : int.tryParse(minEarnTransferMinutes.text)??0,
+        negativeLastResultMaxQualityLimit : int.tryParse(negativeLastResultMaxQualityLimit.text)??0,
+    );
+
+    final changed =
+        _regulator.options.hotDayCount                       != options.hotDayCount                       ||
+        _regulator.options.hotCardQualityTopLimit            != options.hotCardQualityTopLimit            ||
+        _regulator.options.maxCountHotCard                   != options.maxCountHotCard                   ||
+        _regulator.options.hotGroupMinQualityTopLimit        != options.hotGroupMinQualityTopLimit        ||
+        _regulator.options.hotGroupAvgQualityTopLimit        != options.hotGroupAvgQualityTopLimit        ||
+        _regulator.options.minCountHotQualityGroup           != options.minCountHotQualityGroup           ||
+        _regulator.options.lowGroupAvgQualityTopLimit        != options.lowGroupAvgQualityTopLimit        ||
+        _regulator.options.maxCountLowQualityGroup           != options.maxCountLowQualityGroup           ||
+        _regulator.options.lowTryCount                       != options.lowTryCount                       ||
+        _regulator.options.lowDayCount                       != options.lowDayCount                       ||
+        _regulator.options.minEarnTransferMinutes            != options.minEarnTransferMinutes            ||
+        _regulator.options.negativeLastResultMaxQualityLimit != options.negativeLastResultMaxQualityLimit;
+
+    if (changed) {
+      final newRegulator = Regulator(
+        options        : options,
+        cardSetList    : _regulator.cardSetList,
+        difficultyList : _regulator.difficultyList,
+      );
+      await newRegulator.saveToFile(widget.child.regulatorPath);
     }
+
     if (!mounted) return;
     Navigator.pop(context, true);
   }
