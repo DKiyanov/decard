@@ -15,10 +15,10 @@ final _random = Random();
 
 class CardWidget extends StatefulWidget {
   final CardData card;
-  final VoidCallback onPressSelectNextCard;
+  final VoidCallback? onPressSelectNextCard;
   final bool demoMode;
 
-  const CardWidget({required this.card, required this.onPressSelectNextCard, this.demoMode = false,  Key? key}) : super(key: key);
+  const CardWidget({required this.card, this.onPressSelectNextCard, this.demoMode = false,  Key? key}) : super(key: key);
 
   @override
   State<CardWidget> createState() => _CardWidgetState();

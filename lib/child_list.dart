@@ -94,7 +94,7 @@ class _ChildListState extends State<ChildList> {
 
             IconButton(
                 onPressed: (){
-                  ChildStatistics.navigatorPush(context, child, appState.prefs);
+                  ChildStatistics.navigatorPush(context, child);
                 },
                 icon: const Icon(Icons.multiline_chart)
             ),

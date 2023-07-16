@@ -6,6 +6,7 @@ import 'package:decard/regulator.dart';
 import 'package:sqflite/sqflite.dart';
 
 import 'package:simple_events/simple_events.dart';
+import 'child.dart';
 import 'common.dart';
 import 'db.dart';
 import 'card_model.dart';
@@ -13,34 +14,14 @@ import 'card_model.dart';
 
 final _random = Random();
 
-enum CardSetBody {
-  none,
-  first,
-  last,
-  random,
-}
-
 class CardController {
-  final DbSource dbSource;
+  final Child child;
   final ProcessCardController processCardController;
-  final Regulator regulator;
 
   CardController({
-    required this.dbSource,
+    required this.child,
     required this.processCardController,
-    required this.regulator,
   });
-
-  PacInfo?   _pacInfo;
-  CardHead?  _cardHead;
-  CardBody?  _cardBody;
-  CardStyle? _cardStyle;
-  CardStat?  _cardStat;
-
-  RegCardSet?    _regSet;
-
-  RegDifficulty? _difficulty;
-  int _bodyNum = 0;
 
   CardData? _card;
   CardData? get card => _card;
@@ -52,98 +33,9 @@ class CardController {
 
   /// Sets the current card data
   Future<void> setCard(int jsonFileID, int cardID, {int? bodyNum, CardSetBody setBody = CardSetBody.random}) async {
-    _pacInfo   = null;
-    _cardHead  = null;
-    _cardBody  = null;
-    _cardStyle = null;
-    _cardStat  = null;
-    _regSet    = null;
-
-    final headData = await dbSource.tabCardHead.getRow(cardID);
-    _cardHead = CardHead.fromMap(headData!);
-
-    if (_cardHead!.regulatorSetIndex != null) {
-      _regSet = regulator.cardSetList[_cardHead!.regulatorSetIndex!];
-    }
-
-    if (bodyNum != null) {
-      await _setBodyNum(bodyNum);
-    } else {
-      switch(setBody){
-        case  CardSetBody.first:
-          await _setBodyNum(0);
-          break;
-        case CardSetBody.last:
-          await _setBodyNum(_cardHead!.bodyCount - 1);
-          break;
-        case CardSetBody.random:
-          await _setRandomBodyNum();
-          break;
-        case CardSetBody.none:
-          break;
-      }
-    }
-
-    final statData = await processCardController.getStatData(cardID);
-    _cardStat = CardStat.fromMap(statData!);
-
-    final pacData = await dbSource.tabJsonFile.getRow(jsonFileID: jsonFileID);
-    _pacInfo = PacInfo.fromMap(pacData!);
-
-    if (_regSet != null && _regSet!.difficultyLevel != null) {
-      _difficulty = regulator.getDifficulty(_regSet!.difficultyLevel!);
-    } else {
-      _difficulty = regulator.getDifficulty(_cardHead!.difficulty);
-    }
-
-    _card = CardData(
-        head       : _cardHead!,
-        body       : _cardBody!,
-        style      : _cardStyle!,
-        stat       : _cardStat!,
-        pacInfo    : _pacInfo!,
-        difficulty : _difficulty!,
-        regSet     : _regSet,
-        onResult   : _onCardResult
-    );
-
+    _card = await CardData.create(child, jsonFileID, cardID, bodyNum: bodyNum, setBody: setBody, onResult: _onCardResult);
+    await processCardController.setCard(cardID);
     onChange.send();
-  }
-
-  /// Sets the specified body in the current card
-  Future<void> setBodyNum(int bodyNum) async {
-    await _setBodyNum(bodyNum);
-    _card!.body  = _cardBody!;
-    _card!.style = _cardStyle!;
-    onChange.send();
-  }
-
-  Future<void> _setBodyNum(int bodyNum) async {
-    _bodyNum = bodyNum;
-
-    final bodyData = await dbSource.tabCardBody.getRow(jsonFileID: _cardHead!.jsonFileID, cardID: _cardHead!.cardID, bodyNum: bodyNum );
-    _cardBody = CardBody.fromMap(bodyData!);
-
-    final Map<String, dynamic> styleMap = {};
-    for (var styleKey in _cardBody!.styleKeyList) {
-      final styleData = await dbSource.tabCardStyle.getRow(jsonFileID: _cardHead!.jsonFileID, cardStyleKey: styleKey );
-      styleMap.addEntries(styleData!.entries.where((element) => element.value != null));
-    }
-
-    styleMap.addEntries(_cardBody!.styleMap.entries.where((element) => element.value != null));
-
-    if (_regSet != null && _regSet!.style != null) {
-      styleMap.addEntries(_regSet!.style!.entries.where((element) => element.value != null));
-    }
-
-    _cardStyle = CardStyle.fromMap(styleMap);
-  }
-
-  Future<void> _setRandomBodyNum() async {
-    int bodyNum = 0;
-    if (_cardHead!.bodyCount > 1) bodyNum = _random.nextInt(_cardHead!.bodyCount);
-
-    await _setBodyNum(bodyNum);
   }
 
   Future<bool> selectNextCard() async {
@@ -172,27 +64,28 @@ class CardController {
       earn: earn,
     );
   }
+
   Future<void> setCardResult({required bool result, double earn = 0.0}) async {
-    final newStat = await processCardController.registerResult(_cardHead!.jsonFileID, _cardHead!.cardID, result);
+    final newStat = await processCardController.registerResult(_card!.head.jsonFileID, _card!.head.cardID, result);
 
     final testResult = TestResult(
-        fileGuid      : _pacInfo!.guid,
-        fileVersion   : _pacInfo!.version,
-        cardID        : _cardHead!.cardKey,
-        bodyNum       : _bodyNum,
+        fileGuid      : _card!.pacInfo.guid,
+        fileVersion   : _card!.pacInfo.version,
+        cardID        : _card!.head.cardKey,
+        bodyNum       : _card!.body.bodyNum,
         result        : result,
         earned        : earn,
         dateTime      : dateTimeToInt(DateTime.now()),
-        qualityBefore : _cardStat!.quality,
+        qualityBefore : _card!.stat.quality,
         qualityAfter  : newStat.quality,
-        difficulty    : _cardHead!.difficulty
+        difficulty    : _card!.head.difficulty
     );
 
     cardResultList.add(testResult);
 
     onAddEarn.send(earn);
 
-    dbSource.tabTestResult.insertRow(testResult);
+    child.dbSource.tabTestResult.insertRow(testResult);
   }
 }
 
@@ -290,6 +183,8 @@ class ProcessCardController {
   Future<void> _loadCardStat() async {
     final rows = await db.query(TabCardStat.tabName,
       columns   : [TabCardStat.kID, TabCardStat.kJsonFileID, TabCardStat.kCardID, TabCardStat.kCardGroupKey, TabCardStat.kQuality, TabCardStat.kLastResult],
+      where     : '${TabCardStat.kTestsCount} > ? AND ${TabCardStat.kQuality} < ?',
+      whereArgs : [0, Regulator.maxQuality],
       orderBy   : TabCardStat.kID,
     );
 
@@ -300,6 +195,15 @@ class ProcessCardController {
     for (var stat in cardStatList) {
       await _prepareGroup(stat);
     }
+  }
+
+  Future<void> setCard(int cardID) async {
+    if (cardStatList.any((stat) => stat.cardID == cardID)) return;
+
+    final statData = await tabCardStat.getRow(cardID);
+    final cardStat = ProcessCardStat.fromMap(statData!);
+    cardStatList.add(cardStat);
+    await _prepareGroup(cardStat);
   }
 
   Future<_CardGroup> _prepareGroup(ProcessCardStat stat) async {
@@ -330,6 +234,11 @@ class ProcessCardController {
     row[TabCardStat.kLastTestDate] = _curDay;
 
     final testsCount = row[TabCardStat.kTestsCount] as int;
+
+    if (testsCount == 0) {
+      row[TabCardStat.kStartDate] = _curDay;
+    }
+
     row[TabCardStat.kTestsCount] = testsCount + 1;
 
     final jsonStr = row[TabCardStat.kJson] as String?;
@@ -465,6 +374,7 @@ class ProcessCardController {
           FROM ${TabCardStat.tabName} as sub1
          WHERE sub1.${TabCardStat.kJsonFileID} = mainCard.${TabCardHead.kJsonFileID}
            AND sub1.${TabCardStat.kCardID}     = mainCard.${TabCardHead.kCardID}
+           AND sub1.${TabCardStat.kTestsCount} > 0
     )
     
     AND $isStudied EXISTS ( --select groups that have not yet been studied/studied
@@ -472,6 +382,7 @@ class ProcessCardController {
           FROM ${TabCardStat.tabName} as sub2
          WHERE sub2.${TabCardStat.kJsonFileID}   = mainCard.${TabCardHead.kJsonFileID}
            AND sub2.${TabCardStat.kCardGroupKey} = mainCard.${TabCardHead.kGroup}
+           AND sub2.${TabCardStat.kTestsCount}   > 0
     )
     
     AND NOT EXISTS ( --the card has no links with an unfulfilled condition
@@ -486,8 +397,8 @@ class ProcessCardController {
                  FROM (
     
                  SELECT
-                     min( ifNull( stat.${TabCardStat.kQuality}, -1) ) as min,
-                     avg( ifNull( stat.${TabCardStat.kQuality}, -1) ) as avg
+                     min( ifNull( stat.${TabCardStat.kQuality}, 0) ) as min,
+                     avg( ifNull( stat.${TabCardStat.kQuality}, 0) ) as avg
                    FROM ${TabCardHead.tabName}            as testCard
               LEFT JOIN ${TabCardStat.tabName}            as stat
                      ON stat.${TabCardStat.kJsonFileID}   = testCard.${TabCardHead.kJsonFileID}
@@ -561,33 +472,5 @@ class ProcessCardController {
 
     final stat = cardStatList[selIndex];
     return CardPointer(stat.jsonFileID, stat.cardID);
-  }
-
-  Future<ProcessCardStat> _initStatData(int cardID) async {
-    final cardHead = await tabCardHead.getRow(cardID);
-
-    final jsonFileID    = cardHead![TabCardHead.kJsonFileID] as int;
-    final cardKey       = cardHead[TabCardHead.kCardKey]     as String;
-    final cardGroupKey  = cardHead[TabCardHead.kGroup]       as String;
-
-    final id = await tabCardStat.insertRow(jsonFileID: jsonFileID, cardID: cardID, cardKey: cardKey, cardGroupKey: cardGroupKey, quality: 0, lastResult: false, date: _curDay);
-
-    final cardStat = ProcessCardStat(statID: id, jsonFileID: jsonFileID, cardID: cardID, cardGroupKey: cardGroupKey, quality: 0, lastResult: false);
-
-    cardStatList.add(cardStat);
-
-    await _prepareGroup(cardStat);
-
-    return cardStat;
-  }
-
-  Future<Map<String, dynamic>?> getStatData(int cardID) async {
-    final statData = await tabCardStat.getRow(cardID);
-    if (statData != null) return statData;
-
-    await _initStatData(cardID);
-
-    final newStatData = await tabCardStat.getRow(cardID);
-    return newStatData;
   }
 }

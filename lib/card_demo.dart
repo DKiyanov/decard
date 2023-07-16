@@ -69,9 +69,8 @@ class _DeCardDemoState extends State<DeCardDemo> {
         if (widget.child.cardController.card == null) return Container();
 
         return CardWidget(
-          card: widget.child.cardController.card!,
-          onPressSelectNextCard: () {},
-          demoMode: true,
+          card     : widget.child.cardController.card!,
+          demoMode : true,
         );
       },
       events: [widget.child.cardController.onChange],

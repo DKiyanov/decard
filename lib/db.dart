@@ -421,6 +421,18 @@ class TabCardHead {
     final result = rows.map((row) => row.values.first as String).toList();
     return result;
   }
+
+  Future<int> getCardIdFromKey(int jsonFileID, String cardKey) async {
+    final rows = await db.query(tabName, distinct: true,
+        columns   : [kCardID],
+        where     : '$kJsonFileID = ? AND $kCardKey = ?',
+        whereArgs : [jsonFileID, cardKey]
+    );
+
+    final cardID = rows.first.values.first as int;
+
+    return cardID;
+  }
 }
 
 class TabCardTag {
@@ -713,19 +725,16 @@ class TabCardStat {
     required int    cardID,
     required String cardKey,
     required String cardGroupKey,
-    required int    quality,
-    required bool   lastResult,
-    required int    date,
   }) async {
     Map<String, Object> row = {
       kJsonFileID      : jsonFileID,
       kCardID          : cardID,
       kCardKey         : cardKey,
       kCardGroupKey    : cardGroupKey,
-      kQuality         : quality,
-      kLastResult      : lastResult,
-      kQualityFromDate : date,
-      kStartDate       : date,
+      kQuality         : 0,
+      kLastResult      : false,
+      kQualityFromDate : 0,
+      kStartDate       : 0,
       kTestsCount      : 0,
       kJson            : '',
     };
@@ -772,12 +781,21 @@ class TestResult {
   });
 
   factory TestResult.fromMap(Map<String, dynamic> json) {
+    final mapResult = json[TabTestResult.kResult] ?? false;
+    bool result;
+
+    if (mapResult is int ) {
+      result = mapResult == 1;
+    } else {
+      result = mapResult;
+    }
+
     return TestResult(
       fileGuid      : json[TabTestResult.kFileGuid     ],
       fileVersion   : json[TabTestResult.kFileVersion  ],
       cardID        : json[TabTestResult.kCardID       ],
       bodyNum       : json[TabTestResult.kBodyNum      ],
-      result        : json[TabTestResult.kResult       ] == 1,
+      result        : result,
       earned        : json[TabTestResult.kEarned       ],
       dateTime      : json[TabTestResult.kDateTime     ],
       qualityBefore : json[TabTestResult.kQualityBefore],

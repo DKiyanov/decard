@@ -142,7 +142,7 @@ class _OptionsEditorState extends State<OptionsEditor> {
       paramTitle = Text(title);
     } else {
       paramTitle = GestureDetector(
-        child: Container(color: Colors.yellowAccent, child: Text(title)),
+        child: Text(title, style: const TextStyle( color: Colors.blue)),
         onTap: () {
           _showParamHelp(paramHelp);
         },

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:decard/regulator.dart';
 import 'package:decard/server_connect.dart';
+import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart' as path_util;
@@ -41,6 +42,14 @@ class Child {
   late String downloadDir;
   late String cardsDir;
 
+  ChildTestResults? _testResults;
+  Future<ChildTestResults> get testResults async {
+    if (_testResults != null) return _testResults!;
+    _testResults = ChildTestResults(this);
+    await _testResults!.init();
+    return _testResults!;
+  }
+
   DataLoader cardFileLoader;
 
   Child(this.name, this.deviceName, this.appDir, this.cardFileLoader);
@@ -67,9 +76,8 @@ class Child {
     await processCardController.init();
 
     cardController = CardController(
-      dbSource             : dbSource,
+      child: this,
       processCardController: processCardController,
-      regulator            : regulator,
     );
 
   }
@@ -117,5 +125,102 @@ class Child {
   static ChildAndDeviceNames getNamesFromDir(String dirName){
     final sub = dirName.split(namesSeparator);
     return ChildAndDeviceNames(sub.first, sub.last);
+  }
+}
+
+class ChildTestResults {
+  static const int _statDayCount = 10;
+
+  final Child child;
+
+  late DateTime firstDate;
+  late DateTime lastDate;
+
+  late int _firstTime;
+  late int _lastTime;
+
+  int _fromDate = 0;
+  int _toDate = 0;
+
+  DateTime get fromDate => intDateTimeToDateTime(_fromDate);
+  DateTime get toDate   => intDateTimeToDateTime(_toDate);
+
+  final resultList = <TestResult>[];
+
+  ChildTestResults(this.child);
+
+  Future<void> init() async {
+    final now = DateTime.now();
+
+    _firstTime = await child.dbSource.tabTestResult.getFirstTime();
+    if (_firstTime > 0) {
+      firstDate = intDateTimeToDateTime(_firstTime);
+    } else {
+      firstDate = now;
+    }
+
+    _lastTime = await child.dbSource.tabTestResult.getLastTime();
+    if (_lastTime > 0) {
+      lastDate = intDateTimeToDateTime(_lastTime);
+    } else {
+      lastDate = now;
+    }
+
+    final prev = now.add(const Duration(days: - _statDayCount));
+
+    int fromDate = 0;
+    int toDate = 0;
+
+    fromDate = dateTimeToInt(DateTime(prev.year, prev.month, prev.day));
+    toDate   = dateTimeToInt(now); // for end of current day
+
+    await getData(fromDate, toDate);
+  }
+
+  Future<void> getData(int fromDate, int toDate) async {
+    final time = toDate % 1000000;
+    toDate = toDate - time;
+    toDate += 240000;
+
+    if (fromDate < _firstTime) fromDate = _firstTime;
+    if (toDate   > _lastTime ) toDate   = _lastTime;
+
+    if (_fromDate == fromDate && _toDate == toDate) return;
+
+    _fromDate = fromDate;
+    _toDate = toDate;
+
+    resultList.clear();
+    resultList.addAll( await child.dbSource.tabTestResult.getForPeriod(_fromDate, _toDate) );
+  }
+
+  Future<bool> pickedFromDate (BuildContext context) async {
+    final pickedDate = await showDatePicker(
+      context     : context,
+      initialDate : intDateTimeToDateTime(_fromDate),
+      firstDate   : firstDate,
+      lastDate    : lastDate,
+    );
+
+    if (pickedDate == null) return false;
+
+    final fromDate = dateTimeToInt(pickedDate);
+    await getData(fromDate, _toDate);
+    return true;
+  }
+
+  Future<bool> pickedToDate (BuildContext context) async {
+    final pickedDate = await showDatePicker(
+      context     : context,
+      initialDate : intDateTimeToDateTime(_toDate),
+      firstDate   : firstDate,
+      lastDate    : lastDate,
+    );
+
+    if (pickedDate == null) return false;
+
+    final toDate = dateTimeToInt(pickedDate);
+    await getData(_fromDate, toDate);
+    return true;
   }
 }

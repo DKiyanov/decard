@@ -1,42 +1,48 @@
+import 'dart:math';
+
 import 'package:decard/app_state.dart';
 import 'package:decard/regulator.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'bar_chart.dart';
 import 'child.dart';
+import 'child_results_report.dart';
 import 'common.dart';
-import 'db.dart';
 
 typedef IntToStr = String Function(int value);
 
+class QualityRange {
+  final String title;
+  final Color color;
+  final int low;
+  final int high;
+  QualityRange({required this.title, required this.color, required this.low, required this.high});
+}
+
 class ChildStatistics extends StatefulWidget {
-  static Future<Object?> navigatorPush(BuildContext context, Child child, SharedPreferences prefs) async {
-    return Navigator.push(context, MaterialPageRoute( builder: (_) => ChildStatistics(child: child, prefs: prefs)));
+  static Future<Object?> navigatorPush(BuildContext context, Child child) async {
+    return Navigator.push(context, MaterialPageRoute( builder: (_) => ChildStatistics(child: child)));
   }
 
   final Child child;
-  final SharedPreferences prefs;
 
-  const ChildStatistics({required this.child, required this.prefs, Key? key}) : super(key: key);
+  const ChildStatistics({required this.child, Key? key}) : super(key: key);
 
   @override
   State<ChildStatistics> createState() => _ChildStatisticsState();
 }
 
 class _ChildStatisticsState extends State<ChildStatistics> {
-  static const int _startDayCount = 10;
-
   bool _isStarting = true;
 
-  int _fromDate = 0;
-  int _toDate = 0;
+  late ChildTestResults _childTestResults;
 
-  late DateTime _firstDate;
-  late DateTime _lastDate;
+  final _qualityRangeList = <QualityRange>[];
+  final Map<int, RodData> _qualityRangeRodMap = {};
 
-  final _resultList = <TestResult>[];
   final _chartList = <Widget>[];
+
+  final Map<String, GlobalKey> _chartTitleMap = {};
 
   @override
   void initState() {
@@ -49,51 +55,50 @@ class _ChildStatisticsState extends State<ChildStatistics> {
 
   void _starting() async {
     await widget.child.updateTestResultFromServer(appState.serverConnect);
+    _childTestResults = await widget.child.testResults;
 
-    final now = DateTime.now();
-    final prev = now.add(const Duration(days: - _startDayCount));
-    final next = now.add(const Duration(days: 1));
-    final cur  = DateTime(next.year, next.year, next.day).add(const Duration(seconds: - 1));
+    _initQualityRanges();
 
-    _fromDate = dateTimeToInt(DateTime(prev.year, prev.month, prev.day));
-    _toDate   = dateTimeToInt(cur); // for end of current day
-
-    final firstTime = await widget.child.dbSource.tabTestResult.getFirstTime();
-    if (firstTime > 0) {
-      _firstDate = intDateTimeToDateTime(firstTime);
-    } else {
-      _firstDate = DateTime.now();
-    }
-
-    final lastTime = await widget.child.dbSource.tabTestResult.getLastTime();
-    if (lastTime > 0) {
-      _lastDate = intDateTimeToDateTime(lastTime);
-    } else {
-      _lastDate = DateTime.now();
-    }
-
-    if (_fromDate < firstTime) _fromDate = firstTime;
-    if (_toDate   > lastTime ) _toDate   = lastTime;
-
-    await _refreshDbInfo();
+    _refreshChartList();
 
     setState(() {
       _isStarting = false;
     });
   }
 
-  Future<void> _refreshDbInfo() async {
-    _resultList.clear();
-    _resultList.addAll( await widget.child.dbSource.tabTestResult.getForPeriod(_fromDate, _toDate) );
-//    _testInitTestResult();
-    _refreshChartList();
+  void _initQualityRanges() {
+    _qualityRangeList.clear();
+    _qualityRangeRodMap.clear();
+
+    _qualityRangeList.addAll([
+      QualityRange(
+        title: TextConst.txtRodCardStudyGroupActive,
+        color: Colors.yellow,
+        low  : 0,
+        high : widget.child.regulator.options.hotCardQualityTopLimit,
+      ),
+
+      QualityRange(
+        title: TextConst.txtRodCardStudyGroupStudied,
+        color: Colors.grey,
+        low  : widget.child.regulator.options.hotCardQualityTopLimit + 1,
+        high : Regulator.maxQuality,
+      ),
+    ]);
+
+    for (int i = 0; i < _qualityRangeList.length; i++) {
+      final qualityRange = _qualityRangeList[i];
+      _qualityRangeRodMap[i] = RodData(qualityRange.color, qualityRange.title);
+    }
   }
 
-  void _refreshChartList() {
+ void _refreshChartList() {
     _chartList.clear();
     _chartList.addAll([
-//      _randomBarChart(),
+      _randomBarChart(),
       _chartCountCardByGroups(),
+      _chartIncomingByGroups(),
+      _chartOutgoingByGroups(),
     ]);
   }
 
@@ -141,6 +146,26 @@ class _ChildStatisticsState extends State<ChildStatistics> {
       appBar: AppBar(
         centerTitle: true,
         title: Text(TextConst.txtStatistics),
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.multiline_chart),
+            itemBuilder: (context) {
+              return _chartTitleMap.keys.map<PopupMenuItem<String>>((chartTitle) => PopupMenuItem(
+                value: chartTitle,
+                child: Text(chartTitle),
+              )).toList();
+            },
+            onSelected: (value){
+
+            },
+          ),
+
+          IconButton(icon: const Icon(Icons.nearby_error ), onPressed: () async {
+            await ChildResultsReport.navigatorPush(context, widget.child);
+            _refreshChartList();
+            setState(() {});
+          }),
+        ],
       ),
       body: Column(
         children: [
@@ -149,40 +174,26 @@ class _ChildStatisticsState extends State<ChildStatistics> {
             child: Row(children: [
               ElevatedButton(
                   onPressed: () async {
-                    final pickedDate = await showDatePicker(
-                      context     : context,
-                      initialDate : intDateTimeToDateTime(_fromDate),
-                      firstDate   : _firstDate,
-                      lastDate    : _lastDate,
-                    );
-
-                    if (pickedDate == null) return;
-                    _fromDate = dateTimeToInt(pickedDate);
-                    await _refreshDbInfo();
-                    setState(() {});
+                    if (await _childTestResults.pickedFromDate(context)) {
+                      _refreshChartList();
+                      setState(() {});
+                    }
                   },
 
-                  child: Text(dateToStr(intDateTimeToDateTime(_fromDate)))
+                  child: Text(dateToStr(_childTestResults.fromDate))
               ),
 
               Expanded(child: Container()),
 
               ElevatedButton(
                   onPressed: () async {
-                    final pickedDate = await showDatePicker(
-                      context     : context,
-                      initialDate : intDateTimeToDateTime(_toDate),
-                      firstDate   : _firstDate,
-                      lastDate    : _lastDate,
-                    );
-
-                    if (pickedDate == null) return;
-                    _toDate = dateTimeToInt(pickedDate);
-                    await _refreshDbInfo();
-                    setState(() {});
+                    if (await _childTestResults.pickedToDate(context)) {
+                      _refreshChartList();
+                      setState(() {});
+                    }
                   },
 
-                  child: Text(dateToStr(intDateTimeToDateTime(_toDate)))
+                  child: Text(dateToStr(_childTestResults.toDate))
               ),
             ]),
           ),
@@ -198,36 +209,36 @@ class _ChildStatisticsState extends State<ChildStatistics> {
     );
   }
 
-  // Widget _randomBarChart() {
-  //   const title = 'randomBarChart';
-  //
-  //   final groupDataList = <GroupData>[];
-  //
-  //   final Map<int, RodData> rodDataMap = {
-  //     1 : RodData(Colors.green , 'green'),
-  //     2 : RodData(Colors.blue  , 'blue' ),
-  //   };
-  //
-  //   final Random random = Random();
-  //
-  //   for (var x = 0; x <= 11; x++) {
-  //     final Map<int, double> rodValueMap = {};
-  //
-  //     for (var rodIndex in rodDataMap.keys) {
-  //       rodValueMap[rodIndex] = random.nextInt(100).toDouble();
-  //     }
-  //
-  //     groupDataList.add(GroupData(
-  //       x            : x,
-  //       xTitle       : x.toString(),
-  //       rodValueMap  : rodValueMap,
-  //     ));
-  //   }
-  //
-  //   final chartData = MyBarChartData(rodDataMap, groupDataList, title);
-  //
-  //   return MyBarChart(chartData: chartData);
-  // }
+  Widget _randomBarChart() {
+    const title = 'randomBarChart';
+
+    final groupDataList = <GroupData>[];
+
+    final Map<int, RodData> rodDataMap = {
+      1 : RodData(Colors.green , 'green'),
+      2 : RodData(Colors.blue  , 'blue' ),
+    };
+
+    final Random random = Random();
+
+    for (var x = 0; x <= 11; x++) {
+      final Map<int, double> rodValueMap = {};
+
+      for (var rodIndex in rodDataMap.keys) {
+        rodValueMap[rodIndex] = random.nextInt(100).toDouble();
+      }
+
+      groupDataList.add(GroupData(
+        x            : x,
+        xTitle       : x.toString(),
+        rodValueMap  : rodValueMap,
+      ));
+    }
+
+    final chartData = MyBarChartData(rodDataMap, groupDataList, title);
+
+    return MyBarChart(chartData: chartData);
+  }
 
   Widget _makeChart({
     required String chartTitle,
@@ -253,19 +264,24 @@ class _ChildStatisticsState extends State<ChildStatistics> {
 
     final chartData = MyBarChartData(rodDataMap, groupDataList, chartTitle);
 
-    return MyBarChart(chartData: chartData);
+    final key = GlobalKey();
+    _chartTitleMap[chartTitle] = key;
+
+    return MyBarChart(chartData: chartData, key: key);
   }
 
   int _getQualityRodIndex(int quality){
-    if (quality <= widget.child.regulator.options.hotCardQualityTopLimit ) return 1;
-    if (quality < Regulator.completelyStudiedQuality) return 2;
+    for (int i = 0; i < _qualityRangeList.length; i++) {
+      final qualityRange = _qualityRangeList[i];
+      if (quality >= qualityRange.low && quality <= qualityRange.high) return i;
+    }
     return -1;
   }
 
   Widget _chartCountCardByGroups() {
     final collector = Collector();
 
-    for (var testResult in _resultList) {
+    for (var testResult in _childTestResults.resultList) {
       final rodIndex = _getQualityRodIndex(testResult.qualityAfter);
       if (rodIndex < 0) continue;
 
@@ -277,10 +293,59 @@ class _ChildStatisticsState extends State<ChildStatistics> {
     return _makeChart(
         chartTitle: TextConst.txtChartCountCardByStudyGroups,
 
-        rodDataMap: {
-          1 : RodData(Colors.yellow , TextConst.txtRodCardStudyGroupActive ),
-          2 : RodData(Colors.grey   , TextConst.txtRodCardStudyGroupStudied),
-        },
+        rodDataMap: _qualityRangeRodMap,
+
+        collector: collector,
+
+        groupToStr: (group){
+          return group.toString().substring(6);
+        }
+    );
+  }
+
+  Widget _chartIncomingByGroups() {
+    final collector = Collector();
+
+    for (var testResult in _childTestResults.resultList) {
+      final rodIndexBefore = _getQualityRodIndex(testResult.qualityBefore);
+      final rodIndexAfter  = _getQualityRodIndex(testResult.qualityAfter);
+      if (rodIndexBefore >= rodIndexAfter) continue;
+
+      final group = testResult.dateTime ~/ 1000000;
+
+      collector.addValue(group, rodIndexAfter, 1);
+    }
+
+    return _makeChart(
+        chartTitle: TextConst.txtChartIncomingCardByStudyGroups,
+
+        rodDataMap: _qualityRangeRodMap,
+
+        collector: collector,
+
+        groupToStr: (group){
+          return group.toString().substring(6);
+        }
+    );
+  }
+
+  Widget _chartOutgoingByGroups() {
+    final collector = Collector();
+
+    for (var testResult in _childTestResults.resultList) {
+      final rodIndexBefore = _getQualityRodIndex(testResult.qualityBefore);
+      final rodIndexAfter  = _getQualityRodIndex(testResult.qualityAfter);
+      if (rodIndexBefore >= rodIndexAfter) continue;
+
+      final group = testResult.dateTime ~/ 1000000;
+
+      collector.addValue(group, rodIndexBefore, 1);
+    }
+
+    return _makeChart(
+        chartTitle: TextConst.txtChartOutgoingCardByStudyGroups,
+
+        rodDataMap: _qualityRangeRodMap,
 
         collector: collector,
 

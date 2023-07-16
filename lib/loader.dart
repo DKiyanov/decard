@@ -246,6 +246,13 @@ class DataLoader {
         cardID     : cardID,
         linkList   : card[DjfCard.upLinks] as List?,
       );
+
+      await _intCardStat(
+        jsonFileID : jsonFileID,
+        cardID     : cardID,
+        cardKey    : cardKey,
+        groupKey   : groupKey,
+      );
     }
   }
 
@@ -310,6 +317,15 @@ class DataLoader {
         tag            : tag,
       );
     }
+  }
+
+  Future<void> _intCardStat({required int jsonFileID, required int cardID, required String cardKey, required String groupKey}) async {
+    await dbSource.tabCardStat.insertRow(
+      jsonFileID   : jsonFileID,
+      cardID       : cardID,
+      cardKey      : cardKey,
+      cardGroupKey : groupKey,
+    );
   }
 
   Future<void> _clearJsonFileID(int jsonFileID) async {

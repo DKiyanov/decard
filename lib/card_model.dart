@@ -1,5 +1,7 @@
+import 'dart:math';
 import 'dart:ui';
 
+import 'child.dart';
 import 'db.dart';
 import 'decardj.dart';
 import 'regulator.dart';
@@ -14,6 +16,8 @@ class CardData {
   CardStat  stat;
 
   RegDifficulty difficulty;
+
+  List<String>? tagList;
 
   CardResultCallback? onResult;
 
@@ -33,7 +37,17 @@ class CardData {
 
   bool get exclude => regSet != null && regSet!.exclude;
 
-  CardData({ required this.head, required this.style, required this.body, required this.stat, required this.pacInfo, required this.difficulty, this.regSet, this.onResult}) {
+  CardData({
+    required this.head,
+    required this.style,
+    required this.body,
+    required this.stat,
+    required this.pacInfo,
+    required this.difficulty,
+    this.regSet,
+    this.tagList,
+    this.onResult
+  }) {
     cost     = _getValueForQuality(difficulty.maxCost,     difficulty.minCost,     stat.quality);
     penalty  = _getValueForQuality(difficulty.minPenalty,  difficulty.maxPenalty,  stat.quality); // penalty moves in the opposite direction to all others
     tryCount = _getValueForQuality(difficulty.maxTryCount, difficulty.minTryCount, stat.quality);
@@ -50,7 +64,148 @@ class CardData {
   void setResult(bool result, double earned){
     _result = result;
     _earned = earned;
-    if (onResult != null) onResult!(result, earned);
+    if (onResult != null) onResult!.call(result, earned);
+  }
+
+  static Future<CardData> create(
+      Child child,
+      int jsonFileID,
+      int cardID,
+      {
+        int? bodyNum,
+        CardSetBody setBody = CardSetBody.random,
+        bool tags = false,
+        CardResultCallback? onResult
+      }) async {
+
+    final card = await _CardGenerator.createCard(child, jsonFileID, cardID, bodyNum: bodyNum, setBody: setBody, tags: tags, onResult: onResult);
+    return card;
+  }
+
+}
+
+enum CardSetBody {
+  none,
+  first,
+  last,
+  random,
+}
+
+class _CardGenerator {
+  static Child?     _child;
+
+  static CardHead?  _cardHead;
+  static CardBody?  _cardBody;
+  static CardStyle? _cardStyle;
+
+  static RegCardSet?    _regSet;
+
+  static final _random = Random();
+
+  static Future<CardData> createCard(
+      Child child,
+      int jsonFileID,
+      int cardID,
+      {
+        int? bodyNum,
+        CardSetBody setBody = CardSetBody.random,
+        bool tags = false,
+        CardResultCallback? onResult
+      }) async {
+
+    _child     = child;
+    _cardHead  = null;
+    _cardBody  = null;
+    _cardStyle = null;
+    _regSet    = null;
+
+    final headData = await child.dbSource.tabCardHead.getRow(cardID);
+    _cardHead = CardHead.fromMap(headData!);
+
+    if (_cardHead!.regulatorSetIndex != null) {
+      _regSet = child.regulator.cardSetList[_cardHead!.regulatorSetIndex!];
+    }
+
+    if (bodyNum != null) {
+      await _setBodyNum(bodyNum);
+    } else {
+      switch(setBody){
+        case  CardSetBody.first:
+          await _setBodyNum(0);
+          break;
+        case CardSetBody.last:
+          await _setBodyNum(_cardHead!.bodyCount - 1);
+          break;
+        case CardSetBody.random:
+          await _setRandomBodyNum();
+          break;
+        case CardSetBody.none:
+          break;
+      }
+    }
+
+    final statData = await child.dbSource.tabCardStat.getRow(cardID);
+    final cardStat = CardStat.fromMap(statData!);
+
+    final pacData = await child.dbSource.tabJsonFile.getRow(jsonFileID: jsonFileID);
+    final pacInfo = PacInfo.fromMap(pacData!);
+
+    RegDifficulty? difficulty;
+    if (_regSet != null && _regSet!.difficultyLevel != null) {
+      difficulty = child.regulator.getDifficulty(_regSet!.difficultyLevel!);
+    } else {
+      difficulty = child.regulator.getDifficulty(_cardHead!.difficulty);
+    }
+
+    List<String>? tagList;
+
+    if (tags) {
+      tagList = await child.dbSource.tabCardTag.getCardTags(jsonFileID: _cardHead!.jsonFileID, cardID: _cardHead!.cardID);
+      tagList.add('${DjfUpLink.cardTagPrefix}${_cardHead!.cardKey}');
+      if (_cardHead!.group.isNotEmpty){
+        tagList.add('${DjfUpLink.groupTagPrefix}${_cardHead!.group}');
+      }
+    }
+
+    final card = CardData(
+        head       : _cardHead!,
+        body       : _cardBody!,
+        style      : _cardStyle!,
+        stat       : cardStat,
+        pacInfo    : pacInfo,
+        difficulty : difficulty,
+        regSet     : _regSet,
+        tagList    : tagList,
+        onResult   : onResult,
+    );
+
+    return card;
+  }
+
+  static Future<void> _setBodyNum(int bodyNum) async {
+    final bodyData = await _child!.dbSource.tabCardBody.getRow(jsonFileID: _cardHead!.jsonFileID, cardID: _cardHead!.cardID, bodyNum: bodyNum);
+    _cardBody = CardBody.fromMap(bodyData!);
+
+    final Map<String, dynamic> styleMap = {};
+    for (var styleKey in _cardBody!.styleKeyList) {
+      final styleData = await _child!.dbSource.tabCardStyle.getRow(jsonFileID: _cardHead!.jsonFileID, cardStyleKey: styleKey );
+      styleMap.addEntries(styleData!.entries.where((element) => element.value != null));
+    }
+
+    styleMap.addEntries(_cardBody!.styleMap.entries.where((element) => element.value != null));
+
+    if (_regSet != null && _regSet!.style != null) {
+      styleMap.addEntries(_regSet!.style!.entries.where((element) => element.value != null));
+    }
+
+    _cardStyle = CardStyle.fromMap(styleMap);
+  }
+
+  static Future<void> _setRandomBodyNum() async {
+    int bodyNum = 0;
+    if (_cardHead!.bodyCount > 1) bodyNum = _random.nextInt(_cardHead!.bodyCount);
+
+    await _setBodyNum(bodyNum);
   }
 }
 
