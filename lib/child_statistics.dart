@@ -95,7 +95,7 @@ class _ChildStatisticsState extends State<ChildStatistics> {
  void _refreshChartList() {
     _chartList.clear();
     _chartList.addAll([
-      _randomBarChart(),
+//    _randomBarChart(),
       _chartCountCardByGroups(),
       _chartIncomingByGroups(),
       _chartOutgoingByGroups(),
@@ -155,8 +155,11 @@ class _ChildStatisticsState extends State<ChildStatistics> {
                 child: Text(chartTitle),
               )).toList();
             },
-            onSelected: (value){
 
+            onSelected: (chartTitle) async {
+              final chartKey = _chartTitleMap[chartTitle]!;
+              final chartContext = chartKey.currentContext!;
+              await Scrollable.ensureVisible(chartContext);
             },
           ),
 
@@ -204,41 +207,45 @@ class _ChildStatisticsState extends State<ChildStatistics> {
   }
 
   Widget _body() {
-    return ListView(
-      children: _chartList,
+    return SingleChildScrollView(
+      child: Column(children: _chartList),
     );
+
+    // return ListView(
+    //   children: _chartList,
+    // );
   }
 
-  Widget _randomBarChart() {
-    const title = 'randomBarChart';
-
-    final groupDataList = <GroupData>[];
-
-    final Map<int, RodData> rodDataMap = {
-      1 : RodData(Colors.green , 'green'),
-      2 : RodData(Colors.blue  , 'blue' ),
-    };
-
-    final Random random = Random();
-
-    for (var x = 0; x <= 11; x++) {
-      final Map<int, double> rodValueMap = {};
-
-      for (var rodIndex in rodDataMap.keys) {
-        rodValueMap[rodIndex] = random.nextInt(100).toDouble();
-      }
-
-      groupDataList.add(GroupData(
-        x            : x,
-        xTitle       : x.toString(),
-        rodValueMap  : rodValueMap,
-      ));
-    }
-
-    final chartData = MyBarChartData(rodDataMap, groupDataList, title);
-
-    return MyBarChart(chartData: chartData);
-  }
+  // Widget _randomBarChart() {
+  //   const title = 'randomBarChart';
+  //
+  //   final groupDataList = <GroupData>[];
+  //
+  //   final Map<int, RodData> rodDataMap = {
+  //     1 : RodData(Colors.green , 'green'),
+  //     2 : RodData(Colors.blue  , 'blue' ),
+  //   };
+  //
+  //   final Random random = Random();
+  //
+  //   for (var x = 0; x <= 11; x++) {
+  //     final Map<int, double> rodValueMap = {};
+  //
+  //     for (var rodIndex in rodDataMap.keys) {
+  //       rodValueMap[rodIndex] = random.nextInt(100).toDouble();
+  //     }
+  //
+  //     groupDataList.add(GroupData(
+  //       x            : x,
+  //       xTitle       : x.toString(),
+  //       rodValueMap  : rodValueMap,
+  //     ));
+  //   }
+  //
+  //   final chartData = MyBarChartData(rodDataMap, groupDataList, title);
+  //
+  //   return MyBarChart(chartData: chartData);
+  // }
 
   Widget _makeChart({
     required String chartTitle,

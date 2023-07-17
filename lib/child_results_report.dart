@@ -1,4 +1,3 @@
-import 'package:collection/collection.dart';
 import 'package:decard/app_state.dart';
 import 'package:decard/db.dart';
 import 'package:flutter/material.dart';
@@ -8,14 +7,20 @@ import 'card_view.dart';
 import 'child.dart';
 import 'common.dart';
 
+enum ChildResultsReportMode {
+  errors,
+  allResults,
+}
+
 class ChildResultsReport extends StatefulWidget {
-  static Future<Object?> navigatorPush(BuildContext context, Child child) async {
-    return Navigator.push(context, MaterialPageRoute( builder: (_) => ChildResultsReport(child: child)));
+  static Future<Object?> navigatorPush(BuildContext context, Child child, [ChildResultsReportMode reportMode = ChildResultsReportMode.errors] ) async {
+    return Navigator.push(context, MaterialPageRoute( builder: (_) => ChildResultsReport(child: child, reportMode: reportMode)));
   }
 
   final Child child;
+  final ChildResultsReportMode reportMode;
 
-  const ChildResultsReport({required this.child, Key? key}) : super(key: key);
+  const ChildResultsReport({required this.child, required this.reportMode, Key? key}) : super(key: key);
 
   @override
   State<ChildResultsReport> createState() => _ChildResultsReportState();
@@ -33,7 +38,9 @@ class _ChildResultsReportState extends State<ChildResultsReport> {
   final _displayResultList = <TestResult>[];
 
   final Map<String, int> _tagMap = {};
-  String _selTag = '';
+  String _selTag = TextConst.txtAll;
+
+  ChildResultsReportMode _reportMode = ChildResultsReportMode.errors;
 
   @override
   void initState() {
@@ -45,6 +52,8 @@ class _ChildResultsReportState extends State<ChildResultsReport> {
   }
 
   void _starting() async {
+    _reportMode = widget.reportMode;
+
     await widget.child.updateTestResultFromServer(appState.serverConnect);
     _childTestResults = await widget.child.testResults;
 
@@ -64,43 +73,48 @@ class _ChildResultsReportState extends State<ChildResultsReport> {
     final Map<String, int> tagMap = {};
 
     for (var testResult in _childTestResults.resultList) {
-      if (testResult.result) {
-        _resultList.add(testResult);
+      if (_reportMode == ChildResultsReportMode.errors && testResult.result) {
+        continue;
+      }
 
-        final jsonFileID = widget.child.dbSource.tabJsonFile.fileGuidToJsonFileId(testResult.fileGuid)!;
-        final cardID     = await widget.child.dbSource.tabCardHead.getCardIdFromKey(jsonFileID, testResult.cardID);
-        _resultCardIDMap[testResult] = cardID;
+      _resultList.add(testResult);
 
-        CardData? card;
-        card = _cardMap[cardID];
+      final jsonFileID = widget.child.dbSource.tabJsonFile.fileGuidToJsonFileId(testResult.fileGuid)!;
+      final cardID     = await widget.child.dbSource.tabCardHead.getCardIdFromKey(jsonFileID, testResult.cardID);
+      _resultCardIDMap[testResult] = cardID;
 
-        if (card == null) {
-          card = await CardData.create(widget.child, jsonFileID, cardID, tags: true);
-          _cardMap[cardID] = card;
-        }
+      CardData? card;
+      card = _cardMap[cardID];
 
-        for (var tag in card.tagList!) {
-          int? tagCount = tagMap[tag];
-          if (tagCount == null) {
-            tagMap[tag] = 1;
-          } else {
-            tagMap[tag] = tagCount + 1;
-          }
+      if (card == null) {
+        card = await CardData.create(widget.child, jsonFileID, cardID, bodyNum: testResult.bodyNum, tags: true);
+        _cardMap[cardID] = card;
+      }
+
+      for (var tag in card.tagList!) {
+        int? tagCount = tagMap[tag];
+        if (tagCount == null) {
+          tagMap[tag] = 1;
+        } else {
+          tagMap[tag] = tagCount + 1;
         }
       }
+
     }
+
+    _resultList.sort((a,b)=> a.dateTime.compareTo(b.dateTime));
 
     final entries = tagMap.entries.toList();
     entries.sort((b, a) => a.value.compareTo(b.value));
 
-    entries.insert(0, const MapEntry<String, int>('', 0));
+    entries.insert(0, MapEntry<String, int>(TextConst.txtAll, _resultList.length));
     _tagMap.addEntries(entries);
   }
 
   void _refreshDisplayData() {
     _displayResultList.clear();
 
-    if (_selTag.isEmpty) {
+    if (_selTag == TextConst.txtAll) {
       _displayResultList.addAll(_resultList);
       return;
     }
@@ -127,10 +141,46 @@ class _ChildResultsReportState extends State<ChildResultsReport> {
       );
     }
 
+    String title = '';
+    if (_reportMode == ChildResultsReportMode.errors)     title = TextConst.txtNegativeResultsReport;
+    if (_reportMode == ChildResultsReportMode.allResults) title = TextConst.txtAllTestResult;
+
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: Text(TextConst.txtNegativeResultsReport),
+        title: Text(title),
+        actions: [
+          PopupMenuButton<ChildResultsReportMode>(
+            icon: const Icon(Icons.menu),
+            itemBuilder: (context) {
+              return [
+
+                if (_reportMode != ChildResultsReportMode.errors) ...[
+                  PopupMenuItem<ChildResultsReportMode>(
+                    value: ChildResultsReportMode.errors,
+                    child: Text(TextConst.txtNegativeResultsReport),
+                  ),
+                ],
+
+                if (_reportMode != ChildResultsReportMode.allResults) ...[
+                  PopupMenuItem<ChildResultsReportMode>(
+                    value: ChildResultsReportMode.allResults,
+                    child: Text(TextConst.txtAllTestResult),
+                  ),
+                ],
+
+              ];
+            },
+
+            onSelected: (newReportMode) async {
+              _reportMode = newReportMode;
+              await _refreshData();
+              _refreshDisplayData();
+              setState(() { });
+            },
+          ),
+        ],
+
       ),
       body: Column(
         children: [

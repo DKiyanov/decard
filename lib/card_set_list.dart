@@ -245,6 +245,8 @@ class _CardSetListState extends State<CardSetList> {
 
   Future<void> _saveAndExit() async {
     if (_changed) {
+      _regulator.cardSetList.clear();
+      _regulator.cardSetList.addAll(_cardSetList);
       await _regulator.saveToFile(widget.child.regulatorPath);
     }
     if (!mounted) return;

@@ -31,26 +31,29 @@ class DeCardDemo extends StatefulWidget {
 class _DeCardDemoState extends State<DeCardDemo> {
   @override
   Widget build(BuildContext context) {
-    final card = widget.child.cardController.card;
 
     return Scaffold(
         appBar: AppBar(
           title: Text(TextConst.txtAppTitle),
           actions: [
-            if (card != null) ...[
-              IconButton(
-                  onPressed: (){
-                    CardSetList.navigatorPush(context, widget.child, fileGuid: card.pacInfo.guid, onlyThatFile: true, card: card);
-                  },
-                  icon: const Icon(Icons.tune)
-              ),
+            IconButton(
+                onPressed: (){
+                  final card = widget.child.cardController.card;
+                  if (card == null) return;
+                  CardSetList.navigatorPush(context, widget.child, fileGuid: card.pacInfo.guid, onlyThatFile: true, card: card);
+                },
+                icon: const Icon(Icons.tune)
+            ),
 
-              IconButton(
-                  onPressed: ()=>packInfoDisplay(context, card.pacInfo),
-                  icon: const Icon(Icons.info_outline)
-              ),
-            ]
-          ],
+            IconButton(
+              onPressed: (){
+                final card = widget.child.cardController.card;
+                if (card == null) return;
+                packInfoDisplay(context, card.pacInfo);
+              },
+              icon: const Icon(Icons.info_outline)
+            ),
+          ]
         ),
         body: _body()
     );

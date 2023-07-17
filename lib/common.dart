@@ -86,6 +86,7 @@ class TextConst{
   static String txtFile           = "Файл";
   static String txtStatistics = "Статистика";
   static String txtNegativeResultsReport = "Отчёт об ошибках";
+  static String txtAllTestResult = "Все результаты тестирования";
   static String txtChartCountCardByStudyGroups = "Кол-во карточек по группам изучености";
   static String txtChartIncomingCardByStudyGroups = "Новые карточки по группам";
   static String txtChartOutgoingCardByStudyGroups = "Покинули группу";
@@ -93,6 +94,7 @@ class TextConst{
   static String txtRodCardStudyGroupStudied = "Изученные";
   static String txtAutoTest = "Автоматическое тестирование";
   static String txtCardView = "Просмотр карточки";
+  static String txtAll = "Всё";
 
 
   static String djfFormatVersion = "Версия формата";

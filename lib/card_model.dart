@@ -9,17 +9,17 @@ import 'regulator.dart';
 typedef CardResultCallback = void Function(bool result, double earned);
 
 class CardData {
-  PacInfo   pacInfo;
-  CardHead  head;
-  CardBody  body;
-  CardStyle style;
-  CardStat  stat;
+  final PacInfo   pacInfo;
+  final CardHead  head;
+  final CardBody  body;
+  final CardStyle style;
+  final CardStat  stat;
 
-  RegDifficulty difficulty;
+  final RegDifficulty difficulty;
 
-  List<String>? tagList;
+  final List<String>? tagList;
 
-  CardResultCallback? onResult;
+  final CardResultCallback? onResult;
 
   late int cost;
   late int penalty;
@@ -27,7 +27,7 @@ class CardData {
   late int duration;
   late int lowCost;
 
-  RegCardSet?  regSet;
+  final RegCardSet?  regSet;
 
   bool?  _result;
   bool? get result => _result;
