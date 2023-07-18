@@ -87,11 +87,12 @@ class _ChildResultsReportState extends State<ChildResultsReport> {
       card = _cardMap[cardID];
 
       if (card == null) {
-        card = await CardData.create(widget.child, jsonFileID, cardID, bodyNum: testResult.bodyNum, tags: true);
+        card = await CardData.create(widget.child, jsonFileID, cardID, bodyNum: testResult.bodyNum);
+        await card.fillTags();
         _cardMap[cardID] = card;
       }
 
-      for (var tag in card.tagList!) {
+      for (var tag in card.tagList) {
         int? tagCount = tagMap[tag];
         if (tagCount == null) {
           tagMap[tag] = 1;
@@ -123,7 +124,7 @@ class _ChildResultsReportState extends State<ChildResultsReport> {
       final cardID = _resultCardIDMap[result]!;
       final card   = _cardMap[cardID]!;
 
-      if (card.tagList!.contains(_selTag)) {
+      if (card.tagList.contains(_selTag)) {
         _displayResultList.add(result);
       }
     }

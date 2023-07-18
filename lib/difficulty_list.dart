@@ -116,12 +116,24 @@ class _DifficultyListState extends State<DifficultyList> {
   }
 
   Widget _viewParam(String title, int valueMin, int valueMax) {
-    return Card(
-      child: Row( children: [
-        Expanded(flex: 2, child: Text(title)),
-        Expanded(child: Text(valueMin.toString(), textAlign: TextAlign.right)),
-        Expanded(child: Text(valueMax.toString(), textAlign: TextAlign.right)),
-      ]),
+    return Container(
+      decoration: const BoxDecoration(
+          border: Border(
+              bottom: BorderSide(
+                  color: Colors.grey,
+                  width: 1
+              )
+          )
+      ),
+
+      child: Padding(
+        padding: const EdgeInsets.only(left: 4, top: 6),
+        child: Row( crossAxisAlignment: CrossAxisAlignment.end, children: [
+          Expanded(flex: 2, child: Text(title, style: const TextStyle(fontSize: 13) )),
+          Expanded(child: Text(valueMin.toString(), textAlign: TextAlign.right , style: const TextStyle(fontSize: 13))),
+          Expanded(child: Text(valueMax.toString(), textAlign: TextAlign.right , style: const TextStyle(fontSize: 13))),
+        ]),
+      ),
     );
   }
 

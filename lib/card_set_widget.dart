@@ -2,6 +2,7 @@ import 'package:decard/regulator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 
+import 'card_model.dart';
 import 'common.dart';
 
 typedef NewCardSet = void Function(RegCardSet newObject);
@@ -16,6 +17,8 @@ class CardSetWidget extends StatefulWidget {
   final List<String> allTagList;
   final List<String> allDifficulties;
 
+  final List<String> selTagList;
+
   final NewCardSet   onChange;
   final VoidCallback onCancelEditing;
   final VoidCallback onDelete;
@@ -28,6 +31,7 @@ class CardSetWidget extends StatefulWidget {
     required this.allGroupList,
     required this.allTagList,
     required this.allDifficulties,
+    required this.selTagList,
     required this.onChange,
     required this.onCancelEditing,
     required this.onDelete,
@@ -114,11 +118,11 @@ class _CardSetWidgetState extends State<CardSetWidget> {
     ddDifficulties.insert(0, _nullDifficultyStr);
 
     return Column(children: [
-      _tagList(TextConst.drfCardSetCards  , _cards       , widget.allCardList),
-      _tagList(TextConst.drfCardSetGroups , _groups      , widget.allGroupList),
+      _tagList(TextConst.drfCardSetCards  , _cards       , widget.allCardList  , TagPrefix.cardKey),
+      _tagList(TextConst.drfCardSetGroups , _groups      , widget.allGroupList , TagPrefix.group),
       _tagList(TextConst.drfCardSetTags   , _tags        , widget.allTagList),
       _tagList(TextConst.drfCardSetAndTags, _andTags     , widget.allTagList),
-      _tagList(TextConst.drfDifficulties  , _difficulties, widget.allDifficulties),
+      _tagList(TextConst.drfDifficulties  , _difficulties, widget.allDifficulties, TagPrefix.difficulty),
 
       Card(
         child: Column(
@@ -214,7 +218,7 @@ class _CardSetWidgetState extends State<CardSetWidget> {
     ]);
   }
 
-  Widget _tagList(String title, List<String> tags, List<String> allTags) {
+  Widget _tagList(String title, List<String> tags, List<String> allTags, [String prefix = '']) {
     if (allTags.isEmpty) return Container();
     if (!_editing && tags.isEmpty) return Container();
 
@@ -222,6 +226,7 @@ class _CardSetWidgetState extends State<CardSetWidget> {
       padding: const EdgeInsets.only(left: 2, right: 2),
       child: Chip(
         label: Text(tag),
+        backgroundColor: widget.selTagList.contains('$prefix$tag')? Colors.yellow : null,
         onDeleted: !_editing? null : () {
           setState(() {
             tags.remove(tag);
@@ -259,7 +264,7 @@ class _CardSetWidgetState extends State<CardSetWidget> {
               itemBuilder: (context) {
                 return allTags.where((tag) => !tags.contains(tag)).map<PopupMenuItem<String>>((menuTag) => PopupMenuItem<String>(
                   value: menuTag,
-                  child: Text(menuTag),
+                  child: Container(color: widget.selTagList.contains('$prefix$menuTag')? Colors.yellow : null, child: Text(menuTag)),
                 )).toList();
               },
               onSelected: (value){

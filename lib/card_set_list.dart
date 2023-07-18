@@ -38,6 +38,8 @@ class _CardSetListState extends State<CardSetList> {
 
   bool _changed = false;
 
+  RegCardSet? _selCardSet;
+
   @override
   void initState() {
     super.initState();
@@ -53,6 +55,16 @@ class _CardSetListState extends State<CardSetList> {
     }
 
     _regulator = await Regulator.fromFile( widget.child.regulatorPath );
+
+    if (widget.card != null) {
+      await widget.card!.fillTags();
+
+      if (widget.card!.head.regulatorSetIndex != null) {
+        _selCardSet = _regulator.cardSetList[widget.card!.head.regulatorSetIndex!];
+      }
+    }
+
+
     await _getChildFileList();
 
     if (widget.fileGuid.isNotEmpty) {
@@ -192,9 +204,10 @@ class _CardSetListState extends State<CardSetList> {
 
     for (int index = 0; index < _cardSetList.length; index += 1) {
       final item = _cardSetList[index];
+
       result.add(Card(
         key: ValueKey(item), // for ordering and CardSetWidget
-        color: Colors.grey,
+        color: item != _selCardSet? Colors.grey : Colors.green,
         child: CardSetWidget(
           cardSet         : item,
           editing         : _newCardSetList.contains(item),
@@ -203,6 +216,7 @@ class _CardSetListState extends State<CardSetList> {
           allGroupList    : _selFileGroupList,
           allTagList      : _selFileTagList,
           allDifficulties : _selDifficultyList,
+          selTagList      : widget.card?.tagList??[],
           onChange        : (newCardSet) {
             setState(() {
               _changed = true;

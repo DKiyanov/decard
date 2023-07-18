@@ -8,7 +8,14 @@ import 'regulator.dart';
 
 typedef CardResultCallback = void Function(bool result, double earned);
 
+class TagPrefix {
+  static String cardKey    = 'id@';
+  static String group      = 'grp@';
+  static String difficulty = 'dfy@';
+}
+
 class CardData {
+  final Child     child;
   final PacInfo   pacInfo;
   final CardHead  head;
   final CardBody  body;
@@ -17,7 +24,8 @@ class CardData {
 
   final RegDifficulty difficulty;
 
-  final List<String>? tagList;
+  List<String>? _tagList;
+  List<String> get tagList => _tagList??[];
 
   final CardResultCallback? onResult;
 
@@ -38,6 +46,7 @@ class CardData {
   bool get exclude => regSet != null && regSet!.exclude;
 
   CardData({
+    required this.child,
     required this.head,
     required this.style,
     required this.body,
@@ -45,7 +54,6 @@ class CardData {
     required this.pacInfo,
     required this.difficulty,
     this.regSet,
-    this.tagList,
     this.onResult
   }) {
     cost     = _getValueForQuality(difficulty.maxCost,     difficulty.minCost,     stat.quality);
@@ -74,12 +82,22 @@ class CardData {
       {
         int? bodyNum,
         CardSetBody setBody = CardSetBody.random,
-        bool tags = false,
         CardResultCallback? onResult
       }) async {
 
-    final card = await _CardGenerator.createCard(child, jsonFileID, cardID, bodyNum: bodyNum, setBody: setBody, tags: tags, onResult: onResult);
+    final card = await _CardGenerator.createCard(child, jsonFileID, cardID, bodyNum: bodyNum, setBody: setBody, onResult: onResult);
     return card;
+  }
+
+  Future<void> fillTags() async {
+    if (_tagList != null) return;
+
+    _tagList = await child.dbSource.tabCardTag.getCardTags(jsonFileID: head.jsonFileID, cardID: head.cardID);
+    _tagList!.add('${TagPrefix.cardKey}${head.cardKey}');
+    if (head.group.isNotEmpty){
+      _tagList!.add('${TagPrefix.group}${head.group}');
+    }
+    _tagList!.add('${TagPrefix.difficulty}${head.difficulty}');
   }
 
 }
@@ -109,7 +127,6 @@ class _CardGenerator {
       {
         int? bodyNum,
         CardSetBody setBody = CardSetBody.random,
-        bool tags = false,
         CardResultCallback? onResult
       }) async {
 
@@ -157,17 +174,8 @@ class _CardGenerator {
       difficulty = child.regulator.getDifficulty(_cardHead!.difficulty);
     }
 
-    List<String>? tagList;
-
-    if (tags) {
-      tagList = await child.dbSource.tabCardTag.getCardTags(jsonFileID: _cardHead!.jsonFileID, cardID: _cardHead!.cardID);
-      tagList.add('${DjfUpLink.cardTagPrefix}${_cardHead!.cardKey}');
-      if (_cardHead!.group.isNotEmpty){
-        tagList.add('${DjfUpLink.groupTagPrefix}${_cardHead!.group}');
-      }
-    }
-
     final card = CardData(
+        child      : child,
         head       : _cardHead!,
         body       : _cardBody!,
         style      : _cardStyle!,
@@ -175,7 +183,6 @@ class _CardGenerator {
         pacInfo    : pacInfo,
         difficulty : difficulty,
         regSet     : _regSet,
-        tagList    : tagList,
         onResult   : onResult,
     );
 

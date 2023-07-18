@@ -21,12 +21,21 @@ class PackInfoWidget extends StatelessWidget {
   }
 
   Widget row(String title, String value) {
-    return Card(
+    return Container(
+      decoration: const BoxDecoration(
+          border: Border(
+              bottom: BorderSide(
+                  color: Colors.grey,
+                  width: 1
+              )
+          )
+      ),
+
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 4),
+        padding: const EdgeInsets.only(bottom: 4, top: 4),
         child: Row(children: [
-          Expanded(child: Text(title)),
-          Expanded(child: Text(value)),
+          Expanded(child: Text(title, style: const TextStyle(fontSize: 13) )),
+          Expanded(child: Text(value, style: const TextStyle(fontSize: 13) )),
         ]),
       ),
     );
