@@ -95,6 +95,11 @@ class TextConst{
   static String txtAutoTest = "Автоматическое тестирование";
   static String txtCardView = "Просмотр карточки";
   static String txtAll = "Всё";
+  static String txtQuality = "Качество:";
+  static String txtWas = "было";
+  static String txtBecame = "стало";
+  static String txtStartDate = "Дата начала";
+  static String txtTestCount = "Кол-во тестирований";
 
 
   static String djfFormatVersion = "Версия формата";
@@ -153,6 +158,15 @@ class TextConst{
 
 int dateToInt(DateTime date){
   return date.year * 10000 + date.month * 100 + date.day;
+}
+
+DateTime intDateToDateTime(int intDate) {
+  final year    = intDate     ~/ 10000;
+  final rest    = intDate      % 10000;
+  final month   = rest        ~/ 100;
+  final day     = rest         % 100;
+
+  return DateTime(year, month, day);
 }
 
 int dateTimeToInt(DateTime date){

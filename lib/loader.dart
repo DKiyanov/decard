@@ -31,6 +31,10 @@ class DataLoader {
   DbSource? _dbSource;
   DbSource get dbSource => _dbSource!;
 
+  Map<String, dynamic>? _templateSourceRow;
+  int _templateSourceRowIndex = 0;
+  String? _jsonPath;
+
   DataLoader();
   
 
@@ -136,7 +140,8 @@ class DataLoader {
       await _clearJsonFileID(dbSource.tabJsonFile.jsonFileID);
     }
 
-    dbSource.tabJsonFile.setRow(_lastSourceFileID, path_util.dirname(jsonFile.path), path_util.basename(jsonFile.path), json);
+    _jsonPath = path_util.dirname(jsonFile.path);
+    dbSource.tabJsonFile.setRow(_lastSourceFileID, _jsonPath!, path_util.basename(jsonFile.path), json);
     await dbSource.tabJsonFile.save();
 
     final int jsonFileID = dbSource.tabJsonFile.jsonFileID;
@@ -182,10 +187,11 @@ class DataLoader {
 
   Future<void> _processTemplateList({required int jsonFileID, required List templateList, required List sourceList, required List<String> cardKeyList}) async {
     for (var template in templateList) {
-      final templateName = template[DjfCardTemplate.templateName] as String;
-      final cardTemplateList = template[DjfCardTemplate.cardTemplateList];
+      final templateName          = template[DjfCardTemplate.templateName] as String;
+      final cardTemplateList      = template[DjfCardTemplate.cardTemplateList];
       final cardsTemplatesJsonStr = jsonEncode(cardTemplateList);
 
+      _templateSourceRowIndex = 0;
 
       for (Map<String, dynamic> sourceRow in sourceList) {
         if (sourceRow[DjfTemplateSource.templateName] == templateName) {
@@ -196,13 +202,42 @@ class DataLoader {
             curTemplate =  curTemplate.replaceAll('${DjfTemplateSource.paramBegin}$key${DjfTemplateSource.paramEnd}', value);
           });
 
+          _templateSourceRow = sourceRow;
+          _templateSourceRowIndex ++;
+
           final cardList = jsonDecode(curTemplate) as List;
           await _processCardList(jsonFileID: jsonFileID, cardList : cardList, cardKeyList : cardKeyList);
 
         }
       }
-
     }
+
+    _templateSourceRow = null;
+    _templateSourceRowIndex = 0;
+  }
+
+  Future<void> _prepareTemplateFile(String paramName, Map<String, dynamic> questionData) async {
+    final fileName = (questionData[paramName]??'') as String;
+    if (fileName.isEmpty) return;
+
+    final filePath = path_util.normalize( path_util.join(_jsonPath!, fileName) );
+    final file = File(filePath);
+    String fileData = await file.readAsString();
+
+    _templateSourceRow!.forEach((key, value) {
+      fileData =  fileData.replaceAll('${DjfTemplateSource.paramBegin}$key${DjfTemplateSource.paramEnd}', value);
+    });
+
+    final path = path_util.dirname(filePath);
+    final newFileName = 'tg$_templateSourceRowIndex-$fileName';
+    final newFilePath = path_util.join(path, newFileName);
+    final newFile = File(newFilePath);
+
+    if (newFile.existsSync()) return;
+
+    newFile.writeAsString(fileData);
+
+    questionData[paramName] = newFileName;
   }
 
   Future<void> _processCardList({required int jsonFileID, required List cardList, required List<String> cardKeyList}) async {
@@ -283,6 +318,8 @@ class DataLoader {
   Future<void> _processCardBodyList({ required int jsonFileID, required int cardID, required List bodyList }) async {
     int bodyNum = 0;
     for (var body in bodyList) {
+      await _prepareBodyQuestionData(body);
+
       dbSource.tabCardBody.insertRow(
         jsonFileID : jsonFileID,
         cardID     : cardID,
@@ -291,6 +328,13 @@ class DataLoader {
       );
       bodyNum++;
     }
+  }
+
+  Future<void> _prepareBodyQuestionData( Map<String, dynamic> cardBody) async {
+    final questionData =  cardBody[DjfCardBody.questionData] as Map<String, dynamic>;
+
+    await _prepareTemplateFile(DjfQuestionData.markdown, questionData);
+    await _prepareTemplateFile(DjfQuestionData.html, questionData);
   }
 
   Future<void> _processCardTagList({ required int jsonFileID, required int cardID, required String cardKey, required String groupKey, required List? tagList }) async {

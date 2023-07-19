@@ -2,6 +2,7 @@ import 'package:decard/card_set_list.dart';
 import 'package:flutter/material.dart';
 import 'package:simple_events/simple_events.dart';
 
+import 'card_model.dart';
 import 'card_navigator.dart';
 import 'card_widget.dart';
 import 'child.dart';
@@ -29,6 +30,9 @@ class DeCardDemo extends StatefulWidget {
 }
 
 class _DeCardDemoState extends State<DeCardDemo> {
+
+  CardData? get _card => widget.child.cardController.card;
+
   @override
   Widget build(BuildContext context) {
 
@@ -38,11 +42,16 @@ class _DeCardDemoState extends State<DeCardDemo> {
           actions: [
             IconButton(
                 onPressed: (){
-                  final card = widget.child.cardController.card;
-                  if (card == null) return;
-                  CardSetList.navigatorPush(context, widget.child, fileGuid: card.pacInfo.guid, onlyThatFile: true, card: card);
+                  if (_card == null) return;
+                  CardSetList.navigatorPush(context, widget.child, fileGuid: _card!.pacInfo.guid, onlyThatFile: true, card: _card);
                 },
-                icon: const Icon(Icons.tune)
+
+                icon: EventReceiverWidget(
+                  builder: (BuildContext context) {
+                     return Icon(Icons.tune, color: _card?.head.regulatorSetIndex != null ? Colors.red : null);
+                  },
+                  events: [widget.child.cardController.onChange]
+                ),
             ),
 
             IconButton(

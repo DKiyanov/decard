@@ -252,13 +252,26 @@ class _ChildResultsReportState extends State<ChildResultsReport> {
     final cardID = _resultCardIDMap[result]!;
     final card   = _cardMap[cardID]!;
 
-    return ListTile(
-      title: Text(card.body.questionData.text??card.head.title),
-      subtitle: Text('${card.head.difficulty}'),
-      onTap: (){
-        CardView.navigatorPush(context, card);
-      },
+    return ExpansionTile(
+      title: GestureDetector(
+        child: Text(card.body.questionData.text??card.head.title),
+        onTap: (){
+          CardView.navigatorPush(context, card);
+        },
+      ),
+      children: [
+        paramRow(TextConst.txtQuality,    '${TextConst.txtWas} ${result.qualityBefore}; ${TextConst.txtBecame} ${result.qualityAfter}'),
+        paramRow(TextConst.txtEarned,     result.earned.toString()),
+        paramRow(TextConst.txtStartDate,  dateToStr(intDateToDateTime(card.stat.startDate)) ),
+        paramRow(TextConst.txtTestCount,  card.stat.testsCount.toString() ),
+      ],
     );
   }
 
+  Widget paramRow(String title, String value) {
+    return Row(children: [
+      Text(title),
+      Text(value),
+    ]);
+  }
 }
