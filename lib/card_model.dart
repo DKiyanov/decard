@@ -1,12 +1,12 @@
 import 'dart:math';
 import 'dart:ui';
 
+import 'package:simple_events/simple_events.dart';
+
 import 'child.dart';
 import 'db.dart';
 import 'decardj.dart';
 import 'regulator.dart';
-
-typedef CardResultCallback = void Function(bool result, double earned);
 
 class TagPrefix {
   static String cardKey    = 'id@';
@@ -27,8 +27,6 @@ class CardData {
   List<String>? _tagList;
   List<String> get tagList => _tagList??[];
 
-  final CardResultCallback? onResult;
-
   late int cost;
   late int penalty;
   late int tryCount;
@@ -37,11 +35,19 @@ class CardData {
 
   final RegCardSet?  regSet;
 
+  final onResult = SimpleEvent<CardData>();
+
   bool?  _result;
   bool? get result => _result;
 
   double _earned = 0;
   double get earned => _earned;
+
+  int _resultTryCount = 0;
+  int get resultTryCount => _resultTryCount;
+
+  int _solveTime = 0;
+  int get solveTime => _solveTime;
 
   bool get exclude => regSet != null && regSet!.exclude;
 
@@ -54,7 +60,6 @@ class CardData {
     required this.pacInfo,
     required this.difficulty,
     this.regSet,
-    this.onResult
   }) {
     cost     = _getValueForQuality(difficulty.maxCost,     difficulty.minCost,     stat.quality);
     penalty  = _getValueForQuality(difficulty.minPenalty,  difficulty.maxPenalty,  stat.quality); // penalty moves in the opposite direction to all others
@@ -69,10 +74,13 @@ class CardData {
     return result;
   }
 
-  void setResult(bool result, double earned){
-    _result = result;
-    _earned = earned;
-    if (onResult != null) onResult!.call(result, earned);
+  void setResult(bool result, double earned, int tryCount, int solveTime){
+    _result         = result;
+    _earned         = earned;
+    _resultTryCount = tryCount;
+    _solveTime      = solveTime;
+
+    onResult.send(this);
   }
 
   static Future<CardData> create(
@@ -82,10 +90,9 @@ class CardData {
       {
         int? bodyNum,
         CardSetBody setBody = CardSetBody.random,
-        CardResultCallback? onResult
       }) async {
 
-    final card = await _CardGenerator.createCard(child, jsonFileID, cardID, bodyNum: bodyNum, setBody: setBody, onResult: onResult);
+    final card = await _CardGenerator.createCard(child, jsonFileID, cardID, bodyNum: bodyNum, setBody: setBody);
     return card;
   }
 
@@ -127,7 +134,6 @@ class _CardGenerator {
       {
         int? bodyNum,
         CardSetBody setBody = CardSetBody.random,
-        CardResultCallback? onResult
       }) async {
 
     _child     = child;
@@ -183,7 +189,6 @@ class _CardGenerator {
         pacInfo    : pacInfo,
         difficulty : difficulty,
         regSet     : _regSet,
-        onResult   : onResult,
     );
 
     return card;

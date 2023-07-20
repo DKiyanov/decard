@@ -135,8 +135,10 @@ class _CardWidgetState extends State<CardWidget> {
 
     if (widget.demoMode) return;
 
+    final solveTime = DateTime.now().difference(_startTime!).inMilliseconds;
+
     if (tryResult) {
-      widget.card.setResult(true, _costValue);
+      widget.card.setResult(true, _costValue, _tryCount, solveTime);
 
       setState(() {
         _result = true;
@@ -151,7 +153,7 @@ class _CardWidgetState extends State<CardWidget> {
       return;
     }
 
-    widget.card.setResult(false, -widget.card.penalty.toDouble());
+    widget.card.setResult(false, -widget.card.penalty.toDouble(), _tryCount, solveTime);
 
     setState(() {
       _result = false;

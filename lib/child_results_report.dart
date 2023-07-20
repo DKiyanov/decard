@@ -254,7 +254,17 @@ class _ChildResultsReportState extends State<ChildResultsReport> {
 
     return ExpansionTile(
       title: GestureDetector(
-        child: Text(card.body.questionData.text??card.head.title),
+        child: Row( mainAxisSize: MainAxisSize.min,
+          children: [
+            if (result.result) ...[
+              const Icon(Icons.check, color: Colors.green),
+            ],
+            if (!result.result) ...[
+              const Icon(Icons.cancel_outlined, color: Colors.red),
+            ],
+            Text(card.body.questionData.text??card.head.title),
+          ],
+        ),
         onTap: (){
           CardView.navigatorPush(context, card);
         },
@@ -262,6 +272,8 @@ class _ChildResultsReportState extends State<ChildResultsReport> {
       children: [
         paramRow(TextConst.txtQuality,    '${TextConst.txtWas} ${result.qualityBefore}; ${TextConst.txtBecame} ${result.qualityAfter}'),
         paramRow(TextConst.txtEarned,     result.earned.toString()),
+        paramRow(TextConst.txtTryCount,   result.tryCount.toString()),
+        paramRow(TextConst.txtSolveTime,  result.solveTime.toString()),
         paramRow(TextConst.txtStartDate,  dateToStr(intDateToDateTime(card.stat.startDate)) ),
         paramRow(TextConst.txtTestCount,  card.stat.testsCount.toString() ),
       ],
@@ -269,9 +281,23 @@ class _ChildResultsReportState extends State<ChildResultsReport> {
   }
 
   Widget paramRow(String title, String value) {
-    return Row(children: [
-      Text(title),
-      Text(value),
-    ]);
+    return Padding(
+      padding: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
+      child: Container(
+        decoration: const BoxDecoration(
+            border: Border(
+                bottom: BorderSide(
+                    color: Colors.grey,
+                    width: 1,
+                )
+            )
+        ),
+
+        child: Row(children: [
+          Expanded(child: Text(title)),
+          Expanded(child: Text(value)),
+        ]),
+      ),
+    );
   }
 }

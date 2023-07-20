@@ -265,12 +265,7 @@ class AppState {
           result = rnd <= 98;
         }
 
-        await testCardController.setCardResult(result: result);
-
-        final statData = await child.dbSource.tabCardStat.getRow(testCardController.card!.head.cardID);
-        final cardStat = CardStat.fromMap(statData!);
-
-        print('tstres; date ; ${dateToInt(curDate)}; cardKey ; ${testCardController.card!.head.cardKey}; result ; $result; testsCount ; ${cardStat.testsCount}; quality ; ${cardStat.quality}');
+        testCardController.card!.setResult(result, 0, 1, 0);
       }
 
       serverConnect.saveTestsResults(child);

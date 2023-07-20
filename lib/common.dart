@@ -100,6 +100,8 @@ class TextConst{
   static String txtBecame = "стало";
   static String txtStartDate = "Дата начала";
   static String txtTestCount = "Кол-во тестирований";
+  static String txtTryCount = "Кол-во попыток";
+  static String txtSolveTime = "Длтельность решения";
 
 
   static String djfFormatVersion = "Версия формата";

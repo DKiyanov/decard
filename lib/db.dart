@@ -762,6 +762,8 @@ class TestResult {
   final int    bodyNum;
   final bool   result;
   final double earned;
+  final int    tryCount;
+  final int    solveTime;
   final int    dateTime;
   final int    qualityBefore;
   final int    qualityAfter;
@@ -774,6 +776,8 @@ class TestResult {
     required this.bodyNum,
     required this.result,
     required this.earned,
+    required this.tryCount,
+    required this.solveTime,
     required this.dateTime,
     required this.qualityBefore,
     required this.qualityAfter,
@@ -797,6 +801,8 @@ class TestResult {
       bodyNum       : json[TabTestResult.kBodyNum      ],
       result        : result,
       earned        : json[TabTestResult.kEarned       ],
+      tryCount      : json[TabTestResult.kTryCount     ]??1,
+      solveTime     : json[TabTestResult.kSolveTime    ]??0,
       dateTime      : json[TabTestResult.kDateTime     ],
       qualityBefore : json[TabTestResult.kQualityBefore],
       qualityAfter  : json[TabTestResult.kQualityAfter ],
@@ -811,6 +817,8 @@ class TestResult {
     TabTestResult.kBodyNum       : bodyNum,
     TabTestResult.kResult        : result,
     TabTestResult.kEarned        : earned,
+    TabTestResult.kTryCount      : tryCount,
+    TabTestResult.kSolveTime     : solveTime,
     TabTestResult.kDateTime      : dateTime,
     TabTestResult.kQualityBefore : qualityBefore,
     TabTestResult.kQualityAfter  : qualityAfter,
@@ -828,6 +836,8 @@ class TabTestResult {
   static const String kBodyNum       = "bodyNum";
   static const String kResult        = "result";
   static const String kEarned        = "earned";
+  static const String kTryCount      = "tryCount";
+  static const String kSolveTime     = "solveTime";
   static const String kDateTime      = "dateTime";
   static const String kQualityBefore = "qualityBefore";
   static const String kQualityAfter  = "qualityAfter";
@@ -842,6 +852,8 @@ class TabTestResult {
       "$kBodyNum       INTEGER,"
       "$kResult        INTEGER,"
       "$kEarned        INTEGER,"
+      "$kTryCount      INTEGER,"
+      "$kSolveTime     INTEGER,"
       "$kDateTime      INTEGER,"
       "$kQualityBefore INTEGER,"
       "$kQualityAfter  INTEGER,"
@@ -860,6 +872,8 @@ class TabTestResult {
       kBodyNum       : testResult.bodyNum,
       kResult        : testResult.result,
       kEarned        : testResult.earned,
+      kTryCount      : testResult.tryCount,
+      kSolveTime     : testResult.solveTime,
       kDateTime      : testResult.dateTime,
       kQualityBefore : testResult.qualityBefore,
       kQualityAfter  : testResult.qualityAfter,

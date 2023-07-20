@@ -31,9 +31,20 @@ class CardController {
 
   final cardResultList = <TestResult>[];
 
+  Listener<CardData>? _cardListener;
+
   /// Sets the current card data
   Future<void> setCard(int jsonFileID, int cardID, {int? bodyNum, CardSetBody setBody = CardSetBody.random}) async {
-    _card = await CardData.create(child, jsonFileID, cardID, bodyNum: bodyNum, setBody: setBody, onResult: _onCardResult);
+    if (_cardListener != null) {
+      _cardListener!.dispose();
+      _cardListener = null;
+    }
+
+    _card = await CardData.create(child, jsonFileID, cardID, bodyNum: bodyNum, setBody: setBody);
+    _cardListener = _card!.onResult.subscribe((listener, card) {
+      _onCardResult(card!);
+    });
+
     await processCardController.setCard(cardID);
     onChange.send();
   }
@@ -56,34 +67,29 @@ class CardController {
     return true;
   }
 
-  Future<void> _onCardResult(bool result, double earn) async {
+  Future<void> _onCardResult(CardData card) async {
     if (appState.appMode == AppMode.demo) return;
 
-    await setCardResult(
-      result: result,
-      earn: earn,
-    );
-  }
-
-  Future<void> setCardResult({required bool result, double earn = 0.0}) async {
-    final newStat = await processCardController.registerResult(_card!.head.jsonFileID, _card!.head.cardID, result);
+    final newStat = await processCardController.registerResult(card.head.jsonFileID, card.head.cardID, card.result!);
 
     final testResult = TestResult(
-        fileGuid      : _card!.pacInfo.guid,
-        fileVersion   : _card!.pacInfo.version,
-        cardID        : _card!.head.cardKey,
-        bodyNum       : _card!.body.bodyNum,
-        result        : result,
-        earned        : earn,
+        fileGuid      : card.pacInfo.guid,
+        fileVersion   : card.pacInfo.version,
+        cardID        : card.head.cardKey,
+        bodyNum       : card.body.bodyNum,
+        result        : card.result!,
+        earned        : card.earned,
+        tryCount      : card.resultTryCount,
+        solveTime     : card.solveTime,
         dateTime      : dateTimeToInt(DateTime.now()),
-        qualityBefore : _card!.stat.quality,
+        qualityBefore : card.stat.quality,
         qualityAfter  : newStat.quality,
-        difficulty    : _card!.head.difficulty
+        difficulty    : card.head.difficulty
     );
 
     cardResultList.add(testResult);
 
-    onAddEarn.send(earn);
+    onAddEarn.send(card.earned);
 
     child.dbSource.tabTestResult.insertRow(testResult);
   }
