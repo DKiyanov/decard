@@ -20,10 +20,9 @@ class ChildAndDeviceNames {
 }
 
 class Child {
-  static String regulatorFileName = 'regulator.json';
-  static String namesSeparator = '@';
-
-  static String _kLastStatDate = 'lastStatDate';
+  static const String regulatorFileName = 'regulator.json';
+  static const String namesSeparator = '@';
+  static const String _kLastStatDate = 'lastStatDate';
 
   final String appDir;
   final String name;

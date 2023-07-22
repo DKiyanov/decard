@@ -15,6 +15,7 @@ class ServerConnect {
   static const String _statDirName    = "stat";
   static const String _statFilePrefix = "stat-";
   static const String _statFileName   = "stat.json";
+  static const String _commonFolderName = "common_folder";
 
   final SharedPreferences prefs;
 
@@ -109,6 +110,10 @@ class ServerConnect {
 
     final fileList = await client.readDir('');
 
+    if (!fileList.any((webFile) => webFile.name! == _commonFolderName)) {
+      await client.mkdir(_commonFolderName);
+    }
+
     final webFile = fileList.firstWhereOrNull((webFile) => webFile.name!.toLowerCase() == childName.toLowerCase());
     if (webFile != null) {
       final subFileList = await client.readDir(webFile.path!);
@@ -127,17 +132,20 @@ class ServerConnect {
   /// Synchronizes the contents of the child's directories on the server and on the device
   /// Server -> Child
   /// missing directories, on server or device - NOT created
-  Future<List<String>> synchronizeChild(Child child) async {
+  Future<List<String>> synchronizeChild(Child child, {bool fromCommonFolder = false}) async {
     final client = getClient();
 
-    final fileList = await client.readDir(path_util.join(child.name, child.deviceName));
+    var netPath = path_util.join(child.name, child.deviceName);
+    if (fromCommonFolder) netPath = _commonFolderName;
+
+    final fileList = await client.readDir(netPath);
     final newFileList = <String>[];
 
     for (var file in fileList) {
       if (file.isDir!) continue;
 
       final fileName = path_util.basename(file.path!);
-      final netFilePath = path_util.join(serverURL, child.name, child.deviceName, fileName);
+      final netFilePath = path_util.join(serverURL, netPath, fileName);
 
       if (!await child.dbSource.tabSourceFile.checkFileRegisteredEx(netFilePath, file.mTime!, file.size!)) {
         final filePath = path_util.join(child.downloadDir, fileName);
@@ -205,14 +213,6 @@ class ServerConnect {
     return fileDate;
   }
 
-
-  /// sends regulator data to the server
-  /// manager -> server
-  Future<void> putRegulatorToServer(Child child) async {
-    final filePath = path_util.join(child.name, child.deviceName, Child.regulatorFileName);
-    await _saveJson(child.regulator, filePath);
-  }
-
   /// sends file to the server
   /// manager -> server
   Future<void> putFileToServer(Child child, String path) async {
@@ -224,7 +224,7 @@ class ServerConnect {
   /// Returns test results for a period
   /// server -> manager
   Future<List<TestResult>> getTestsResultsFromServer(Child child, int from, int to) async {
-	final result = <TestResult>[];
+	  final result = <TestResult>[];
 	
     final client = getClient();
 
@@ -256,5 +256,4 @@ class ServerConnect {
 
 	  return result;
   }
-
 }

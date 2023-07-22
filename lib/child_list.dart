@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'card_set_list.dart';
 import 'card_demo.dart';
+import 'child.dart';
 import 'child_statistics.dart';
 import 'common.dart';
 import 'difficulty_list.dart';
@@ -59,7 +60,7 @@ class _ChildListState extends State<ChildList> {
                     value: () async {
                       final result = await OptionsEditor.navigatorPush(context, child);
                       if (result != null && result) {
-                        child.refreshRegulator();
+                        refreshChildRegulator(child);
                       }
                     },
                     child: Text(TextConst.txtRegOptions),
@@ -69,7 +70,7 @@ class _ChildListState extends State<ChildList> {
                     value: () async {
                       final result = await CardSetList.navigatorPush(context, child);
                       if (result != null && result) {
-                        child.refreshRegulator();
+                        refreshChildRegulator(child);
                       }
                     },
                     child: Text(TextConst.txtRegCardSet),
@@ -79,7 +80,7 @@ class _ChildListState extends State<ChildList> {
                     value: () async {
                       final result = await DifficultyList.navigatorPush(context, child);
                       if (result != null && result) {
-                        child.refreshRegulator();
+                        refreshChildRegulator(child);
                       }
                     },
                     child: Text(TextConst.txtRegDifficultyLevelsTuning),
@@ -102,5 +103,10 @@ class _ChildListState extends State<ChildList> {
         )).toList(),
       )),
     );
+  }
+
+  Future<void> refreshChildRegulator(Child child) async {
+    await child.refreshRegulator();
+    await appState.serverConnect.putFileToServer(child, child.regulatorPath);
   }
 }

@@ -166,6 +166,11 @@ class _FileListState extends State<FileList> {
         await appState.viewFileChild.refreshCardsDB(appState.fileSources.items);
       }
     }
+
+    final fileList = await appState.serverConnect.synchronizeChild(appState.viewFileChild, fromCommonFolder : true);
+    if (fileList.isNotEmpty) {
+      appState.viewFileChild.refreshCardsDB([appState.viewFileChild.downloadDir]);
+    }
   }
 
   Future<void> setFileToChild(Child child, PacInfo file) async {
