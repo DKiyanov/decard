@@ -4,6 +4,7 @@ import 'package:decard/regulator.dart';
 import 'package:decard/server_connect.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart' as path_util;
 
@@ -21,6 +22,8 @@ class ChildAndDeviceNames {
 class Child {
   static String regulatorFileName = 'regulator.json';
   static String namesSeparator = '@';
+
+  static String _kLastStatDate = 'lastStatDate';
 
   final String appDir;
   final String name;
@@ -50,9 +53,12 @@ class Child {
     return _testResults!;
   }
 
-  DataLoader cardFileLoader;
+  final DataLoader cardFileLoader;
+  final SharedPreferences prefs;
 
-  Child(this.name, this.deviceName, this.appDir, this.cardFileLoader);
+  int _lastStatDate = 0;
+
+  Child(this.name, this.deviceName, this.appDir, this.cardFileLoader, this.prefs);
 
   Future<void> init() async {
     rootDir = join(appDir, '$name$namesSeparator$deviceName');
@@ -80,6 +86,7 @@ class Child {
       processCardController: processCardController,
     );
 
+    _lastStatDate = prefs.getInt(_kLastStatDate)??0;
   }
 
   Future<void> refreshRegulator() async {
@@ -110,6 +117,18 @@ class Child {
     }
   }
 
+  /// saves tests results to server
+  Future<void> saveTestsResultsToServer(ServerConnect serverConnect) async {
+    serverConnect.saveTestsResults(this);
+
+    final curDate = dateToInt(DateTime.now());
+    if (_lastStatDate >= curDate) return;
+
+    await serverConnect.saveStatistics(this);
+    _lastStatDate = curDate;
+    await prefs.setInt(_kLastStatDate, _lastStatDate);
+  }
+
   /// load last test results from server
   Future<void> updateTestResultFromServer(ServerConnect serverConnect) async {
     final from = await dbSource.tabTestResult.getLastTime();
@@ -120,6 +139,22 @@ class Child {
     for (var testResult in testResultList) {
       dbSource.tabTestResult.insertRow(testResult);
     }
+
+    await updateStatFromServer(serverConnect);
+  }
+
+  /// load stat data from server
+  /// to download statistics to the parent device
+  /// to download statistics to the child's device when installing the application
+  Future<void> updateStatFromServer(ServerConnect serverConnect) async {
+    final curDate = dateToInt(DateTime.now());
+    if (_lastStatDate >= curDate) return;
+
+    final newLastDate = await serverConnect.updateStatFromServer(this, _lastStatDate);
+    if (newLastDate == 0) return;
+
+    _lastStatDate = newLastDate;
+    await prefs.setInt(_kLastStatDate, _lastStatDate);
   }
 
   static ChildAndDeviceNames getNamesFromDir(String dirName){

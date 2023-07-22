@@ -12,8 +12,9 @@ import 'child.dart';
 import 'db.dart';
 
 class ServerConnect {
-  static const String _statDirName = "stat";
+  static const String _statDirName    = "stat";
   static const String _statFilePrefix = "stat-";
+  static const String _statFileName   = "stat.json";
 
   final SharedPreferences prefs;
 
@@ -152,6 +153,14 @@ class ServerConnect {
     return newFileList;
   }
 
+  Future<void> _saveJson(Object object, String filePath) async {
+    final jsonStr = jsonEncode(object);
+    final fileData = Uint8List.fromList(jsonStr.codeUnits);
+
+    final client = getClient();
+    await client.write(filePath, fileData);
+  }
+
   /// saves tests results
   /// child -> server
   Future<void> saveTestsResults(Child child) async {
@@ -159,24 +168,49 @@ class ServerConnect {
     if (resultList.isEmpty) return;
 
     final fileName = '$_statFilePrefix${resultList.first.dateTime}-${resultList.last.dateTime.toString().substring(8)}.json';
+    final filePath = path_util.join(child.name, child.deviceName, _statDirName, fileName);
 
-    final jsonStr = jsonEncode(resultList);
-    final fileData = Uint8List.fromList(jsonStr.codeUnits);
-
-    final client = getClient();
-    await client.write(path_util.join(child.name, child.deviceName, _statDirName, fileName), fileData);
+    await _saveJson(resultList, filePath);
 
     resultList.clear();
   }
 
+  /// saves statistics
+  /// data from table stat
+  /// child -> server
+  Future<void> saveStatistics(Child child) async {
+    final rows = await child.dbSource.tabCardStat.getAllRows();
+    final filePath = path_util.join(child.name, child.deviceName, _statFileName);
+
+    await _saveJson(rows, filePath);
+  }
+
+  /// load statistics
+  /// update data in table stat
+  /// server -> child
+  Future<int> updateStatFromServer(Child child, int lastStatDate) async {
+    final filePath = path_util.join(child.name, child.deviceName, _statFileName);
+    final client = getClient();
+    final webFile = await client.readProps(filePath);
+    final fileDate = dateToInt(webFile.cTime!);
+
+    if (lastStatDate >= fileDate) return 0;
+
+    final fileData = await client.read(filePath);
+    final jsonStr = utf8.decode(fileData);
+    final rows = jsonDecode(jsonStr) as List<Map<String, Object?>>;
+
+    await child.dbSource.tabCardStat.setRows(rows);
+
+    return fileDate;
+  }
+
+
   /// sends regulator data to the server
   /// manager -> server
   Future<void> putRegulatorToServer(Child child) async {
-    final jsonStr = jsonEncode(child.regulator);
-    final fileData = Uint8List.fromList(jsonStr.codeUnits);
-
-    final client = getClient();
-    await client.write(path_util.join(child.name, child.deviceName, Child.regulatorFileName), fileData);
+    final filePath = path_util.join(child.name, child.deviceName, Child.regulatorFileName);
+    await _saveJson(child.regulator, filePath);
   }
 
   /// sends file to the server
@@ -222,4 +256,5 @@ class ServerConnect {
 
 	  return result;
   }
+
 }

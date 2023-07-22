@@ -745,12 +745,23 @@ class TabCardStat {
 
   /// Deletes all records in the table, needed for test purposes
   Future<void> clear() async {
-    db.delete(tabName);
+    await db.delete(tabName);
   }
 
   Future<List<Map<String, Object?>>> getAllRows() async {
-    final rows = await db.query(tabName);
+    final rows = await db.query(tabName,
+      where: '$kQuality > ?',
+      whereArgs: [0],
+    );
     return rows;
+  }
+
+  Future<void> setRows(List<Map<String, Object?>> rows) async {
+    await db.delete(tabName);
+
+    for (var row in rows) {
+      await db.insert(tabName, row);
+    }
   }
 }
 

@@ -12,10 +12,8 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:flutter_broadcasts/flutter_broadcasts.dart';
 import 'package:simple_events/simple_events.dart';
 
-import 'card_model.dart';
 import 'child.dart';
 import 'card_controller.dart';
-import 'common.dart';
 import 'file_sources.dart';
 import 'loader.dart';
 import 'package:path/path.dart' as path_util;
@@ -95,7 +93,7 @@ class AppState {
       earnController = EarnController(prefs, packageInfo);
 
       earnController.onSendEarn.subscribe((listener, data) {
-        serverConnect.saveTestsResults(childList.first);
+        childList.first.saveTestsResultsToServer(serverConnect);
       });
 
       childList.first.cardController.onAddEarn.subscribe((listener, earn){
@@ -115,13 +113,17 @@ class AppState {
     synchronize();
   }
 
-  Future<void> addChild(String childName, String deviceName) async {
-    if (childList.any((child) => child.name == childName && child.deviceName == deviceName )) return;
+  /// add new child if it not exists
+  /// return new or exists child
+  Future<Child> addChild(String childName, String deviceName) async {
+    final child = childList.firstWhereOrNull((child) => child.name == childName && child.deviceName == deviceName);
+    if (child != null) return child;
 
-    final child = Child(childName, deviceName, _appDir, _dataLoader);
-    await child.init();
+    final newChild = Child(childName, deviceName, _appDir, _dataLoader, prefs);
+    await newChild.init();
 
-    childList.add(child);
+    childList.add(newChild);
+    return newChild;
   }
 
   /// Initializes children whose directories are on the device
@@ -142,7 +144,7 @@ class AppState {
       childList.remove(specChild);
       viewFileChild = specChild;
     } else {
-      viewFileChild = Child(_kViewFileChildName, _kViewFileChildDeviceName, _appDir, _dataLoader);
+      viewFileChild = Child(_kViewFileChildName, _kViewFileChildDeviceName, _appDir, _dataLoader, prefs);
       await viewFileChild.init();
     }
 
@@ -164,7 +166,8 @@ class AppState {
   Future<void> setUsingMode(UsingMode newUsingMode, String childName, String deviceName) async {
     if (newUsingMode == UsingMode.testing) {
       final names = await serverConnect.addChildDevice(childName, deviceName);
-      await addChild(names.childName, names.deviceName);
+      final child = await addChild(names.childName, names.deviceName);
+      child.updateStatFromServer(serverConnect);
     }
 
     prefs.setString(_kUsingMode, newUsingMode.name);
