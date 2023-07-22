@@ -184,7 +184,12 @@ class _CardWidgetState extends State<CardWidget> {
   }
 
   void _startDisplayCard() {
-    _startTime = DateTime.now();
+    if (widget.card.startTime == 0) {
+      _startTime = DateTime.now();
+    } else {
+      _startTime = DateTime.fromMillisecondsSinceEpoch(widget.card.startTime);
+    }
+
     _costValue = widget.card.cost.toDouble();
     _costDuration = widget.card.duration * 1000;
     _prepareAnswerVariantList();

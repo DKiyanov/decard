@@ -21,9 +21,10 @@ class DeCard extends StatefulWidget {
 }
 
 class _DeCardState extends State<DeCard> {
-  static const keyCardFileID  = 'CardFileID';
-  static const keyCardID      = 'CardID';
-  static const keyCardBodyNum = 'CardBodyNum';
+  static const keyCardFileID    = 'CardFileID';
+  static const keyCardID        = 'CardID';
+  static const keyCardBodyNum   = 'CardBodyNum';
+  static const keyCardStartTime = 'CardStartTime';
 
   @override
   Widget build(BuildContext context) {
@@ -37,25 +38,29 @@ class _DeCardState extends State<DeCard> {
             ],
           ),
           actions: [
-            PopupMenuButton<String>(
+            PopupMenuButton<VoidCallback>(
               icon: const Icon(Icons.menu),
               itemBuilder: (context) {
                 return [
-                  PopupMenuItem<String>(
-                    child: Text(TextConst.txtDemo),
-                    onTap: () {
-                      DeCardDemo.navigatorPush(context, widget.child).then((value) => _startFirstTest());
+                  PopupMenuItem<VoidCallback>(
+                    value: () async {
+                      await DeCardDemo.navigatorPush(context, widget.child);
+                      _startFirstTest();
                     },
+                    child: Text(TextConst.txtDemo),
                   ),
 
-                  PopupMenuItem<String>(
-                    child: Text(TextConst.txtAutoTest),
-                    onTap: () {
+                  PopupMenuItem<VoidCallback>(
+                    value: () {
                       appState.selfTest(appState.childList.first);
                     },
+                    child: Text(TextConst.txtAutoTest),
                   )
 
                 ];
+              },
+              onSelected: (value){
+                value.call();
               },
             ),
           ],
@@ -63,27 +68,6 @@ class _DeCardState extends State<DeCard> {
 
         body: _body( )
     );
-  }
-
-  Future<void> _selectNextCard() async {
-    final ok = await widget.child.cardController.selectNextCard();
-    if (!ok) {
-      Fluttertoast.showToast(msg: TextConst.txtNoCards);
-    } else {
-      appState.prefs.setInt(keyCardFileID , widget.child.cardController.card!.head.jsonFileID);
-      appState.prefs.setInt(keyCardID     , widget.child.cardController.card!.head.cardID);
-      appState.prefs.setInt(keyCardBodyNum, widget.child.cardController.card!.body.bodyNum);
-    }
-  }
-
-  Future<void> _setTestCard(int jsonFileID, int cardID, int bodyNum) async {
-    try {
-      await widget.child.cardController.setCard(jsonFileID, cardID, bodyNum: bodyNum);
-      setState(() {});
-    } catch (e) {
-      _selectNextCard();
-    }
-
   }
 
   Widget _earnedBoxWidget() {
@@ -156,16 +140,52 @@ class _DeCardState extends State<DeCard> {
     );
   }
 
+  Future<void> _saveSelCard() async {
+    final card = widget.child.cardController.card!;
+    await appState.prefs.setInt(keyCardFileID   , card.head.jsonFileID);
+    await appState.prefs.setInt(keyCardID       , card.head.cardID);
+    await appState.prefs.setInt(keyCardBodyNum  , card.body.bodyNum);
+    await appState.prefs.setInt(keyCardStartTime, DateTime.now().millisecondsSinceEpoch);
+  }
+
+  Future<void> _selectNextCard() async {
+    final ok = await widget.child.cardController.selectNextCard();
+    if (ok) {
+      await _saveSelCard();
+      setState(() {});
+    } else {
+      Fluttertoast.showToast(msg: TextConst.txtNoCards);
+    }
+  }
+
+  Future<void> _setTestCard(int jsonFileID, int cardID, int bodyNum, int startTime) async {
+    try {
+      await widget.child.cardController.setCard(jsonFileID, cardID, bodyNum: bodyNum, startTime : startTime);
+      setState(() {});
+    } catch (e) {
+      await _selectNextCard();
+    }
+  }
+
   void _startFirstTest() {
-    final cardFileID  = appState.prefs.getInt(keyCardFileID)??-1;
-    final cardID      = appState.prefs.getInt(keyCardID)??-1;
-    final cardBodyNum = appState.prefs.getInt(keyCardBodyNum)??0;
+    final cardFileID    = appState.prefs.getInt(keyCardFileID)??-1;
+    final cardID        = appState.prefs.getInt(keyCardID)??-1;
+    final cardBodyNum   = appState.prefs.getInt(keyCardBodyNum)??0;
+    var cardStartTime   = appState.prefs.getInt(keyCardStartTime)??0;
+
+    if (cardStartTime > 0) {
+      final dateTime = DateTime.fromMillisecondsSinceEpoch(cardStartTime);
+      final now = DateTime.now();
+      if (now.difference(dateTime).inMinutes >= 90) {
+        cardStartTime = 0;
+      }
+    }
 
     if (cardFileID >= 0 && cardID >= 0) {
-      _setTestCard(cardFileID, cardID, cardBodyNum);
+      _setTestCard(cardFileID, cardID, cardBodyNum, cardStartTime);
       return;
     }
 
-    _selectNextCard().then((value) => setState(() {}));
+    _selectNextCard();
   }
 }

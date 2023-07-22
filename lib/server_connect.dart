@@ -96,6 +96,7 @@ class ServerConnect {
 
     for (var webFile in fileList) {
       if (webFile.isDir!) {
+        if (webFile.name! == _commonFolderName) continue;
         final subFileList = await client.readDir(webFile.path!);
         final deviceDirList = subFileList.where((webSubFile) => webSubFile.isDir!).map((webSubFile) => webSubFile.name!).toList();
         result[webFile.name!] = deviceDirList;

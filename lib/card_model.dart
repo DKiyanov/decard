@@ -33,6 +33,8 @@ class CardData {
   late int duration;
   late int lowCost;
 
+  int startTime = 0;
+
   final RegCardSet?  regSet;
 
   final onResult = SimpleEvent<CardData>();
