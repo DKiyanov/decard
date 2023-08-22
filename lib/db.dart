@@ -78,6 +78,12 @@ class TabSourceFile {
   }
 }
 
+class FileKey {
+  final String guid;
+  final int version;
+  FileKey(this.guid, this.version);
+}
+
 /// Loaded json files
 class TabJsonFile {
   static const String tabName       = 'JsonFile';
@@ -125,25 +131,26 @@ class TabJsonFile {
   String? get email        => _row[kEmail        ] as String?;
   String? get license      => _row[kLicense      ] as String?;
 
-  final Map<int, String> _jsonFileIdToGuidMap = {};
+  final Map<int, FileKey> _jsonFileIdToGuidMap = {};
 
-  String jsonFileIdToFileGuid(int jsonFileId) => _jsonFileIdToGuidMap[jsonFileId]!;
+  FileKey jsonFileIdToFileKey(int jsonFileId) => _jsonFileIdToGuidMap[jsonFileId]!;
 
   int? fileGuidToJsonFileId(String guid) {
     for (var element in _jsonFileIdToGuidMap.entries) {
-      if (element.value == guid) return element.key;
+      if (element.value.guid == guid) return element.key;
     }
 
     return null;
   }
 
   Future<void> init() async {
-    final rows = await db.query(tabName, columns: [kJsonFileID, kGuid]);
+    final rows = await db.query(tabName, columns: [kJsonFileID, kGuid, kVersion]);
 
     for (var row in rows) {
       final jsonFileID = row[kJsonFileID] as int;
       final fileGuid   = row[kGuid] as String;
-      _jsonFileIdToGuidMap[jsonFileID] = fileGuid;
+      final version    = row[kVersion] as int;
+      _jsonFileIdToGuidMap[jsonFileID] = FileKey(fileGuid, version);
     }
   }
 
@@ -641,6 +648,95 @@ class DayResult {
   };
 }
 
+class CardStatExchange {
+  static const String kFileGuid      = "fileGuid";
+  static const String kFileVersion   = "fileVersion";
+  static const String kCardID        = "cardID";
+
+  static DbSource? dbSource; // for time fromMap / toJson
+
+  final int    jsonFileID;
+  final String cardKey;
+  final int    quality;           // studying quality, 100 - card is completely studied; 0 - minimum studying quality
+  final int    qualityFromDate;   // the first date taken into account when calculating quality
+  final int    startDate;         // date of studying beginning
+  final int    lastTestDate;      // date of last test
+  final int    testsCount;        // number of tests
+
+  CardStatExchange({
+    required this.jsonFileID,
+    required this.cardKey,
+    required this.quality,
+    required this.qualityFromDate,
+    required this.startDate,
+    required this.lastTestDate,
+    required this.testsCount,
+  });
+
+  factory CardStatExchange.fromDbMap(Map<String, dynamic> json){
+    return CardStatExchange(
+      jsonFileID        : json[TabCardStat.kJsonFileID],
+      cardKey           : json[TabCardStat.kCardKey],
+      quality           : json[TabCardStat.kQuality],
+      qualityFromDate   : json[TabCardStat.kQualityFromDate],
+      startDate         : json[TabCardStat.kStartDate],
+      lastTestDate      : json[TabCardStat.kLastTestDate]??0,
+      testsCount        : json[TabCardStat.kTestsCount],
+    );
+  }
+
+  Future<Map<String, dynamic>> toDbMap() async {
+    final cardID = await dbSource!.tabCardHead.getCardIdFromKey(jsonFileID, cardKey);
+    final row = (await dbSource!.tabCardHead.getRow(cardID))!;
+    final String groupKey = row[TabCardHead.kGroup]??'';
+
+    Map<String, dynamic> map = {
+      TabCardStat.kJsonFileID      : jsonFileID,
+      TabCardStat.kCardID          : cardID,
+      TabCardStat.kCardKey         : cardKey,
+      TabCardStat.kCardGroupKey    : groupKey,
+      TabCardStat.kQuality         : quality,
+      TabCardStat.kQualityFromDate : qualityFromDate,
+      TabCardStat.kStartDate       : startDate,
+      TabCardStat.kLastTestDate    : lastTestDate,
+      TabCardStat.kTestsCount      : testsCount,
+    };
+
+    return map;
+  }
+
+  factory CardStatExchange.fromJson(Map<String, dynamic> json){
+    final jsonFileID = dbSource!.tabJsonFile.fileGuidToJsonFileId(json[kFileGuid])!;
+
+    return CardStatExchange(
+      jsonFileID        : jsonFileID,
+      cardKey           : json[kCardID],
+      quality           : json[TabCardStat.kQuality],
+      qualityFromDate   : json[TabCardStat.kQualityFromDate],
+      startDate         : json[TabCardStat.kStartDate],
+      lastTestDate      : json[TabCardStat.kLastTestDate]??0,
+      testsCount        : json[TabCardStat.kTestsCount],
+    );
+  }
+
+  Map<String, dynamic> toJson(){
+    final fileKey = dbSource!.tabJsonFile.jsonFileIdToFileKey(jsonFileID);
+
+    Map<String, dynamic> map = {
+      kFileGuid                    : fileKey.guid,
+      kFileVersion                 : fileKey.version,
+      kCardID                      : cardKey,
+      TabCardStat.kQuality         : quality,
+      TabCardStat.kQualityFromDate : qualityFromDate,
+      TabCardStat.kStartDate       : startDate,
+      TabCardStat.kLastTestDate    : lastTestDate,
+      TabCardStat.kTestsCount      : testsCount,
+    };
+
+    return map;
+  }
+}
+
 class TabCardStat {
   static const String tabName          = 'CardStat';
 
@@ -756,12 +852,11 @@ class TabCardStat {
     return rows;
   }
 
-  Future<void> setRows(List<Map<String, Object?>> rows) async {
-    await db.delete(tabName);
-
-    for (var row in rows) {
-      await db.insert(tabName, row);
-    }
+  Future<void> updateRow(int jsonFileID, int cardID, Map<String, Object?> map) async {
+    await db.update(tabName, map,
+      where: '$kJsonFileID = ? AND $kCardID = ?',
+      whereArgs: [jsonFileID, cardID]
+    );
   }
 }
 
@@ -811,7 +906,7 @@ class TestResult {
       cardID        : json[TabTestResult.kCardID       ],
       bodyNum       : json[TabTestResult.kBodyNum      ],
       result        : result,
-      earned        : json[TabTestResult.kEarned       ],
+      earned        : _isDouble(json[TabTestResult.kEarned]),
       tryCount      : json[TabTestResult.kTryCount     ]??1,
       solveTime     : json[TabTestResult.kSolveTime    ]??0,
       dateTime      : json[TabTestResult.kDateTime     ],
@@ -819,6 +914,13 @@ class TestResult {
       qualityAfter  : json[TabTestResult.kQualityAfter ],
       difficulty    : json[TabTestResult.kDifficulty   ],
     );
+  }
+
+  static double _isDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    return 0.0;
   }
 
   Map<String, dynamic> toJson() => {

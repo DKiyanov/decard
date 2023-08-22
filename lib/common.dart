@@ -102,6 +102,7 @@ class TextConst{
   static String txtTestCount = "Кол-во тестирований";
   static String txtTryCount = "Кол-во попыток";
   static String txtSolveTime = "Длтельность решения";
+  static String txtDialogInputText = "Введите текст";
 
 
   static String djfFormatVersion = "Версия формата";

@@ -108,6 +108,7 @@ class DjfQuestionData { // structure of DjfCardBody.questionData
 	static const String text     = "text";     // optional, string, question text
 	static const String html     = "html";     // TODO optional, link to html file, file can be a template
 	static const String markdown = "markdown"; // TODO optional, link to markdown file, file can be a template
+	static const String textConstructor = "textConstructor"; // TODO optional, link to text constructor json file, file can be a template
 	static const String audio    = "audio";    // optional, link to audio resource
 	static const String video    = "video";    // TODO optional, link to video resource
 	static const String image    = "image";    // optional, link to image

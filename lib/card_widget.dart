@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:decard/text_constructor/text_constructor.dart';
+import 'package:decard/text_constructor/word_panel_model.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:path/path.dart' as path_util;
@@ -112,20 +115,27 @@ class _CardWidgetState extends State<CardWidget> {
     _onAnswer(true);
   }
 
-  void _onSelectAnswer(String answerValue) {
+  void _onSelectAnswer(String answerValue,[List<String>? answerList]) {
     _selValues.clear();
     _selValues.add(answerValue);
 
-    List<String> answerList;
+    bool tryResult = false;
 
     if (widget.card.style.answerCaseSensitive) {
-      answerList = widget.card.body.answerList;
+      tryResult = widget.card.body.answerList.any((str) => str == answerValue);
     } else {
-      answerList = widget.card.body.answerList.map((str) => str.toLowerCase()).toList();
       answerValue = answerValue.toLowerCase();
+      tryResult = widget.card.body.answerList.any((str) => str.toLowerCase() == answerValue);
     }
 
-    final tryResult = answerList.contains(answerValue);
+    if (!tryResult && answerList != null) {
+      if (widget.card.style.answerCaseSensitive) {
+        tryResult = answerList.any((str) => str == answerValue);
+      } else {
+        answerValue = answerValue.toLowerCase();
+        tryResult = answerList.any((str) => str.toLowerCase() == answerValue);
+      }
+    }
 
     _onAnswer(tryResult);
   }
@@ -400,6 +410,24 @@ class _CardWidgetState extends State<CardWidget> {
           style: const TextStyle(fontSize: 30),
           textAlign: TextAlign.center,
         ),
+      );
+    }
+
+    if (widget.card.body.questionData.html != null) {
+      widgetList.add(
+        htmlViewer(widget.card.body.questionData.html!),
+      );
+    }
+
+    if (widget.card.body.questionData.markdown != null) {
+      widgetList.add(
+        markdownViewer(widget.card.body.questionData.markdown!)
+      );
+    }
+
+    if (widget.card.body.questionData.textConstructor != null) {
+      widgetList.add(
+        textConstructor(widget.card.body.questionData.textConstructor!)
       );
     }
 
@@ -831,6 +859,19 @@ class _CardWidgetState extends State<CardWidget> {
         ),
       ],
     );
+  }
+
+  Widget htmlViewer(String html) {
+    return Container(); // TODO add html viewer
+  }
+
+  Widget markdownViewer(String markdown) {
+    return Container(); // TODO add markdown viewer
+  }
+
+  Widget textConstructor(String jsonStr) {
+    final textConstructor = TextConstructorData.fromMap(jsonDecode(jsonStr));
+    return TextConstructorWidget(textConstructor : textConstructor, onRegisterAnswer: _onSelectAnswer);
   }
 }
 

@@ -32,7 +32,6 @@ class DataLoader {
   DbSource get dbSource => _dbSource!;
 
   Map<String, dynamic>? _templateSourceRow;
-  int _templateSourceRowIndex = 0;
   String? _jsonPath;
 
   DataLoader();
@@ -191,8 +190,6 @@ class DataLoader {
       final cardTemplateList      = template[DjfCardTemplate.cardTemplateList];
       final cardsTemplatesJsonStr = jsonEncode(cardTemplateList);
 
-      _templateSourceRowIndex = 0;
-
       for (Map<String, dynamic> sourceRow in sourceList) {
         if (sourceRow[DjfTemplateSource.templateName] == templateName) {
 
@@ -203,7 +200,6 @@ class DataLoader {
           });
 
           _templateSourceRow = sourceRow;
-          _templateSourceRowIndex ++;
 
           final cardList = jsonDecode(curTemplate) as List;
           await _processCardList(jsonFileID: jsonFileID, cardList : cardList, cardKeyList : cardKeyList);
@@ -213,31 +209,28 @@ class DataLoader {
     }
 
     _templateSourceRow = null;
-    _templateSourceRowIndex = 0;
   }
 
-  Future<void> _prepareTemplateFile(String paramName, Map<String, dynamic> questionData) async {
+  Future<void> _prepareQuestionFile(String paramName, Map<String, dynamic> questionData) async {
     final fileName = (questionData[paramName]??'') as String;
     if (fileName.isEmpty) return;
 
     final filePath = path_util.normalize( path_util.join(_jsonPath!, fileName) );
     final file = File(filePath);
-    String fileData = await file.readAsString();
 
-    _templateSourceRow!.forEach((key, value) {
-      fileData =  fileData.replaceAll('${DjfTemplateSource.paramBegin}$key${DjfTemplateSource.paramEnd}', value);
-    });
+    String? fileData;
 
-    final path = path_util.dirname(filePath);
-    final newFileName = 'tg$_templateSourceRowIndex-$fileName';
-    final newFilePath = path_util.join(path, newFileName);
-    final newFile = File(newFilePath);
+    if (await file.exists()) {
+      fileData = await file.readAsString();
 
-    if (newFile.existsSync()) return;
+      if (_templateSourceRow != null) {
+        _templateSourceRow!.forEach((key, value) {
+          fileData =  fileData!.replaceAll('${DjfTemplateSource.paramBegin}$key${DjfTemplateSource.paramEnd}', value);
+        });
+      }
+    }
 
-    newFile.writeAsString(fileData);
-
-    questionData[paramName] = newFileName;
+    questionData[paramName] = fileData;
   }
 
   Future<void> _processCardList({required int jsonFileID, required List cardList, required List<String> cardKeyList}) async {
@@ -333,8 +326,9 @@ class DataLoader {
   Future<void> _prepareBodyQuestionData( Map<String, dynamic> cardBody) async {
     final questionData =  cardBody[DjfCardBody.questionData] as Map<String, dynamic>;
 
-    await _prepareTemplateFile(DjfQuestionData.markdown, questionData);
-    await _prepareTemplateFile(DjfQuestionData.html, questionData);
+    await _prepareQuestionFile(DjfQuestionData.markdown, questionData);
+    await _prepareQuestionFile(DjfQuestionData.html, questionData);
+    await _prepareQuestionFile(DjfQuestionData.textConstructor, questionData);
   }
 
   Future<void> _processCardTagList({ required int jsonFileID, required int cardID, required String cardKey, required String groupKey, required List? tagList }) async {

@@ -123,7 +123,7 @@ class Child {
     final curDate = dateToInt(DateTime.now());
     if (_lastStatDate >= curDate) return;
 
-    await serverConnect.saveStatistics(this);
+    await serverConnect.saveStatToServer(this);
     _lastStatDate = curDate;
     await prefs.setInt(_kLastStatDate, _lastStatDate);
   }

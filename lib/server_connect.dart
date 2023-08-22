@@ -187,11 +187,18 @@ class ServerConnect {
   /// saves statistics
   /// data from table stat
   /// child -> server
-  Future<void> saveStatistics(Child child) async {
+  Future<void> saveStatToServer(Child child) async {
     final rows = await child.dbSource.tabCardStat.getAllRows();
+
+    final statList = <CardStatExchange>[];
+    CardStatExchange.dbSource = child.dbSource;
+    for (var row in rows) {
+      statList.add(CardStatExchange.fromDbMap(row));
+    }
+
     final filePath = path_util.join(child.name, child.deviceName, _statFileName);
 
-    await _saveJson(rows, filePath);
+    await _saveJson(statList, filePath);
   }
 
   /// load statistics
@@ -201,15 +208,17 @@ class ServerConnect {
     final filePath = path_util.join(child.name, child.deviceName, _statFileName);
     final client = getClient();
     final webFile = await client.readProps(filePath);
-    final fileDate = dateToInt(webFile.cTime!);
+    final fileDate = dateToInt(webFile.mTime!);
 
     if (lastStatDate >= fileDate) return 0;
 
-    final fileData = await client.read(filePath);
-    final jsonStr = utf8.decode(fileData);
-    final rows = jsonDecode(jsonStr) as List<Map<String, Object?>>;
+    //final fileData = await client.read(filePath);
+    //final jsonStr = utf8.decode(fileData);
+    //final rows = jsonDecode(jsonStr) as List;
 
-    await child.dbSource.tabCardStat.setRows(rows);
+    // for (var row in rows) {
+    //   await child.dbSource.tabCardStat.setRows(rows);
+    // }
 
     return fileDate;
   }

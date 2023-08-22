@@ -340,14 +340,16 @@ class QuestionData {
     this.text,
     this.html,
     this.markdown,
+    this.textConstructor,
     this.audio,
     this.video,
     this.image,
   });
 
   final String? text;     // String question text
-  final String? html;     // link to html source
-  final String? markdown; // link to markdown source
+  final String? html;     // html source
+  final String? markdown; // markdown source
+  final String? textConstructor; // textConstructor source
   final String? audio;    // link to audio source
   final String? video;    // link to video source
   final String? image;    // link to image source
@@ -356,6 +358,7 @@ class QuestionData {
     text     : json[DjfQuestionData.text],
     html     : json[DjfQuestionData.html],
     markdown : json[DjfQuestionData.markdown],
+    textConstructor : json[DjfQuestionData.textConstructor],
     audio    : json[DjfQuestionData.audio],
     video    : json[DjfQuestionData.video],
     image    : json[DjfQuestionData.image],
