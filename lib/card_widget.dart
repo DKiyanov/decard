@@ -6,6 +6,8 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:decard/text_constructor/text_constructor.dart';
 import 'package:decard/text_constructor/word_panel_model.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:path/path.dart' as path_util;
 
@@ -862,11 +864,17 @@ class _CardWidgetState extends State<CardWidget> {
   }
 
   Widget htmlViewer(String html) {
-    return Container(); // TODO add html viewer
+    return InAppWebView(
+      initialData: InAppWebViewInitialData( data: html ),
+    );
+
+    //return Container(); // TODO add html viewer
   }
 
   Widget markdownViewer(String markdown) {
-    return Container(); // TODO add markdown viewer
+    return Markdown(data: markdown);
+
+    // return Container(); // TODO add markdown viewer
   }
 
   Widget textConstructor(String jsonStr) {

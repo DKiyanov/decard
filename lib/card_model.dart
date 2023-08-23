@@ -395,7 +395,7 @@ class CardBody {
       questionData      : QuestionData.fromMap(json[ DjfCardBody.questionData]),
       styleKeyList      : json[ DjfCardBody.styleIdList] != null ? List<String>.from(json[ DjfCardBody.styleIdList].map((x) => x)) : [],
       styleMap          : json[ DjfCardBody.style]??{},
-      answerList        : List<String>.from(json[ DjfCardBody.answerList].map((x) => x)),
+      answerList        : json[ DjfCardBody.answerList] != null ? List<String>.from(json[ DjfCardBody.answerList].map((x) => x)) : [],
     );
   }
 }
