@@ -152,6 +152,10 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
       panelHeight = viewportConstraints.maxHeight - _basementMinHeight;
     }
 
+    if (panelHeight < _panelController.wordBoxHeight) {
+      panelHeight = _panelController.wordBoxHeight;
+    }
+
     return Column(
       children: [
 

@@ -6,7 +6,6 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:decard/text_constructor/text_constructor.dart';
 import 'package:decard/text_constructor/word_panel_model.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:path/path.dart' as path_util;
@@ -15,6 +14,7 @@ import 'audio_widget.dart';
 import 'card_model.dart';
 import 'common.dart';
 import 'decardj.dart';
+import 'html_widget.dart';
 
 final _random = Random();
 
@@ -864,22 +864,22 @@ class _CardWidgetState extends State<CardWidget> {
   }
 
   Widget htmlViewer(String html) {
-    return InAppWebView(
-      initialData: InAppWebViewInitialData( data: html ),
-    );
-
-    //return Container(); // TODO add html viewer
+    return HtmlViewWidget(html: html);
   }
 
   Widget markdownViewer(String markdown) {
-    return Markdown(data: markdown);
-
-    // return Container(); // TODO add markdown viewer
+    return MarkdownBody(data: markdown);
   }
 
   Widget textConstructor(String jsonStr) {
     final textConstructor = TextConstructorData.fromMap(jsonDecode(jsonStr));
-    return TextConstructorWidget(textConstructor : textConstructor, onRegisterAnswer: _onSelectAnswer);
+    return SizedBox(
+      height: 200,
+        child: TextConstructorWidget(
+            textConstructor : textConstructor,
+            onRegisterAnswer: _onSelectAnswer
+        )
+    );
   }
 }
 
