@@ -864,21 +864,41 @@ class _CardWidgetState extends State<CardWidget> {
   }
 
   Widget htmlViewer(String html) {
-    return HtmlViewWidget(html: html);
+    final regexp = RegExp(r'<img[^>]*src="([^"]+)"[^>]*>', caseSensitive: false, multiLine: true);
+
+    html = html.replaceAllMapped(regexp, (match) {
+      final matchStr = match[0]!;
+      final fileName = match[1];
+      if (fileName == null) return matchStr;
+
+      final str = matchStr.replaceFirst('src="$fileName', 'src="${path_util.join(widget.card.pacInfo.path, fileName)}');
+      return str;
+    });
+
+    return HtmlViewWidget(html: html, filesDir: widget.card.pacInfo.path);
   }
 
   Widget markdownViewer(String markdown) {
+    final regexp = RegExp(r'!\[.*\]\((.*?)\s*(".*")?\s*\)', caseSensitive: false, multiLine: true);
+
+    markdown = markdown.replaceAllMapped(regexp, (match) {
+      final matchStr = match[0]!;
+      final fileName = match[1];
+      if (fileName == null) return matchStr;
+
+      final str = matchStr.replaceFirst(']($fileName', '](${path_util.join(widget.card.pacInfo.path, fileName)}');
+      return str;
+    });
+
     return MarkdownBody(data: markdown);
   }
 
   Widget textConstructor(String jsonStr) {
     final textConstructor = TextConstructorData.fromMap(jsonDecode(jsonStr));
-    return SizedBox(
-      height: 200,
-        child: TextConstructorWidget(
-            textConstructor : textConstructor,
-            onRegisterAnswer: _onSelectAnswer
-        )
+
+    return TextConstructorWidget(
+        textConstructor : textConstructor,
+        onRegisterAnswer: _onSelectAnswer
     );
   }
 }

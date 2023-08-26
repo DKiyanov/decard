@@ -104,6 +104,9 @@ class DjfUpLink { // element of DjfCard.upLinks
 	static const String groupTagPrefix = "grp@";   // prefix for make tag from card.group
 }
 
+/// html: for correct operation, the html must contain the line
+/// <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 class DjfQuestionData { // structure of DjfCardBody.questionData
 	static const String text     = "text";     // optional, string, question text
 	static const String html     = "html";     // TODO optional, link to html file, file can be a template

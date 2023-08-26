@@ -5,7 +5,7 @@ import 'package:collection/collection.dart';
 import 'boxes_area.dart';
 import 'drag_box_widget.dart';
 
-typedef DragBoxTap = Future<String?> Function(String label, Offset position);
+typedef DragBoxTap = Future<String?> Function(String label, Offset position, Offset globalPosition);
 typedef OnChangeHeight = void Function(double newHeight);
 
 enum DragBoxSpec {
@@ -523,7 +523,7 @@ class WordPanelState extends State<WordPanel> {
       onPanUpdate : _onPanUpdate,
       onPanEnd    : _onPanEnd,
 
-      onBoxLongPress: (boxInfo, position) => _tapProcess(widget.onDragBoxLongPress, boxInfo),
+      onBoxLongPress: (boxInfo, position, globalPosition) => _tapProcess(widget.onDragBoxLongPress, boxInfo, position, globalPosition),
 
       onChangeSize: (double prevWidth, double newWidth, double prevHeight, double newHeight){
         if (prevHeight != newHeight) {
@@ -708,7 +708,7 @@ class WordPanelState extends State<WordPanel> {
   }
 
 
-  Future<void> _onTapUp(DragBoxInfo<PanelBoxExt>? boxInfo, Offset position) async {
+  Future<void> _onTapUp(DragBoxInfo<PanelBoxExt>? boxInfo, Offset position, Offset globalPosition) async {
     final sensRect = _sensRectList.firstWhereOrNull((rect)=>rect.contains(position));
     if (sensRect != null){
       _editPos.setState(
@@ -745,7 +745,7 @@ class WordPanelState extends State<WordPanel> {
     bool labelChanged = false;
 
     if (widget.onDragBoxTap != null){
-      final newLabel = await widget.onDragBoxTap!.call(boxInfo.data.ext.label, boxInfo.data.position);
+      final newLabel = await widget.onDragBoxTap!.call(boxInfo.data.ext.label, position, globalPosition);
       if (newLabel != null ) {
         if (boxInfo.data.ext.label != newLabel) {
           boxInfo.data.ext.label = newLabel;
@@ -763,11 +763,11 @@ class WordPanelState extends State<WordPanel> {
     }
   }
 
-  Future<void> _tapProcess(DragBoxTap? onDragTap, DragBoxInfo<PanelBoxExt>? boxInfo) async {
+  Future<void> _tapProcess(DragBoxTap? onDragTap, DragBoxInfo<PanelBoxExt>? boxInfo, Offset position, Offset globalPosition) async {
     if (onDragTap == null) return;
     if (boxInfo == null) return;
 
-    final newLabel = await onDragTap.call(boxInfo.data.ext.label, boxInfo.data.position);
+    final newLabel = await onDragTap.call(boxInfo.data.ext.label, position, globalPosition);
     if (newLabel == null || boxInfo.data.ext.label == newLabel) return;
 
     boxInfo.data.ext.label = newLabel;
@@ -776,7 +776,7 @@ class WordPanelState extends State<WordPanel> {
     widget.controller.onChange?.call();
 
     _rebuildStrNeed = true;
-    setState(() {});
+    widget.controller.refreshPanel();
   }
 
   void _saveCursor([int? pos]) {

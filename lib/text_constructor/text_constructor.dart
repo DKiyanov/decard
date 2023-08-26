@@ -42,7 +42,7 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
   final Color  _colorWordMove     = Colors.black12;
   final double _editPosWidth      = 10;
   final double _insertPosWidth    = 10;
-  final double _basementMinHeight = 200;
+//  final double _basementMinHeight = 200;
 
   final Map<String, Color> _colorMap = {
     'r' : Colors.red,
@@ -122,56 +122,52 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
   }
 
   Widget body(BoxConstraints viewportConstraints) {
-
     if (_basementHeight == 0.0) {
       return Column(
         children: [
 
           toolbar(),
 
-          Expanded(
-            child: wordPanel(),
+          Container(height: 4),
+
+          SizedBox(
+            height: _panelHeight,
+            child: wordPanel()
           ),
 
           Offstage( child: SizedBox(
             height:  300,
             child: basement(),
           )),
-
         ],
       );
-    }
-
-    var panelHeight = _panelHeight;
-
-    if (panelHeight == 0.0) {
-      panelHeight = _panelController.wordBoxHeight * 2;
-    }
-
-    if (panelHeight > (viewportConstraints.maxHeight - _basementMinHeight)) {
-      panelHeight = viewportConstraints.maxHeight - _basementMinHeight;
-    }
-
-    if (panelHeight < _panelController.wordBoxHeight) {
-      panelHeight = _panelController.wordBoxHeight;
     }
 
     return Column(
       children: [
 
-        SizedBox(
-          height: panelHeight,
-          child: wordPanel(),
-        ),
-
         toolbar(),
 
-        Expanded(
-            child: basement()
+        Container(height: 4),
+
+        SizedBox(
+            height: _panelHeight,
+            child: wordPanel()
         ),
 
+        const Divider(
+          color: Colors.black,
+        ),
+
+        SizedBox(
+          height:  _basementHeight,
+          child: basement(),
+        ),
+
+        Container(height: 4),
       ],
     );
+
   }
 
   Widget startBody() {
@@ -193,43 +189,38 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
   }
 
   Widget wordPanel() {
-    return Padding(
-      key: _panelKey,
-      padding: const EdgeInsets.all(6.0),
-      child: WordPanel(
-        controller         : _panelController,
-        onDragBoxBuild     : onDragBoxBuild,
-        onDragBoxTap       : onDragBoxTap,
-        onDragBoxLongPress : onDragBoxLongPress,
-        onDoubleTap        : onDragBoxLongPress,
-        onChangeHeight     : (double newHeight) {
-          final newPanelHeight = newHeight + 12 + _panelController.wordBoxHeight;
-          if (_panelHeight != newPanelHeight) {
-            setState(() {
-              _panelHeight = newPanelHeight;
-            });
-          }
-        },
-      ),
+    return WordPanel(
+      key                : _panelKey,
+      controller         : _panelController,
+      onDragBoxBuild     : onDragBoxBuild,
+      onDragBoxTap       : onDragBoxTap,
+      onDragBoxLongPress : onDragBoxLongPress,
+      onDoubleTap        : onDragBoxLongPress,
+      onChangeHeight     : (double newHeight) {
+        final extHeight = newHeight + _panelController.wordBoxHeight;
+        if (_panelHeight != extHeight) {
+          setState(() {
+            _panelHeight = extHeight;
+          });
+        }
+      },
     );
   }
 
   Widget basement() {
-    return Padding(
-      key: _basementKey,
-      padding: const EdgeInsets.all(6.0),
-      child: WordGrid(
-        controller     : _basementController,
-        onDragBoxBuild : onBasementBoxBuild,
-        onDragBoxTap   : onBasementBoxTap,
-        onChangeHeight : (double newHeight) {
-          if (_basementHeight != newHeight) {
-            setState(() {
-              _basementHeight = newHeight;
-            });
-          }
-        },
-      ),
+    return WordGrid(
+      key            : _basementKey,
+      controller     : _basementController,
+      onDragBoxBuild : onBasementBoxBuild,
+      onDragBoxTap   : onBasementBoxTap,
+      onChangeHeight : (double newHeight) {
+        final extHeight = newHeight;
+        if (_basementHeight != extHeight) {
+          setState(() {
+            _basementHeight = extHeight;
+          });
+        }
+      },
     );
   }
 
@@ -369,7 +360,7 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
   }
 
 
-  Future<String?> onDragBoxTap(String label, Offset position) async {
+  Future<String?> onDragBoxTap(String label, Offset position, Offset globalPosition) async {
     if (label.isEmpty) return label;
 
     if (label == wordKeyboard) {
@@ -389,8 +380,8 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
     return label;
   }
 
-  Future<String?> onDragBoxLongPress(String label, Offset position) async {
-    return showPopupMenu(label, position);
+  Future<String?> onDragBoxLongPress(String label, Offset position, Offset globalPosition) async {
+    return showPopupMenu(label, globalPosition);
   }
 
   Widget editPos() {

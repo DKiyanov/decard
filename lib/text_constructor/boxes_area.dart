@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'drag_box_widget.dart';
 
-typedef DragBoxTap<T> = void Function(DragBoxInfo<T>? boxInfo, Offset position);
+typedef DragBoxTap<T> = void Function(DragBoxInfo<T>? boxInfo, Offset position, Offset globalPosition);
 typedef AreaPan = Function(Offset position);
 
 typedef OnChangeSize = void Function(double prevWidth, double newWidth, double prevHeight, double newHeight);
@@ -208,9 +208,9 @@ class _BoxesAreaState<T> extends State<BoxesArea<T>> {
 
     final renderBox = _getStackRenderBox();
     final position = renderBox.globalToLocal(globalPosition);
-    final boxInfo = _controller.boxInfoList.firstWhereOrNull((boxInfo)=>boxInfo.rect.contains(position));
+    final boxInfo = _controller.boxInfoList.firstWhereOrNull((boxInfo)=> boxInfo.rect.contains(position) && boxInfo.data.visible);
 
-    tapEvent.call(boxInfo, position);
+    tapEvent.call(boxInfo, position, globalPosition);
   }
 
   Future<void> _onPanProcess(AreaPan? panEvent, Offset globalPosition) async {

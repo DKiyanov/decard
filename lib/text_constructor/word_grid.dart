@@ -350,7 +350,7 @@ class _WordGridState extends State<WordGrid> {
         _putBoxesInPlaces(viewportConstraints.maxWidth);
       },
 
-      onBoxTap: (DragBoxInfo<GridBoxExt>? boxInfo, Offset position) async {
+      onBoxTap: (DragBoxInfo<GridBoxExt>? boxInfo, Offset position, Offset globalPosition) async {
         if (boxInfo == null) return;
         widget.onDragBoxTap!.call(boxInfo, boxInfo.data.position);
       },
@@ -381,6 +381,7 @@ class _WordGridState extends State<WordGrid> {
   }
 
   void _refresh() {
+    _rebuildStrNeed = true;
     _boxAreaController.refresh();
   }
 }
