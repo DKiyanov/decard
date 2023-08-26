@@ -11,11 +11,13 @@ import 'drag_box_widget.dart';
 
 
 typedef RegisterAnswer = void Function(String answerValue,[List<String>? answerList]);
+typedef BuildViewStrWidget = Widget? Function(BuildContext context, String viewStr, DragBoxSpec spec);
 
 class TextConstructorWidget extends StatefulWidget {
   final TextConstructorData textConstructor;
   final RegisterAnswer onRegisterAnswer;
-  const TextConstructorWidget({required this.textConstructor, required this.onRegisterAnswer, Key? key}) : super(key: key);
+  final BuildViewStrWidget? onBuildViewStrWidget;
+  const TextConstructorWidget({required this.textConstructor, required this.onRegisterAnswer, this.onBuildViewStrWidget, Key? key}) : super(key: key);
 
   @override
   State<TextConstructorWidget> createState() => _TextConstructorWidgetState();
@@ -449,6 +451,7 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
     return wordObject;
   }
 
+
   Widget labelWidget(BuildContext context, String label, DragBoxSpec spec) {
     if (label.isEmpty) return Container();
 
@@ -504,6 +507,23 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
     DragBoxSpec spec       = DragBoxSpec.none,
     bool        forPopup   = false
   }) {
+
+    if (widget.onBuildViewStrWidget != null) {
+      final retWidget = widget.onBuildViewStrWidget!.call(context, viewStr, spec);
+
+      if (retWidget != null) {
+        return makeDecoration(
+          child           : LimitedBox(
+              maxHeight : internalBoxHeight(),
+              child     : retWidget
+          ),
+          borderColor     : _borderColor,
+          borderWidth     : _borderWidth,
+          backgroundColor : spec == DragBoxSpec.move? _colorWordMove : _colorWordNormal,
+        );
+      }
+    }
+
     var textStyleBold   = false;
     var textStyleItalic = false;
 

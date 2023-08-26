@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:math';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:decard/text_constructor/text_constructor.dart';
+import 'package:decard/text_constructor/word_panel.dart';
 import 'package:decard/text_constructor/word_panel_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -898,8 +899,21 @@ class _CardWidgetState extends State<CardWidget> {
 
     return TextConstructorWidget(
         textConstructor : textConstructor,
-        onRegisterAnswer: _onSelectAnswer
+        onRegisterAnswer: _onSelectAnswer,
+        onBuildViewStrWidget: textConstructorLabelWidget,
     );
+  }
+
+  Widget? textConstructorLabelWidget(BuildContext context, String viewStr, DragBoxSpec spec) {
+    if (viewStr.indexOf(DjfCardStyle.buttonImagePrefix) != 0) return null;
+
+    final imagePath = viewStr.substring(DjfCardStyle.buttonImagePrefix.length);
+    final absPath = path_util.normalize( path_util.join(widget.card.pacInfo.path, imagePath) );
+    final imgFile = File(absPath);
+
+    if (!imgFile.existsSync()) return null;
+
+    return Image.file( imgFile );
   }
 }
 
