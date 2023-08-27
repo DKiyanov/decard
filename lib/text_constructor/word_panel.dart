@@ -318,7 +318,9 @@ class WordPanelState extends State<WordPanel> {
 
     for (var i = 0; i < _boxInfoList.length; i++) {
       final boxInfo = _boxInfoList[i];
-      boxInfo.refreshSize();
+      if (boxInfo.size.height < _wordBoxHeight) {
+        boxInfo.size = Size(boxInfo.size.width, _wordBoxHeight);
+      }
 
       nextPosition = Offset(position.dx + boxInfo.size.width, position.dy);
       if (nextPosition.dx >= width){

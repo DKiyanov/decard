@@ -60,12 +60,21 @@ class _WordGridState extends State<WordGrid> {
   double _width  = 0.0;
   double _height = 0.0;
 
+  late  DragBoxInfo<GridBoxExt> _testBox;
+  double _minBoxHeight = 0.0;
+
   @override
   void initState() {
     super.initState();
 
+    _testBox = _createDragBoxInfo('Tp');
+
     _setText(widget.controller._text);
-    _boxAreaController = BoxesAreaController(_boxInfoList);
+    _boxAreaController = BoxesAreaController(_boxInfoList,
+      techBoxInfoList : [
+        _testBox,
+      ]
+    );
   }
 
   void _setText(String text){
@@ -150,6 +159,12 @@ class _WordGridState extends State<WordGrid> {
       }
 
       _initHideList.clear();
+    }
+
+    for (var boxInfo in _boxInfoList) {
+      if (boxInfo.size.height < _minBoxHeight && !boxInfo.data.ext.isGroup) {
+        boxInfo.size = Size(boxInfo.size.width, _minBoxHeight);
+      }
     }
 
     _height = 0.0;
@@ -295,7 +310,7 @@ class _WordGridState extends State<WordGrid> {
         lineVisible = false;
 
         if (i < toIndex) {
-          lineHeight = 0.0;
+          lineHeight = boxInfo.size.height;
         }
       }
 
@@ -343,6 +358,7 @@ class _WordGridState extends State<WordGrid> {
         if (_width != viewportConstraints.maxWidth) {
           _width = viewportConstraints.maxWidth;
           _rebuildStrNeed = true;
+          _getTechBoxSizes();
         }
 
         if (!_rebuildStrNeed) return;
@@ -363,21 +379,33 @@ class _WordGridState extends State<WordGrid> {
     );
   }
 
+  void _getTechBoxSizes() {
+    if (_minBoxHeight == 0.0) {
+      _testBox.refreshSize();
+      _minBoxHeight = _testBox.size.height;
+      _testBox.setState(visible: false);
+    }
+  }
+
   void _addWord(String word) {
     final boxInfo = _boxInfoList.firstWhereOrNull((boxInfo) => boxInfo.data.ext.label == word && !boxInfo.data.visible);
     if (boxInfo != null) {
       boxInfo.setState(visible: true);
     } else {
       _boxInfoList.add(
-          DragBoxInfo.create<GridBoxExt>(
-            builder: widget.onDragBoxBuild,
-            ext: GridBoxExt(label: word),
-          )
+        _createDragBoxInfo(word)
       );
     }
 
     _rebuildStrNeed = true;
     _boxAreaController.refresh();
+  }
+
+  DragBoxInfo<GridBoxExt> _createDragBoxInfo(String word){
+    return DragBoxInfo.create<GridBoxExt>(
+      builder: widget.onDragBoxBuild,
+      ext: GridBoxExt(label: word),
+    );
   }
 
   void _refresh() {

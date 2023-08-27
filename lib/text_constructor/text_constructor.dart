@@ -455,18 +455,6 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
   Widget labelWidget(BuildContext context, String label, DragBoxSpec spec) {
     if (label.isEmpty) return Container();
 
-    if (label == wordKeyboard) {
-      return makeDecoration(
-        child           : SizedBox(
-          height : internalBoxHeight(),
-          child  : const Icon(Icons.keyboard_alt_outlined, color: Colors.white)
-        ),
-        borderColor     : _borderColor,
-        borderWidth     : _borderWidth,
-        backgroundColor : spec == DragBoxSpec.move? _colorWordMove : _colorWordNormal,
-      );
-    }
-
     var viewIndex = -1;
 
     int? styleIndex;
@@ -507,23 +495,6 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
     DragBoxSpec spec       = DragBoxSpec.none,
     bool        forPopup   = false
   }) {
-
-    if (widget.onBuildViewStrWidget != null) {
-      final retWidget = widget.onBuildViewStrWidget!.call(context, viewStr, spec);
-
-      if (retWidget != null) {
-        return makeDecoration(
-          child           : LimitedBox(
-              maxHeight : internalBoxHeight(),
-              child     : retWidget
-          ),
-          borderColor     : _borderColor,
-          borderWidth     : _borderWidth,
-          backgroundColor : spec == DragBoxSpec.move? _colorWordMove : _colorWordNormal,
-        );
-      }
-    }
-
     var textStyleBold   = false;
     var textStyleItalic = false;
 
@@ -654,22 +625,42 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
       borderWidth = _focusBorderWidth;
     }
 
-    final retWidget = Container(
-      color: backgroundColor,
-      child: Text(
-        outStr,
-        style: TextStyle(
-          color: textColor,
+    Widget? retWidget;
 
-          decoration     : linePos,
-          decorationColor: lineColor,
-          decorationStyle: lineStyle,
+    if (widget.onBuildViewStrWidget != null) {
+      final buildWidget = widget.onBuildViewStrWidget!.call(context, viewStr, spec);
 
-          fontSize: _fontSize,
-          fontWeight: textStyleBold? FontWeight.bold : null,
-          fontStyle: textStyleItalic? FontStyle.italic : null,
+      if (buildWidget != null) {
+        retWidget = LimitedBox(
+            maxHeight : internalBoxHeight(),
+            child     : buildWidget
+        );
+      }
+    }
+
+    if (retWidget == null && viewStr == wordKeyboard) {
+      retWidget = SizedBox(
+          height : internalBoxHeight(),
+          child  : const Icon(Icons.keyboard_alt_outlined, color: Colors.white)
+      );
+    }
+
+    retWidget ??= Container(
+        color: backgroundColor,
+        child: Text(
+          outStr,
+          style: TextStyle(
+            color: textColor,
+
+            decoration     : linePos,
+            decorationColor: lineColor,
+            decorationStyle: lineStyle,
+
+            fontSize: _fontSize,
+            fontWeight: textStyleBold? FontWeight.bold : null,
+            fontStyle: textStyleItalic? FontStyle.italic : null,
+          ),
         ),
-      ),
     );
 
     if (forPopup) {
