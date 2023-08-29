@@ -11,6 +11,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:path/path.dart' as path_util;
 
+import 'audio_button.dart';
 import 'audio_widget.dart';
 import 'card_model.dart';
 import 'common.dart';
@@ -599,6 +600,10 @@ class _CardWidgetState extends State<CardWidget> {
   }
 
   void _addAnswerVariants(List<Widget> widgetList) {
+    if (widget.card.body.questionData.textConstructor != null) {
+      return;
+    }
+
     Widget? answerInput;
 
     final alignment = _getAnswerAlignment();
@@ -904,16 +909,28 @@ class _CardWidgetState extends State<CardWidget> {
     );
   }
 
-  Widget? textConstructorLabelWidget(BuildContext context, String viewStr, DragBoxSpec spec) {
-    if (viewStr.indexOf(DjfCardStyle.buttonImagePrefix) != 0) return null;
+  Widget? textConstructorLabelWidget(BuildContext context, String viewStr, DragBoxSpec spec, Color textColor, Color backgroundColor) {
+    if (viewStr.indexOf(JrfSpecText.imagePrefix) == 0) {
+      final imagePath = viewStr.substring(JrfSpecText.imagePrefix.length);
+      final absPath = path_util.normalize( path_util.join(widget.card.pacInfo.path, imagePath) );
+      final imgFile = File(absPath);
 
-    final imagePath = viewStr.substring(DjfCardStyle.buttonImagePrefix.length);
-    final absPath = path_util.normalize( path_util.join(widget.card.pacInfo.path, imagePath) );
-    final imgFile = File(absPath);
+      if (!imgFile.existsSync()) return null;
 
-    if (!imgFile.existsSync()) return null;
+      return Image.file( imgFile );
+    }
 
-    return Image.file( imgFile );
+    if (viewStr.indexOf(JrfSpecText.audioPrefix) == 0) {
+      final audioPath = viewStr.substring(JrfSpecText.audioPrefix.length);
+      final absPath = path_util.normalize( path_util.join(widget.card.pacInfo.path, audioPath) );
+      final audioFile = File(absPath);
+
+      if (!audioFile.existsSync()) return null;
+
+      return SimpleAudioButton(localFilePath: absPath, color: textColor);
+    }
+
+    return null;
   }
 }
 

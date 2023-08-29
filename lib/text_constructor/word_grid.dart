@@ -53,7 +53,6 @@ class WordGrid extends StatefulWidget {
 class _WordGridState extends State<WordGrid> {
   final _boxInfoList = <DragBoxInfo<GridBoxExt>>[];
   late BoxesAreaController<GridBoxExt> _boxAreaController;
-  bool _rebuildStrNeed = false;
 
   final _initHideList = <DragBoxInfo>[];
 
@@ -104,8 +103,6 @@ class _WordGridState extends State<WordGrid> {
 
     final endText = text.substring(pos);
     _addText(endText);
-
-    _rebuildStrNeed = true;
   }
 
   void _addText(String str) {
@@ -357,12 +354,9 @@ class _WordGridState extends State<WordGrid> {
       onRebuildLayout: (BoxConstraints viewportConstraints, List<DragBoxInfo<GridBoxExt>> boxInfoList) {
         if (_width != viewportConstraints.maxWidth) {
           _width = viewportConstraints.maxWidth;
-          _rebuildStrNeed = true;
           _getTechBoxSizes();
         }
 
-        if (!_rebuildStrNeed) return;
-        _rebuildStrNeed = false;
         _putBoxesInPlaces(viewportConstraints.maxWidth);
       },
 
@@ -397,7 +391,6 @@ class _WordGridState extends State<WordGrid> {
       );
     }
 
-    _rebuildStrNeed = true;
     _boxAreaController.refresh();
   }
 
@@ -409,7 +402,6 @@ class _WordGridState extends State<WordGrid> {
   }
 
   void _refresh() {
-    _rebuildStrNeed = true;
     _boxAreaController.refresh();
   }
 }

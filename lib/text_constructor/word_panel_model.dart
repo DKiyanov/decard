@@ -12,12 +12,21 @@ class JrfTextConstructor {
   static const String focusAsCursor      = 'focusAsCursor';
   static const String answerList         = 'answerList';
 
+  static const String fontSize           = 'fontSize';
+  static const String boxHeight          = 'boxHeight';
+
   static const String btnKeyboard        = 'btnKeyboard';
   static const String btnUndo            = 'btnUndo';
   static const String btnRedo            = 'btnRedo';
   static const String btnBackspace       = 'btnBackspace';
   static const String btnDelete          = 'btnDelete';
   static const String btnClear           = 'btnClear';
+}
+
+class JrfSpecText {
+  static const String imagePrefix  = "img="; // Prefix for box image: img=<file path>
+  static const String audioPrefix  = "audio="; // Prefix for box image: img=<file path>
+  static const String wordKeyboard = '@keyboard';
 }
 
 class JtfWordObject {
@@ -41,6 +50,9 @@ class TextConstructorData {
   final bool focusAsCursor;
   final List<String>? answerList;
 
+  final double fontSize ;
+  final double boxHeight;
+
   final bool btnKeyboard ;
   final bool btnUndo     ;
   final bool btnRedo     ;
@@ -61,6 +73,9 @@ class TextConstructorData {
     this.noCursor      = false,
     this.focusAsCursor = true,
     this.answerList,
+
+    this.fontSize     = 40,
+    this.boxHeight    = 0,
 
     this.btnKeyboard  = true,
     this.btnUndo      = true,
@@ -85,6 +100,9 @@ class TextConstructorData {
       focusAsCursor      : json[JrfTextConstructor.focusAsCursor]??true,
       answerList         : valueListFromMapList<String>(json[JrfTextConstructor.answerList]),
 
+      fontSize           : json[JrfTextConstructor.fontSize]??40,
+      boxHeight          : json[JrfTextConstructor.boxHeight]??0,
+
       btnKeyboard        : json[JrfTextConstructor.btnKeyboard ]??true,
       btnUndo            : json[JrfTextConstructor.btnUndo     ]??true,
       btnRedo            : json[JrfTextConstructor.btnRedo     ]??true,
@@ -108,6 +126,9 @@ class TextConstructorData {
     JrfTextConstructor.noCursor           :noCursor,
     JrfTextConstructor.focusAsCursor      :focusAsCursor,
     JrfTextConstructor.answerList         :answerList,
+
+    JrfTextConstructor.fontSize           :fontSize,
+    JrfTextConstructor.boxHeight          :boxHeight,
 
     JrfTextConstructor.btnKeyboard        :btnKeyboard ,
     JrfTextConstructor.btnUndo            :btnUndo     ,

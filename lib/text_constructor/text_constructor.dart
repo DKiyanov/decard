@@ -11,7 +11,7 @@ import 'drag_box_widget.dart';
 
 
 typedef RegisterAnswer = void Function(String answerValue,[List<String>? answerList]);
-typedef BuildViewStrWidget = Widget? Function(BuildContext context, String viewStr, DragBoxSpec spec);
+typedef BuildViewStrWidget = Widget? Function(BuildContext context, String viewStr, DragBoxSpec spec, Color textColor, Color backgroundColor);
 
 class TextConstructorWidget extends StatefulWidget {
   final TextConstructorData textConstructor;
@@ -24,14 +24,12 @@ class TextConstructorWidget extends StatefulWidget {
 }
 
 class _TextConstructorWidgetState extends State<TextConstructorWidget> {
-  static const String wordKeyboard = '@keyboard';
-
   late TextConstructorData _textConstructorData;
   late WordPanelController _panelController;
   late WordGridController  _basementController;
 
   final Color  _defaultTextColor  = Colors.white;
-  final double _fontSize          = 40.0;
+  late  double _fontSize;
   final Color  _borderColor      = Colors.black;
   final double _borderWidth      = 1.0;
   final Color  _focusBorderColor  = Colors.blue;
@@ -72,6 +70,7 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
     super.initState();
 
     _textConstructorData = widget.textConstructor; //TextConstructorData.fromMap(jsonDecode(textConstructorJson));
+    _fontSize = _textConstructorData.fontSize;
 
     _panelController = WordPanelController(
       text          : _textConstructorData.text,
@@ -365,7 +364,7 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
   Future<String?> onDragBoxTap(String label, Offset position, Offset globalPosition) async {
     if (label.isEmpty) return label;
 
-    if (label == wordKeyboard) {
+    if (label == JrfSpecText.wordKeyboard) {
       final inputValue = await wordInputDialog(context);
       if (inputValue.isEmpty) return null;
       return inputValue;
@@ -433,6 +432,10 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
   }
 
   double internalBoxHeight() {
+    if (_textConstructorData.boxHeight > 0) {
+      return _textConstructorData.boxHeight - 2;
+    }
+
     if (_panelController.wordBoxHeight == 0.0) return 20.0;
     return _panelController.wordBoxHeight - 2;
   }
@@ -568,6 +571,9 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
           if (formatId == 'bc') {
             backgroundColor = _colorMap[colorKey]!;
           }
+          if (formatId == 'fc') {
+            borderColor = _colorMap[colorKey]!;
+          }
 
           if (formatCh == 'l') {
             linePos = TextDecoration.underline;
@@ -628,20 +634,20 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
     Widget? retWidget;
 
     if (widget.onBuildViewStrWidget != null) {
-      final buildWidget = widget.onBuildViewStrWidget!.call(context, viewStr, spec);
+      final buildWidget = widget.onBuildViewStrWidget!.call(context, viewStr, spec, textColor, backgroundColor);
 
       if (buildWidget != null) {
-        retWidget = LimitedBox(
-            maxHeight : internalBoxHeight(),
+        retWidget = SizedBox(
+            height : internalBoxHeight(),
             child     : buildWidget
         );
       }
     }
 
-    if (retWidget == null && viewStr == wordKeyboard) {
+    if (retWidget == null && viewStr == JrfSpecText.wordKeyboard) {
       retWidget = SizedBox(
           height : internalBoxHeight(),
-          child  : const Icon(Icons.keyboard_alt_outlined, color: Colors.white)
+          child  : Icon(Icons.keyboard_alt_outlined, color: textColor)
       );
     }
 
@@ -687,6 +693,7 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
     required Color  backgroundColor,
   }){
     return  Container(
+      height:  _textConstructorData.boxHeight > 0 ? _textConstructorData.boxHeight : null,
       padding: const EdgeInsets.only(left: 10, right: 10),
       decoration: BoxDecoration(
         border: Border.all(

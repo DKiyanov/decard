@@ -232,7 +232,6 @@ class WordPanelState extends State<WordPanel> {
   bool _insertPosVisible = false;
 
   Offset? _selectInPos;
-  bool _rebuildStrNeed = false;
 
   double _width = 0.0;
 
@@ -278,8 +277,6 @@ class WordPanelState extends State<WordPanel> {
 
     _boxInfoList.addAll(_splitText(text));
     widget.controller.onChange?.call();
-
-    _rebuildStrNeed = true;
   }
 
   List<DragBoxInfo<PanelBoxExt>> _splitText(String text) {
@@ -391,19 +388,16 @@ class WordPanelState extends State<WordPanel> {
       }
     }
     widget.controller.onChange?.call();
-    _rebuildStrNeed = true;
   }
 
   void _insertText(int pos, String text){
     _boxInfoList.insertAll(pos, _splitText(text));
     widget.controller.onChange?.call();
-    _rebuildStrNeed = true;
   }
 
   void _insertWord(int pos, String word) {
     _boxInfoList.insert(pos, _createDragBoxInfo(label: word));
     widget.controller.onChange?.call();
-    _rebuildStrNeed = true;
   }
 
   int _getFocusPos() {
@@ -508,13 +502,10 @@ class WordPanelState extends State<WordPanel> {
       onRebuildLayout: (BoxConstraints viewportConstraints, List<DragBoxInfo<PanelBoxExt>> boxInfoList) {
         if (_width != viewportConstraints.maxWidth) {
           _width = viewportConstraints.maxWidth;
-          _rebuildStrNeed = true;
           _getTechBoxSizes();
           _hideTechBoxes();
         }
 
-        if (!_rebuildStrNeed) return;
-        _rebuildStrNeed = false;
         _buildBoxesString(viewportConstraints.maxWidth);
         _restoreCursor();
       },
@@ -529,6 +520,7 @@ class WordPanelState extends State<WordPanel> {
 
       onChangeSize: (double prevWidth, double newWidth, double prevHeight, double newHeight){
         if (prevHeight != newHeight) {
+          _saveCursor();
           widget.onChangeHeight?.call(newHeight);
         }
       },
@@ -694,7 +686,7 @@ class WordPanelState extends State<WordPanel> {
         _buildBoxesString(_width);
 
         if (_boxAreaController.isHeightChanged()) {
-          _boxAreaController.refresh();
+          _refresh();
         }
 
         if (cursorBoxInfo != null) {
@@ -760,8 +752,7 @@ class WordPanelState extends State<WordPanel> {
 
     if (labelChanged) {
       widget.controller.onChange?.call();
-      _rebuildStrNeed = true;
-      widget.controller.refreshPanel();
+      _refresh();
     }
   }
 
@@ -777,8 +768,7 @@ class WordPanelState extends State<WordPanel> {
 
     widget.controller.onChange?.call();
 
-    _rebuildStrNeed = true;
-    widget.controller.refreshPanel();
+    _refresh();
   }
 
   void _saveCursor([int? pos]) {

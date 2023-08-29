@@ -74,7 +74,7 @@ class BoxesArea<T> extends StatefulWidget {
 class _BoxesAreaState<T> extends State<BoxesArea<T>> {
   late BoxesAreaController<T> _controller;
   final _stackKey = GlobalKey();
-  bool  _starting = true;
+  bool  _refreshing = true;
 
   double _width = 0.0;
   double _height = 0.0;
@@ -105,16 +105,16 @@ class _BoxesAreaState<T> extends State<BoxesArea<T>> {
           _calcSize(viewportConstraints);
         }
 
-        if (_starting) {
+        if (_refreshing) {
           _calcSize(viewportConstraints);
 
-          _starting = false;
+          _refreshing = false;
           setState(() {});
+          return;
         }
-
       });
 
-      if (_starting) {
+      if (_refreshing) {
         return Offstage(
           child: Stack(
             children: childList,
@@ -178,7 +178,7 @@ class _BoxesAreaState<T> extends State<BoxesArea<T>> {
 
       _width  = width;
       _height = height;
-      _starting = true;
+      _refreshing = true;
 
       widget.onChangeSize?.call(prevWidth, width, prevHeight, height);
     }
@@ -223,7 +223,7 @@ class _BoxesAreaState<T> extends State<BoxesArea<T>> {
   }
 
   void _refresh() {
-    _starting = true;
+    _refreshing = true;
     setState(() {});
   }
 
