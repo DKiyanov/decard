@@ -5,7 +5,7 @@ import 'package:collection/collection.dart';
 import 'boxes_area.dart';
 import 'drag_box_widget.dart';
 
-typedef DragBoxTap = Future<String?> Function(String label, Offset position, Offset globalPosition);
+typedef DragBoxTap = Future<String?> Function(String label, Widget child, Offset position, Offset globalPosition);
 typedef OnChangeHeight = void Function(double newHeight);
 
 enum DragBoxSpec {
@@ -739,7 +739,7 @@ class WordPanelState extends State<WordPanel> {
     bool labelChanged = false;
 
     if (widget.onDragBoxTap != null){
-      final newLabel = await widget.onDragBoxTap!.call(boxInfo.data.ext.label, position, globalPosition);
+      final newLabel = await widget.onDragBoxTap!.call(boxInfo.data.ext.label, boxInfo.data.subWidget!, position, globalPosition);
       if (newLabel != null ) {
         if (boxInfo.data.ext.label != newLabel) {
           boxInfo.data.ext.label = newLabel;
@@ -760,7 +760,7 @@ class WordPanelState extends State<WordPanel> {
     if (onDragTap == null) return;
     if (boxInfo == null) return;
 
-    final newLabel = await onDragTap.call(boxInfo.data.ext.label, position, globalPosition);
+    final newLabel = await onDragTap.call(boxInfo.data.ext.label, boxInfo.data.subWidget!, position, globalPosition);
     if (newLabel == null || boxInfo.data.ext.label == newLabel) return;
 
     boxInfo.data.ext.label = newLabel;

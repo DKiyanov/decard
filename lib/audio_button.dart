@@ -1,5 +1,21 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'dart:io';
+
+Future<void> playAudio(String fileName) async {
+  final audioFile = File(fileName);
+
+  if (!audioFile.existsSync()) return;
+
+  final player = AudioPlayer();
+
+  player.onPlayerComplete.listen((_) {
+    player.dispose();
+  });
+
+  await player.setSourceDeviceFile(fileName);
+  player.resume();
+}
 
 class SimpleAudioButton extends StatefulWidget {
   final String localFilePath;

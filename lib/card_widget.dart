@@ -4,14 +4,12 @@ import 'dart:io';
 import 'dart:math';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:decard/text_constructor/text_constructor.dart';
-import 'package:decard/text_constructor/word_panel.dart';
 import 'package:decard/text_constructor/word_panel_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:path/path.dart' as path_util;
 
-import 'audio_button.dart';
 import 'audio_widget.dart';
 import 'card_model.dart';
 import 'common.dart';
@@ -371,7 +369,7 @@ class _CardWidgetState extends State<CardWidget> {
       }
 
       if ( urlType == UrlType.localPath ) {
-        final absPath = path_util.normalize( path_util.join(widget.card.pacInfo.path, widget.card.body.questionData.image) );
+        final absPath = prepareFilePath(widget.card.body.questionData.image!);
         final imgFile = File(absPath);
         if (imgFile.existsSync()) {
           widgetList.add(
@@ -394,7 +392,7 @@ class _CardWidgetState extends State<CardWidget> {
       }
 
       if ( urlType == UrlType.localPath ) {
-        final absPath = path_util.normalize( path_util.join(widget.card.pacInfo.path, widget.card.body.questionData.audio) );
+        final absPath = prepareFilePath( widget.card.body.questionData.audio!);
         final imgFile = File(absPath);
         if (imgFile.existsSync()) {
           widgetList.add(
@@ -725,7 +723,7 @@ class _CardWidgetState extends State<CardWidget> {
     if (str.isEmpty) return Container();
     if (str.indexOf(DjfCardStyle.buttonImagePrefix) == 0) {
       final imagePath = str.substring(DjfCardStyle.buttonImagePrefix.length);
-      final absPath = path_util.normalize( path_util.join(widget.card.pacInfo.path, imagePath) );
+      final absPath = prepareFilePath(imagePath);
       final imgFile = File(absPath);
       if (imgFile.existsSync()) {
         var maxWidth = double.infinity;
@@ -905,32 +903,13 @@ class _CardWidgetState extends State<CardWidget> {
     return TextConstructorWidget(
         textConstructor : textConstructor,
         onRegisterAnswer: _onSelectAnswer,
-        onBuildViewStrWidget: textConstructorLabelWidget,
+        onPrepareFilePath: prepareFilePath,
     );
   }
 
-  Widget? textConstructorLabelWidget(BuildContext context, String viewStr, DragBoxSpec spec, Color textColor, Color backgroundColor) {
-    if (viewStr.indexOf(JrfSpecText.imagePrefix) == 0) {
-      final imagePath = viewStr.substring(JrfSpecText.imagePrefix.length);
-      final absPath = path_util.normalize( path_util.join(widget.card.pacInfo.path, imagePath) );
-      final imgFile = File(absPath);
-
-      if (!imgFile.existsSync()) return null;
-
-      return Image.file( imgFile );
-    }
-
-    if (viewStr.indexOf(JrfSpecText.audioPrefix) == 0) {
-      final audioPath = viewStr.substring(JrfSpecText.audioPrefix.length);
-      final absPath = path_util.normalize( path_util.join(widget.card.pacInfo.path, audioPath) );
-      final audioFile = File(absPath);
-
-      if (!audioFile.existsSync()) return null;
-
-      return SimpleAudioButton(localFilePath: absPath, color: textColor);
-    }
-
-    return null;
+  String prepareFilePath(String fileName) {
+    final absPath = path_util.normalize( path_util.join(widget.card.pacInfo.path, fileName) );
+    return absPath;
   }
 }
 

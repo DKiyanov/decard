@@ -4,6 +4,7 @@ class JrfTextConstructor {
   static const String styles             = 'styles';
   static const String markStyle          = 'markStyle';
   static const String basement           = 'basement';
+  static const String audioMap           = 'audioMap';
   static const String randomMixWord      = 'randomMixWord';
   static const String randomView         = 'randomView';
   static const String notDelFromBasement = 'notDelFromBasement';
@@ -26,7 +27,8 @@ class JrfTextConstructor {
 class JrfSpecText {
   static const String imagePrefix  = "img="; // Prefix for box image: img=<file path>
   static const String audioPrefix  = "audio="; // Prefix for box image: img=<file path>
-  static const String wordKeyboard = '@keyboard';
+  static const String wordKeyboard = '@keyboard'; // box with Keyboard icon, call input text dialog
+  static const String hideMenuItem = '-'; // Special text for popup menu item, it is hide this menu item from menu
 }
 
 class JtfWordObject {
@@ -42,6 +44,8 @@ class TextConstructorData {
   final List<String> styles;
   final int markStyle;
   final String basement;
+  final Map<String, String> audioMap;
+
   final bool canMoveWord;
   final bool randomMixWord;
   final bool randomView;
@@ -66,6 +70,7 @@ class TextConstructorData {
     required this.styles,
     required this.markStyle,
     required this.basement,
+    required this.audioMap,
     required this.randomMixWord,
     required this.randomView,
     required this.notDelFromBasement,
@@ -86,12 +91,21 @@ class TextConstructorData {
   });
 
   factory TextConstructorData.fromMap(Map<String, dynamic> json) {
+    final Map<String, String> audioMap = {};
+    final audioList = valueListFromMapList<String>(json[JrfTextConstructor.audioMap]);
+    for (var str in audioList) {
+      final split = str.split('|');
+      if (split.length != 2) continue;
+      audioMap[split[0].trim()] = split[1].trim();
+    }
+
     return TextConstructorData(
       text               : json[JrfTextConstructor.text],
       objects            : objectListFromMapList<WordObject>(WordObject.fromMap, json[JrfTextConstructor.objects]),
       styles             : valueListFromMapList<String>(json[JrfTextConstructor.styles]),
       markStyle          : json[JrfTextConstructor.markStyle]??-1,
       basement           : json[JrfTextConstructor.basement]??'',
+      audioMap           : audioMap,
       randomMixWord      : json[JrfTextConstructor.randomMixWord]??false,
       randomView         : json[JrfTextConstructor.randomView]??false,
       notDelFromBasement : json[JrfTextConstructor.notDelFromBasement]??false,
@@ -119,6 +133,7 @@ class TextConstructorData {
     JrfTextConstructor.styles             :styles,
     JrfTextConstructor.markStyle          :markStyle,
     JrfTextConstructor.basement           :basement,
+    JrfTextConstructor.audioMap          :audioMap,
     JrfTextConstructor.randomMixWord      :randomMixWord,
     JrfTextConstructor.randomView         :randomView,
     JrfTextConstructor.notDelFromBasement :notDelFromBasement,
@@ -162,10 +177,10 @@ class WordObject {
   }
 
   Map<String, dynamic> toJson() => {
-    JtfWordObject.name      :name,
-    JtfWordObject.viewIndex :viewIndex,
+    JtfWordObject.name         :name,
+    JtfWordObject.viewIndex    :viewIndex,
     JtfWordObject.nonRemovable :nonRemovable,
-    JtfWordObject.views     :views,
+    JtfWordObject.views        :views,
   };
 }
 

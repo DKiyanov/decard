@@ -3,21 +3,23 @@ import 'package:decard/text_constructor/word_grid.dart';
 import 'package:decard/text_constructor/word_panel.dart';
 import 'package:decard/text_constructor/word_panel_model.dart';
 import 'package:flutter/material.dart';
+import 'dart:io';
 
 import 'package:simple_events/simple_events.dart';
 
+import '../audio_button.dart';
 import '../common.dart';
 import 'drag_box_widget.dart';
 
 
 typedef RegisterAnswer = void Function(String answerValue,[List<String>? answerList]);
-typedef BuildViewStrWidget = Widget? Function(BuildContext context, String viewStr, DragBoxSpec spec, Color textColor, Color backgroundColor);
+typedef PrepareFilePath = String Function(String fileName);
 
 class TextConstructorWidget extends StatefulWidget {
   final TextConstructorData textConstructor;
   final RegisterAnswer onRegisterAnswer;
-  final BuildViewStrWidget? onBuildViewStrWidget;
-  const TextConstructorWidget({required this.textConstructor, required this.onRegisterAnswer, this.onBuildViewStrWidget, Key? key}) : super(key: key);
+  final PrepareFilePath? onPrepareFilePath;
+  const TextConstructorWidget({required this.textConstructor, required this.onRegisterAnswer, this.onPrepareFilePath, Key? key}) : super(key: key);
 
   @override
   State<TextConstructorWidget> createState() => _TextConstructorWidgetState();
@@ -360,8 +362,7 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
     _basementController.addWord(word);
   }
 
-
-  Future<String?> onDragBoxTap(String label, Offset position, Offset globalPosition) async {
+  Future<String?> onDragBoxTap(String label, Widget child, Offset position, Offset globalPosition) async {
     if (label.isEmpty) return label;
 
     if (label == JrfSpecText.wordKeyboard) {
@@ -370,7 +371,14 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
       return inputValue;
     }
 
-    if (_textConstructorData.markStyle >= 0){
+    final boxWidget = child as _BoxWidget;
+    final fileName = _textConstructorData.audioMap[boxWidget.outStr];
+    if (fileName != null) {
+      final filePath = widget.onPrepareFilePath!(fileName);
+      playAudio(filePath);
+    }
+
+    if (_textConstructorData.markStyle >= 0) {
       if (label.substring(0, 1) == '\$') {
         label = label.substring(1);
       } else {
@@ -381,7 +389,7 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
     return label;
   }
 
-  Future<String?> onDragBoxLongPress(String label, Offset position, Offset globalPosition) async {
+  Future<String?> onDragBoxLongPress(String label, Widget child, Offset position, Offset globalPosition) async {
     return showPopupMenu(label, globalPosition);
   }
 
@@ -453,7 +461,6 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
     final wordObject = _textConstructorData.objects.firstWhereOrNull((wordObject) => wordObject.name == objectName)!;
     return wordObject;
   }
-
 
   Widget labelWidget(BuildContext context, String label, DragBoxSpec spec) {
     if (label.isEmpty) return Container();
@@ -633,21 +640,11 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
 
     Widget? retWidget;
 
-    if (widget.onBuildViewStrWidget != null) {
-      final buildWidget = widget.onBuildViewStrWidget!.call(context, viewStr, spec, textColor, backgroundColor);
-
-      if (buildWidget != null) {
-        retWidget = SizedBox(
-            height : internalBoxHeight(),
-            child     : buildWidget
-        );
-      }
-    }
-
-    if (retWidget == null && viewStr == JrfSpecText.wordKeyboard) {
+    retWidget = extWidget(context, outStr, spec, textColor, backgroundColor);
+    if (retWidget != null) {
       retWidget = SizedBox(
           height : internalBoxHeight(),
-          child  : Icon(Icons.keyboard_alt_outlined, color: textColor)
+          child  : retWidget
       );
     }
 
@@ -678,12 +675,44 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
       );
     }
 
-    return makeDecoration(
-      child           : retWidget,
-      borderColor     : borderColor,
-      borderWidth     : borderWidth,
-      backgroundColor : backgroundColor,
+    return _BoxWidget(
+      outStr: outStr,
+      menuText: menuText,
+      child: makeDecoration(
+        child           : retWidget,
+        borderColor     : borderColor,
+        borderWidth     : borderWidth,
+        backgroundColor : backgroundColor,
+      ),
     );
+  }
+
+  Widget? extWidget(BuildContext context, String outStr, DragBoxSpec spec, Color textColor, Color backgroundColor) {
+    if (outStr.indexOf(JrfSpecText.imagePrefix) == 0) {
+      final imagePath = outStr.substring(JrfSpecText.imagePrefix.length);
+      final absPath = widget.onPrepareFilePath!.call(imagePath);
+      final imgFile = File(absPath);
+
+      if (!imgFile.existsSync()) return null;
+
+      return Image.file( imgFile );
+    }
+
+    if (outStr.indexOf(JrfSpecText.audioPrefix) == 0) {
+      final audioPath = outStr.substring(JrfSpecText.audioPrefix.length);
+      final absPath = widget.onPrepareFilePath!.call(audioPath);
+      final audioFile = File(absPath);
+
+      if (!audioFile.existsSync()) return null;
+
+      return SimpleAudioButton(localFilePath: absPath, color: textColor);
+    }
+
+    if (outStr == JrfSpecText.wordKeyboard) {
+      return Icon(Icons.keyboard_alt_outlined, color: textColor);
+    }
+
+    return null;
   }
 
   Widget makeDecoration({
@@ -727,10 +756,13 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
 
     for ( var i = 0; i < wordObject.views.length; i++ ) {
       final viewStr = wordObject.views[i];
+      final popupItemWidget = getObjectViewWidget(context, objectName: objectName, viewStr: viewStr, forPopup: true);
+      if (popupItemWidget is _BoxWidget) continue;
+
       popupItems.add( PopupMenuItem(
           value: '#$i|$objectName',
           padding: EdgeInsets.zero,
-          child: Center(child: getObjectViewWidget(context, objectName: objectName, viewStr: viewStr, forPopup: true))
+          child: Center(child: popupItemWidget)
       ));
     }
 
@@ -789,5 +821,18 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
 
     return '';
   }
-
 }
+
+class _BoxWidget extends StatelessWidget {
+  final Widget child;
+  final String outStr;
+  final String menuText;
+
+  const _BoxWidget({required this.child, required this.outStr, required this.menuText, Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return child;
+  }
+}
+

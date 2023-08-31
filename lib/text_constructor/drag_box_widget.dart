@@ -6,6 +6,7 @@ typedef DragBoxBuilder<T> = Widget Function(BuildContext context, T ext);
 class DragBoxData<T>{
   Offset position;
   bool   visible;
+  Widget? subWidget;
   T      ext;
 
   DragBoxData({
@@ -87,10 +88,12 @@ class DragBoxState<T> extends State<DragBox<T>> {
       );
     }
 
+    widget.data.subWidget = widget.onBuild.call(context, widget.data.ext);
+
     return Positioned(
         left  : widget.data.position.dx,
         top   : widget.data.position.dy,
-        child : widget.onBuild.call(context, widget.data.ext)
+        child : widget.data.subWidget!
     );
   }
 }
