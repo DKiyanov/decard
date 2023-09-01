@@ -9,12 +9,10 @@ Future<void> playAudio(String fileName) async {
 
   final player = AudioPlayer();
 
-  player.onPlayerComplete.listen((_) {
-    player.dispose();
-  });
-
   await player.setSourceDeviceFile(fileName);
   player.resume();
+
+  await player.onPlayerComplete.first;
 }
 
 class SimpleAudioButton extends StatefulWidget {

@@ -12,6 +12,7 @@ enum DragBoxSpec {
   none,
   move,
   canDrop,
+  tapInProcess,
   focus,
   insertPos,
   editPos,
@@ -727,24 +728,30 @@ class WordPanelState extends State<WordPanel> {
       }
     }
 
-    if (setFocus) {
-      boxInfo.data.ext.spec = DragBoxSpec.focus;
-      _focusBox = boxInfo;
-
-      if (widget.controller.focusAsCursor) {
-        _hideCursor();
-      }
-    }
-
     bool labelChanged = false;
 
     if (widget.onDragBoxTap != null){
+      final saveSpec = boxInfo.data.ext.spec;
+      boxInfo.data.ext.spec = DragBoxSpec.tapInProcess;
+      boxInfo.setState();
+
       final newLabel = await widget.onDragBoxTap!.call(boxInfo.data.ext.label, boxInfo.data.subWidget!, position, globalPosition);
       if (newLabel != null ) {
         if (boxInfo.data.ext.label != newLabel) {
           boxInfo.data.ext.label = newLabel;
           labelChanged = true;
         }
+      }
+
+      boxInfo.data.ext.spec = saveSpec;
+    }
+
+    if (setFocus) {
+      boxInfo.data.ext.spec = DragBoxSpec.focus;
+      _focusBox = boxInfo;
+
+      if (widget.controller.focusAsCursor) {
+        _hideCursor();
       }
     }
 

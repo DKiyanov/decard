@@ -34,6 +34,7 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
   late  double _fontSize;
   final Color  _borderColor      = Colors.black;
   final double _borderWidth      = 1.0;
+  final Color  _tapInProcessBorderColor  = Colors.green;
   final Color  _focusBorderColor  = Colors.blue;
   final double _focusBorderWidth  = 2.0;
   final Color  _editPosColor      = Colors.blue;
@@ -115,32 +116,32 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
 
       if (_starting) {
         return Offstage(
-          child: startBody(),
+          child: _startBody(),
         );
       }
 
-      return body(viewportConstraints);
+      return _body(viewportConstraints);
     });
 
   }
 
-  Widget body(BoxConstraints viewportConstraints) {
+  Widget _body(BoxConstraints viewportConstraints) {
     if (_basementHeight == 0.0) {
       return Column(
         children: [
 
-          toolbar(),
+          _toolbar(),
 
           Container(height: 4),
 
           SizedBox(
             height: _panelHeight,
-            child: wordPanel()
+            child: _wordPanel()
           ),
 
           Offstage( child: SizedBox(
             height:  300,
-            child: basement(),
+            child: _basement(),
           )),
         ],
       );
@@ -149,13 +150,13 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
     return Column(
       children: [
 
-        toolbar(),
+        _toolbar(),
 
         Container(height: 4),
 
         SizedBox(
             height: _panelHeight,
-            child: wordPanel()
+            child: _wordPanel()
         ),
 
         const Divider(
@@ -164,7 +165,7 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
 
         SizedBox(
           height:  _basementHeight,
-          child: basement(),
+          child: _basement(),
         ),
 
         Container(height: 4),
@@ -173,32 +174,32 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
 
   }
 
-  Widget startBody() {
+  Widget _startBody() {
     return Column(
       children: [
 
         SizedBox(
           height: 100,
-          child: wordPanel(),
+          child: _wordPanel(),
         ),
 
         SizedBox(
             height: 100,
-            child: basement()
+            child: _basement()
         ),
 
       ],
     );
   }
 
-  Widget wordPanel() {
+  Widget _wordPanel() {
     return WordPanel(
       key                : _panelKey,
       controller         : _panelController,
-      onDragBoxBuild     : onDragBoxBuild,
-      onDragBoxTap       : onDragBoxTap,
-      onDragBoxLongPress : onDragBoxLongPress,
-      onDoubleTap        : onDragBoxLongPress,
+      onDragBoxBuild     : _onDragBoxBuild,
+      onDragBoxTap       : _onDragBoxTap,
+      onDragBoxLongPress : _onDragBoxLongPress,
+      onDoubleTap        : _onDragBoxLongPress,
       onChangeHeight     : (double newHeight) {
         final extHeight = newHeight + _panelController.wordBoxHeight;
         if (_panelHeight != extHeight) {
@@ -210,12 +211,12 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
     );
   }
 
-  Widget basement() {
+  Widget _basement() {
     return WordGrid(
       key            : _basementKey,
       controller     : _basementController,
-      onDragBoxBuild : onBasementBoxBuild,
-      onDragBoxTap   : onBasementBoxTap,
+      onDragBoxBuild : _onBasementBoxBuild,
+      onDragBoxTap   : _onBasementBoxTap,
       onChangeHeight : (double newHeight) {
         final extHeight = newHeight;
         if (_basementHeight != extHeight) {
@@ -227,7 +228,7 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
     );
   }
 
-  Widget toolbar() {
+  Widget _toolbar() {
     return  EventReceiverWidget(
         events: [_toolBarRefresh],
         builder: (BuildContext context) {
@@ -240,7 +241,7 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
                   if (_textConstructorData.btnKeyboard) ...[
                     IconButton(
                       onPressed: () async {
-                        final word = await wordInputDialog(context);
+                        final word = await _wordInputDialog(context);
                         if (word.isEmpty) return;
 
                         final pos = _panelController.getCursorPos(lastPostIfNot: true);
@@ -287,14 +288,14 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
 
                   if (_textConstructorData.btnBackspace) ...[
                     IconButton(
-                      onPressed: ()=> deleteWord(-1),
+                      onPressed: ()=> _deleteWord(-1),
                       icon: const Icon(Icons.backspace_outlined),
                     ),
                   ],
 
                   if (_textConstructorData.btnDelete) ...[
                     IconButton(
-                      onPressed: ()=> deleteWord(),
+                      onPressed: ()=> _deleteWord(),
                       icon: const Icon(Icons.delete_outline),
                     ),
                   ],
@@ -322,7 +323,7 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
     );
   }
 
-  void deleteWord([int posAdd = 0]){
+  void _deleteWord([int posAdd = 0]){
     var pos = _panelController.getCursorPos(onlyCursor: true);
 
     bool cursor = false;
@@ -351,7 +352,7 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
       word = word.substring(1);
     }
 
-    final wordObject = getWordObjectFromLabel(word);
+    final wordObject = _getWordObjectFromLabel(word);
     if (wordObject != null) {
       if (wordObject.nonRemovable) return;
     }
@@ -362,11 +363,11 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
     _basementController.addWord(word);
   }
 
-  Future<String?> onDragBoxTap(String label, Widget child, Offset position, Offset globalPosition) async {
+  Future<String?> _onDragBoxTap(String label, Widget child, Offset position, Offset globalPosition) async {
     if (label.isEmpty) return label;
 
     if (label == JrfSpecText.wordKeyboard) {
-      final inputValue = await wordInputDialog(context);
+      final inputValue = await _wordInputDialog(context);
       if (inputValue.isEmpty) return null;
       return inputValue;
     }
@@ -375,7 +376,7 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
     final fileName = _textConstructorData.audioMap[boxWidget.outStr];
     if (fileName != null) {
       final filePath = widget.onPrepareFilePath!(fileName);
-      playAudio(filePath);
+      await playAudio(filePath);
     }
 
     if (_textConstructorData.markStyle >= 0) {
@@ -389,11 +390,11 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
     return label;
   }
 
-  Future<String?> onDragBoxLongPress(String label, Widget child, Offset position, Offset globalPosition) async {
-    return showPopupMenu(label, globalPosition);
+  Future<String?> _onDragBoxLongPress(String label, Widget child, Offset position, Offset globalPosition) async {
+    return _showPopupMenu(label, globalPosition);
   }
 
-  Widget editPos() {
+  Widget _editPosWidget() {
     return Container(
       decoration: BoxDecoration(
         borderRadius: const BorderRadius.all(Radius.circular(3)),
@@ -404,7 +405,7 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
     );
   }
 
-  Widget insertPos() {
+  Widget _insertPosWidget() {
     return Container(
       decoration: BoxDecoration(
         borderRadius: const BorderRadius.all(Radius.circular(3)),
@@ -415,31 +416,31 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
     );
   }
 
-  Widget onDragBoxBuild(BuildContext context, PanelBoxExt ext){ //String label, DragBoxSpec spec) {
+  Widget _onDragBoxBuild(BuildContext context, PanelBoxExt ext){ //String label, DragBoxSpec spec) {
     if (ext.spec == DragBoxSpec.editPos){
-      return editPos();
+      return _editPosWidget();
     }
 
     if (ext.spec == DragBoxSpec.insertPos){
-      return insertPos();
+      return _insertPosWidget();
     }
 
-    return labelWidget(context, ext.label, ext.spec);
+    return _labelWidget(context, ext.label, ext.spec);
   }
 
-  Widget basementGroupHead(BuildContext context, String label) {
+  Widget _basementGroupHead(BuildContext context, String label) {
     return Text(label);
   }
 
-  Widget onBasementBoxBuild(BuildContext context, GridBoxExt ext) {
+  Widget _onBasementBoxBuild(BuildContext context, GridBoxExt ext) {
     if (ext.isGroup) {
-      return basementGroupHead(context, ext.label);
+      return _basementGroupHead(context, ext.label);
     }
 
-    return labelWidget(context, ext.label, DragBoxSpec.none);
+    return _labelWidget(context, ext.label, DragBoxSpec.none);
   }
 
-  double internalBoxHeight() {
+  double _internalBoxHeight() {
     if (_textConstructorData.boxHeight > 0) {
       return _textConstructorData.boxHeight - 2;
     }
@@ -448,7 +449,7 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
     return _panelController.wordBoxHeight - 2;
   }
 
-  WordObject? getWordObjectFromLabel(String label) {
+  WordObject? _getWordObjectFromLabel(String label) {
     if (label.substring(0, 1) != '#') return null;
 
     String objectName;
@@ -462,7 +463,7 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
     return wordObject;
   }
 
-  Widget labelWidget(BuildContext context, String label, DragBoxSpec spec) {
+  Widget _labelWidget(BuildContext context, String label, DragBoxSpec spec) {
     if (label.isEmpty) return Container();
 
     var viewIndex = -1;
@@ -491,13 +492,13 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
 
       final viewStr = wordObject.views[viewIndex];
 
-      return getObjectViewWidget(context, objectName: objectName, viewStr: viewStr, styleIndex: styleIndex, spec: spec );
+      return _getObjectViewWidget(context, objectName: objectName, viewStr: viewStr, styleIndex: styleIndex, spec: spec );
     }
 
-    return getObjectViewWidget(context, label: label, styleIndex: styleIndex, spec : spec );
+    return _getObjectViewWidget(context, label: label, styleIndex: styleIndex, spec : spec );
   }
 
-  Widget getObjectViewWidget(BuildContext context, {
+  Widget _getObjectViewWidget(BuildContext context, {
     String      label      = '',
     String      objectName = '',
     String      viewStr    = '',
@@ -633,6 +634,10 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
     if (spec == DragBoxSpec.canDrop) {
       backgroundColor = _colorWordCanDrop;
     }
+    if (spec == DragBoxSpec.tapInProcess) {
+      borderColor = _tapInProcessBorderColor;
+      borderWidth = _focusBorderWidth;
+    }
     if (spec == DragBoxSpec.focus) {
       borderColor = _focusBorderColor;
       borderWidth = _focusBorderWidth;
@@ -640,10 +645,10 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
 
     Widget? retWidget;
 
-    retWidget = extWidget(context, outStr, spec, textColor, backgroundColor);
+    retWidget = _extWidget(context, outStr, spec, textColor, backgroundColor);
     if (retWidget != null) {
       retWidget = SizedBox(
-          height : internalBoxHeight(),
+          height : _internalBoxHeight(),
           child  : retWidget
       );
     }
@@ -667,18 +672,22 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
     );
 
     if (forPopup) {
-      return makeDecoration(
-        child           : retWidget,
-        borderColor     : _borderColor,
-        borderWidth     : _borderWidth,
-        backgroundColor : backgroundColor,
+      return _BoxWidget(
+        outStr: outStr,
+        menuText: menuText,
+        child: _makeDecoration(
+          child           : retWidget,
+          borderColor     : _borderColor,
+          borderWidth     : _borderWidth,
+          backgroundColor : backgroundColor,
+        ),
       );
     }
 
     return _BoxWidget(
       outStr: outStr,
       menuText: menuText,
-      child: makeDecoration(
+      child: _makeDecoration(
         child           : retWidget,
         borderColor     : borderColor,
         borderWidth     : borderWidth,
@@ -687,7 +696,7 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
     );
   }
 
-  Widget? extWidget(BuildContext context, String outStr, DragBoxSpec spec, Color textColor, Color backgroundColor) {
+  Widget? _extWidget(BuildContext context, String outStr, DragBoxSpec spec, Color textColor, Color backgroundColor) {
     if (outStr.indexOf(JrfSpecText.imagePrefix) == 0) {
       final imagePath = outStr.substring(JrfSpecText.imagePrefix.length);
       final absPath = widget.onPrepareFilePath!.call(imagePath);
@@ -715,7 +724,7 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
     return null;
   }
 
-  Widget makeDecoration({
+  Widget _makeDecoration({
     required Widget child,
     required Color  borderColor,
     required double borderWidth,
@@ -739,7 +748,7 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
     );
   }
 
-  Future<String?> showPopupMenu(String label, Offset position) async {
+  Future<String?> _showPopupMenu(String label, Offset position) async {
     if (label.isEmpty) return null;
     if (label.substring(0, 1) != '#') return null;
 
@@ -756,8 +765,8 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
 
     for ( var i = 0; i < wordObject.views.length; i++ ) {
       final viewStr = wordObject.views[i];
-      final popupItemWidget = getObjectViewWidget(context, objectName: objectName, viewStr: viewStr, forPopup: true);
-      if (popupItemWidget is _BoxWidget) continue;
+      final popupItemWidget = _getObjectViewWidget(context, objectName: objectName, viewStr: viewStr, forPopup: true) as _BoxWidget;
+      if (popupItemWidget.menuText == JrfSpecText.hideMenuItem) continue;
 
       popupItems.add( PopupMenuItem(
           value: '#$i|$objectName',
@@ -776,7 +785,7 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
     return value;
   }
 
-  void onBasementBoxTap(DragBoxInfo<GridBoxExt> boxInfo, Offset position) {
+  void _onBasementBoxTap(DragBoxInfo<GridBoxExt> boxInfo, Offset position) {
     final curPos = _panelController.getCursorPos(lastPostIfNot: true);
     _panelController.saveCursor();
     _panelController.insertWord(curPos, boxInfo.data.ext.label);
@@ -788,7 +797,7 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
     _basementController.refresh();
   }
 
-  Future<String> wordInputDialog(BuildContext context) async {
+  Future<String> _wordInputDialog(BuildContext context) async {
     final textController = TextEditingController();
     String  word = '';
 
