@@ -901,9 +901,10 @@ class _CardWidgetState extends State<CardWidget> {
     final textConstructor = TextConstructorData.fromMap(jsonDecode(jsonStr));
 
     return TextConstructorWidget(
-        textConstructor : textConstructor,
-        onRegisterAnswer: _onSelectAnswer,
-        onPrepareFilePath: prepareFilePath,
+        textConstructor   : textConstructor,
+        onRegisterAnswer  : _onSelectAnswer,
+        onPrepareFilePath : prepareFilePath,
+        quality           : widget.card.stat.quality,
     );
   }
 

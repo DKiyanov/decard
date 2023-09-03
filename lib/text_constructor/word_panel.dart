@@ -189,6 +189,48 @@ class WordPanelController {
 
     _panelState!._refresh();
   }
+
+  static List<String> textToWordList(String text) {
+    if (text.isEmpty) return [];
+
+    final wordList = <String>[];
+
+    final subStrList = text.split("'");
+
+    bool solid = false;
+
+    for (var subStr in subStrList) {
+      if (solid) {
+        wordList.add(subStr);
+      } else {
+        wordList.addAll(subStr.split(' '));
+      }
+
+      solid = !solid;
+    }
+
+    return wordList;
+  }
+
+  static String wordListToText(List<String> wordList){
+    String ret = '';
+
+    for (var i = 0; i < wordList.length; i++) {
+      var word = wordList[i];
+      if (word.contains(' ')) {
+        word = "'$word'";
+      }
+
+      if (ret.isEmpty) {
+        ret = word;
+      } else {
+        ret = '$ret $word';
+      }
+    }
+
+    return ret;
+  }
+
 }
 
 class WordPanel extends StatefulWidget {
@@ -281,25 +323,8 @@ class WordPanelState extends State<WordPanel> {
   }
 
   List<DragBoxInfo<PanelBoxExt>> _splitText(String text) {
-    if (text.isEmpty) return [];
-
+    final wordList = WordPanelController.textToWordList(text);
     final result = <DragBoxInfo<PanelBoxExt>>[];
-
-    final wordList = <String>[];
-
-    final subStrList = text.split("'");
-
-    bool solid = false;
-
-    for (var subStr in subStrList) {
-      if (solid) {
-        wordList.add(subStr);
-      } else {
-        wordList.addAll(subStr.split(' '));
-      }
-
-      solid = !solid;
-    }
 
     for (var word in wordList) {
       if (word.isNotEmpty) {
@@ -356,21 +381,13 @@ class WordPanelState extends State<WordPanel> {
   }
 
   String _getText(){
-    String ret = '';
+    final wordList = <String>[];
 
     for (var i = 0; i < _boxInfoList.length; i++) {
-      var label = _boxInfoList[i].data.ext.label;
-      if (label.contains(' ')) {
-        label = "'$label'";
-      }
-
-      if (ret.isEmpty) {
-        ret = label;
-      } else {
-        ret = '$ret $label';
-      }
+      wordList.add(_boxInfoList[i].data.ext.label);
     }
 
+    final ret = WordPanelController.wordListToText(wordList);
     return ret;
   }
 

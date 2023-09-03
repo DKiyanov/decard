@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:collection/collection.dart';
 import 'package:decard/text_constructor/word_grid.dart';
 import 'package:decard/text_constructor/word_panel.dart';
@@ -19,7 +21,8 @@ class TextConstructorWidget extends StatefulWidget {
   final TextConstructorData textConstructor;
   final RegisterAnswer onRegisterAnswer;
   final PrepareFilePath? onPrepareFilePath;
-  const TextConstructorWidget({required this.textConstructor, required this.onRegisterAnswer, this.onPrepareFilePath, Key? key}) : super(key: key);
+  final int? quality;
+  const TextConstructorWidget({required this.textConstructor, required this.onRegisterAnswer, this.onPrepareFilePath, this.quality, Key? key}) : super(key: key);
 
   @override
   State<TextConstructorWidget> createState() => _TextConstructorWidgetState();
@@ -29,6 +32,12 @@ class _HistData {
   String panelStr;
   String basementStr;
   _HistData(this.panelStr, this.basementStr);
+}
+
+class _RandomDelWordResult {
+  final String text;
+  final String delWords;
+  _RandomDelWordResult(this.text, this.delWords);
 }
 
 class _TextConstructorWidgetState extends State<TextConstructorWidget> {
@@ -81,15 +90,70 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
     _textConstructorData = widget.textConstructor; //TextConstructorData.fromMap(jsonDecode(textConstructorJson));
     _fontSize = _textConstructorData.fontSize;
 
+    var panelText = _textConstructorData.text;
+    var basementText = widget.textConstructor.basement;
+
+    if (widget.quality != null) {
+      if (_textConstructorData.randomMixWord) {
+        panelText = _randomMixWord(panelText, widget.quality!);
+      }
+      if (_textConstructorData.randomDelWord) {
+        final delResult = _randomDelWord(panelText, widget.quality!);
+        panelText = delResult.text;
+        basementText = '$basementText ${delResult.delWords}';
+      }
+    }
+
     _panelController = WordPanelController(
-      text          : _textConstructorData.text,
+      text          : panelText,
       onChange      : _onChange,
       canMoveWord   : _textConstructorData.canMoveWord,
       noCursor      : _textConstructorData.noCursor,
       focusAsCursor : _textConstructorData.focusAsCursor,
     );
 
-    _basementController = WordGridController(widget.textConstructor.basement);
+    _basementController = WordGridController(basementText);
+  }
+
+  String _randomMixWord(String text, int percent) {
+    final wordList = WordPanelController.textToWordList(text);
+    final count = ( wordList.length * percent ) ~/ 100;
+    final wordListLength = wordList.length;
+
+    final random = Random();
+
+    for ( var i = 0; i < count ; i++) {
+      final delPos = random.nextInt(wordListLength);
+      final word = wordList[delPos];
+      wordList.removeAt(delPos);
+
+      final insPos = random.nextInt(wordListLength);
+      wordList.insert(insPos, word);
+    }
+
+    final result = WordPanelController.wordListToText(wordList);
+    return result;
+  }
+
+  _RandomDelWordResult _randomDelWord(String text, int percent) {
+    final wordList = WordPanelController.textToWordList(text);
+    final count = ( wordList.length * percent ) ~/ 100;
+    final wordListLength = wordList.length;
+    final delWords = <String>[];
+
+    final random = Random();
+
+    for ( var i = 0; i < count ; i++) {
+      final delPos = random.nextInt(wordListLength);
+      final word = wordList[delPos];
+      wordList.removeAt(delPos);
+      delWords.add(word);
+    }
+
+    final newText = WordPanelController.wordListToText(wordList);
+    final delWordsText = WordPanelController.wordListToText(delWords);
+
+    return _RandomDelWordResult(newText, delWordsText);
   }
 
   void _onChange() {

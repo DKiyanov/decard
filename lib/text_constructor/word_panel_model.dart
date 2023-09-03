@@ -6,6 +6,7 @@ class JrfTextConstructor {
   static const String basement           = 'basement';
   static const String audioMap           = 'audioMap';
   static const String randomMixWord      = 'randomMixWord';
+  static const String randomDelWord      = 'randomDelWord';
   static const String randomView         = 'randomView';
   static const String notDelFromBasement = 'notDelFromBasement';
   static const String canMoveWord        = 'canMoveWord';
@@ -48,6 +49,7 @@ class TextConstructorData {
 
   final bool canMoveWord;
   final bool randomMixWord;
+  final bool randomDelWord;
   final bool randomView;
   final bool notDelFromBasement;
   final bool noCursor;
@@ -73,6 +75,7 @@ class TextConstructorData {
     required this.basement,
     required this.audioMap,
     required this.randomMixWord,
+    required this.randomDelWord,
     required this.randomView,
     required this.notDelFromBasement,
     this.canMoveWord   = true,
@@ -108,6 +111,7 @@ class TextConstructorData {
       basement           : json[JrfTextConstructor.basement]??'',
       audioMap           : audioMap,
       randomMixWord      : json[JrfTextConstructor.randomMixWord]??false,
+      randomDelWord      : json[JrfTextConstructor.randomDelWord]??false,
       randomView         : json[JrfTextConstructor.randomView]??false,
       notDelFromBasement : json[JrfTextConstructor.notDelFromBasement]??false,
       canMoveWord        : json[JrfTextConstructor.canMoveWord]??true,
@@ -134,8 +138,9 @@ class TextConstructorData {
     JrfTextConstructor.styles             :styles,
     JrfTextConstructor.markStyle          :markStyle,
     JrfTextConstructor.basement           :basement,
-    JrfTextConstructor.audioMap          :audioMap,
+    JrfTextConstructor.audioMap           :audioMap,
     JrfTextConstructor.randomMixWord      :randomMixWord,
+    JrfTextConstructor.randomDelWord      :randomDelWord,
     JrfTextConstructor.randomView         :randomView,
     JrfTextConstructor.notDelFromBasement :notDelFromBasement,
     JrfTextConstructor.canMoveWord        :canMoveWord,
