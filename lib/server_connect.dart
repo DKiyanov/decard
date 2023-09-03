@@ -212,13 +212,18 @@ class ServerConnect {
 
     if (lastStatDate >= fileDate) return 0;
 
-    //final fileData = await client.read(filePath);
-    //final jsonStr = utf8.decode(fileData);
-    //final rows = jsonDecode(jsonStr) as List;
+    final fileData = await client.read(filePath);
+    final jsonStr = utf8.decode(fileData);
+    final rows = jsonDecode(jsonStr) as List;
 
-    // for (var row in rows) {
-    //   await child.dbSource.tabCardStat.setRows(rows);
-    // }
+    child.dbSource.tabCardStat.clear();
+    CardStatExchange.dbSource = child.dbSource;
+
+    for (var row in rows) {
+      final statExchange = CardStatExchange.fromJson(row);
+      final dbRowMap = await statExchange.toDbMap();
+      child.dbSource.tabCardStat.insertRowFromMap(dbRowMap);
+    }
 
     return fileDate;
   }

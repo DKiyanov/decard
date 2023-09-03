@@ -649,14 +649,13 @@ class DayResult {
 }
 
 class CardStatExchange {
-  static const String kFileGuid      = "fileGuid";
-  static const String kFileVersion   = "fileVersion";
-  static const String kCardID        = "cardID";
+  static const String kFileGuid = "fileGuid";
+  static const String kCardID   = "cardID";
 
   static DbSource? dbSource; // for time fromMap / toJson
 
-  final int    jsonFileID;
-  final String cardKey;
+  final String fileGuid;
+  final String cardID;            // == json Card.id
   final int    quality;           // studying quality, 100 - card is completely studied; 0 - minimum studying quality
   final int    qualityFromDate;   // the first date taken into account when calculating quality
   final int    startDate;         // date of studying beginning
@@ -664,8 +663,8 @@ class CardStatExchange {
   final int    testsCount;        // number of tests
 
   CardStatExchange({
-    required this.jsonFileID,
-    required this.cardKey,
+    required this.fileGuid,
+    required this.cardID,
     required this.quality,
     required this.qualityFromDate,
     required this.startDate,
@@ -673,10 +672,27 @@ class CardStatExchange {
     required this.testsCount,
   });
 
-  factory CardStatExchange.fromDbMap(Map<String, dynamic> json){
+  factory CardStatExchange.fromDbMap(Map<String, dynamic> json) {
+    // child -> server
+    // for output to server from child device DB
+    final fileKey = dbSource!.tabJsonFile.jsonFileIdToFileKey(json[TabCardStat.kJsonFileID]);
     return CardStatExchange(
-      jsonFileID        : json[TabCardStat.kJsonFileID],
-      cardKey           : json[TabCardStat.kCardKey],
+      fileGuid          : fileKey.guid,
+      cardID            : json[TabCardStat.kCardKey],
+      quality           : json[TabCardStat.kQuality],
+      qualityFromDate   : json[TabCardStat.kQualityFromDate],
+      startDate         : json[TabCardStat.kStartDate],
+      lastTestDate      : json[TabCardStat.kLastTestDate]??0,
+      testsCount        : json[TabCardStat.kTestsCount],
+    );
+  }
+
+  factory CardStatExchange.fromJson(Map<String, dynamic> json) {
+    // server -> child
+    // for load from server to child DB
+    return CardStatExchange(
+      fileGuid          : json[kFileGuid],
+      cardID            : json[kCardID],
       quality           : json[TabCardStat.kQuality],
       qualityFromDate   : json[TabCardStat.kQualityFromDate],
       startDate         : json[TabCardStat.kStartDate],
@@ -686,14 +702,19 @@ class CardStatExchange {
   }
 
   Future<Map<String, dynamic>> toDbMap() async {
-    final cardID = await dbSource!.tabCardHead.getCardIdFromKey(jsonFileID, cardKey);
-    final row = (await dbSource!.tabCardHead.getRow(cardID))!;
+    // server -> child
+    // make map for save to DB tab TabCardStat
+
+    final jsonFileID = dbSource!.tabJsonFile.fileGuidToJsonFileId(fileGuid)!;
+    final cardDBID = await dbSource!.tabCardHead.getCardIdFromKey(jsonFileID, cardID);
+
+    final row = (await dbSource!.tabCardHead.getRow(cardDBID))!;
     final String groupKey = row[TabCardHead.kGroup]??'';
 
     Map<String, dynamic> map = {
       TabCardStat.kJsonFileID      : jsonFileID,
-      TabCardStat.kCardID          : cardID,
-      TabCardStat.kCardKey         : cardKey,
+      TabCardStat.kCardID          : cardDBID,
+      TabCardStat.kCardKey         : cardID,
       TabCardStat.kCardGroupKey    : groupKey,
       TabCardStat.kQuality         : quality,
       TabCardStat.kQualityFromDate : qualityFromDate,
@@ -705,27 +726,13 @@ class CardStatExchange {
     return map;
   }
 
-  factory CardStatExchange.fromJson(Map<String, dynamic> json){
-    final jsonFileID = dbSource!.tabJsonFile.fileGuidToJsonFileId(json[kFileGuid])!;
-
-    return CardStatExchange(
-      jsonFileID        : jsonFileID,
-      cardKey           : json[kCardID],
-      quality           : json[TabCardStat.kQuality],
-      qualityFromDate   : json[TabCardStat.kQualityFromDate],
-      startDate         : json[TabCardStat.kStartDate],
-      lastTestDate      : json[TabCardStat.kLastTestDate]??0,
-      testsCount        : json[TabCardStat.kTestsCount],
-    );
-  }
-
   Map<String, dynamic> toJson(){
-    final fileKey = dbSource!.tabJsonFile.jsonFileIdToFileKey(jsonFileID);
+    // child -> server
+    // for make json and save it to server
 
     Map<String, dynamic> map = {
-      kFileGuid                    : fileKey.guid,
-      kFileVersion                 : fileKey.version,
-      kCardID                      : cardKey,
+      kFileGuid                    : fileGuid,
+      kCardID                      : cardID,
       TabCardStat.kQuality         : quality,
       TabCardStat.kQualityFromDate : qualityFromDate,
       TabCardStat.kStartDate       : startDate,
@@ -839,7 +846,11 @@ class TabCardStat {
     return id;
   }
 
-  /// Deletes all records in the table, needed for test purposes
+  Future<int> insertRowFromMap(Map<String, dynamic> rowMap) async {
+    final id = await db.insert(tabName, rowMap);
+    return id;
+  }
+
   Future<void> clear() async {
     await db.delete(tabName);
   }
