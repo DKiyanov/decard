@@ -75,6 +75,7 @@ class _BoxesAreaState<T> extends State<BoxesArea<T>> {
   late BoxesAreaController<T> _controller;
   final _stackKey = GlobalKey();
   bool  _refreshing = true;
+  bool  _starting = true;
 
   double _width = 0.0;
   double _height = 0.0;
@@ -102,14 +103,24 @@ class _BoxesAreaState<T> extends State<BoxesArea<T>> {
 
         if (_viewportSize.width != viewportConstraints.maxWidth || _viewportSize.height != viewportConstraints.maxHeight) {
           _viewportSize = Size(viewportConstraints.maxWidth, viewportConstraints.maxHeight);
-          _calcSize(viewportConstraints);
         }
 
-        if (_refreshing) {
-          _calcSize(viewportConstraints);
+        _calcSize(viewportConstraints);
 
+        if (_refreshing) {
           _refreshing = false;
           setState(() {});
+
+          if (_starting) {
+            _starting = false;
+            Future.delayed(const Duration(milliseconds: 300), () {
+              _calcSize(viewportConstraints);
+              if (_refreshing) {
+                setState(() {});
+              }
+            });
+          }
+
           return;
         }
       });
@@ -150,7 +161,9 @@ class _BoxesAreaState<T> extends State<BoxesArea<T>> {
   void _calcSize(BoxConstraints viewportConstraints) {
     for (var boxInfo in _controller.boxInfoList) {
       if (!boxInfo.data.visible) continue;
-      boxInfo.refreshSize();
+      if (boxInfo.refreshSize()) {
+        _refreshing = true;
+      }
     }
 
     widget.onRebuildLayout.call(viewportConstraints, _controller.boxInfoList);

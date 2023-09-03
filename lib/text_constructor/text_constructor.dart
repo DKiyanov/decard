@@ -25,6 +25,12 @@ class TextConstructorWidget extends StatefulWidget {
   State<TextConstructorWidget> createState() => _TextConstructorWidgetState();
 }
 
+class _HistData {
+  String panelStr;
+  String basementStr;
+  _HistData(this.panelStr, this.basementStr);
+}
+
 class _TextConstructorWidgetState extends State<TextConstructorWidget> {
   late TextConstructorData _textConstructorData;
   late WordPanelController _panelController;
@@ -55,7 +61,7 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
     'o' : Colors.orange,
   };
 
-  final _historyList = <String>[];
+  final _historyList = <_HistData>[];
   bool _historyRecordOn = true;
   int _historyPos = -1;
 
@@ -87,6 +93,7 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
   }
 
   void _onChange() {
+    if (_starting) return;
     if (!_historyRecordOn) return;
 
     if (_historyPos >= 0) {
@@ -94,12 +101,14 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
       _historyPos = -1;
     }
 
-    final text = _panelController.text;
-    if (_historyList.isNotEmpty && _historyList.last == text) {
+    final panelStr = _panelController.text;
+    if (_historyList.isNotEmpty && _historyList.last.panelStr == panelStr) {
       return;
     }
 
-    _historyList.add(text);
+    final basementStr = _basementController.getVisibleWords();
+
+    _historyList.add(_HistData(panelStr, basementStr));
     _toolBarRefresh.send();
   }
 
@@ -110,6 +119,7 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
         if (_starting) {
           setState(() {
             _starting = false;
+            _onChange();
           });
         }
       });
@@ -263,7 +273,9 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
                         }
 
                         _historyRecordOn = false;
-                        _panelController.text = _historyList[_historyPos];
+                        final histData = _historyList[_historyPos];
+                        _panelController.text = histData.panelStr;
+                        _basementController.setVisibleWords(histData.basementStr);
                         _historyRecordOn = true;
 
                         _toolBarRefresh.send();
@@ -277,7 +289,9 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
                       onPressed: (_historyPos < 0 || _historyPos == (_historyList.length - 1) ) ? null : (){
                         _historyPos ++;
                         _historyRecordOn = false;
-                        _panelController.text = _historyList[_historyPos];
+                        final histData = _historyList[_historyPos];
+                        _panelController.text = histData.panelStr;
+                        _basementController.setVisibleWords(histData.basementStr);
                         _historyRecordOn = true;
 
                         _toolBarRefresh.send();
@@ -357,10 +371,10 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
       if (wordObject.nonRemovable) return;
     }
 
+    _basementController.addWord(word);
+
     _panelController.deleteWord(pos);
     _panelController.refreshPanel();
-
-    _basementController.addWord(word);
   }
 
   Future<String?> _onDragBoxTap(String label, Widget child, Offset position, Offset globalPosition) async {
@@ -786,15 +800,15 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
   }
 
   void _onBasementBoxTap(DragBoxInfo<GridBoxExt> boxInfo, Offset position) {
+    if (!_textConstructorData.notDelFromBasement){
+      boxInfo.setState(visible: false);
+      _basementController.refresh();
+    }
+
     final curPos = _panelController.getCursorPos(lastPostIfNot: true);
     _panelController.saveCursor();
     _panelController.insertWord(curPos, boxInfo.data.ext.label);
     _panelController.refreshPanel();
-
-    if (_textConstructorData.notDelFromBasement) return;
-
-    boxInfo.setState(visible: false);
-    _basementController.refresh();
   }
 
   Future<String> _wordInputDialog(BuildContext context) async {

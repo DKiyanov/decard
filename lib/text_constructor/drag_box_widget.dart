@@ -46,10 +46,16 @@ class DragBoxInfo<T>{
     }
   }
 
-  void refreshSize() {
+  bool refreshSize() {
     final boxKey = widget.key as GlobalKey<DragBoxState>;
     final renderBox = boxKey.currentContext!.findRenderObject() as RenderBox;
-    size = renderBox.size;
+
+    if (size.width != renderBox.size.width || size.height != renderBox.size.height) {
+      size = renderBox.size;
+      return true;
+    }
+
+    return false;
   }
 
   static DragBoxInfo<T> create<T>({required DragBoxBuilder<T> builder, required T ext}){

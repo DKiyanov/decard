@@ -34,7 +34,7 @@ class JrfSpecText {
 class JtfWordObject {
   static const String name         = 'name';
   static const String viewIndex    = 'viewIndex';
-  static const String nonRemovable = 'nonRemovabl';
+  static const String nonRemovable = 'nonRemovable';
   static const String views        = 'views';
 }
 
@@ -52,6 +52,7 @@ class TextConstructorData {
   final bool notDelFromBasement;
   final bool noCursor;
   final bool focusAsCursor;
+
   final List<String>? answerList;
 
   final double fontSize ;

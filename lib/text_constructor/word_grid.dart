@@ -35,6 +35,20 @@ class WordGridController {
 
     _gridState!._refresh();
   }
+
+  String getVisibleWords() {
+    if (_gridState == null) return '';
+    if (!_gridState!.mounted) return '';
+
+    return _gridState!._getVisibleWords();
+  }
+
+  void setVisibleWords(String words) {
+    if (_gridState == null) return;
+    if (!_gridState!.mounted) return;
+
+    _gridState!._setVisibleWords(words);
+  }
 }
 
 class WordGrid extends StatefulWidget {
@@ -235,16 +249,18 @@ class _WordGridState extends State<WordGrid> {
       toIndex = _boxInfoList.length - 1;
     }
 
-    midWidth = midWidth / count;
+    midWidth = (midWidth / count).truncateToDouble();
 
     if (maxWidth > panelWidth) {
       maxWidth = panelWidth;
     }
 
-    int bestLineCount = 100000000;
+    maxWidth = maxWidth.truncateToDouble() + 1;
+
+    double bestLineCount = 100000000;
     double bestColumnWidth = 0.0;
 
-    for (double columnWidth = midWidth; columnWidth <= maxWidth; columnWidth ++) {
+    for (double columnWidth = midWidth; columnWidth <= maxWidth; columnWidth = columnWidth + 0.1 ) {
       final lineCount = _getGroupLineCount(fromIndex, toIndex, columnWidth, panelWidth);
 
       if (bestLineCount >= lineCount) {
@@ -323,15 +339,19 @@ class _WordGridState extends State<WordGrid> {
     _height = position.dy + lineHeight;
   }
 
-  int _getGroupLineCount(int fromIndex, int toIndex, double columnWidth, double panelWidth) {
-    int lineCount = 1;
+  double _getGroupLineCount(int fromIndex, int toIndex, double columnWidth, double panelWidth) {
+    double lineCount = 1;
 
     double lineWidth = 0;
+    int penalty = 0;
 
     for (var i = fromIndex; i <= toIndex; i++) {
       final boxInfo = _boxInfoList[i];
 
       final boxWidth = _getBoxGridWidth(boxInfo.size.width, columnWidth, panelWidth);
+      if (boxWidth > columnWidth) {
+        penalty ++;
+      }
 
       lineWidth += boxWidth;
 
@@ -341,7 +361,7 @@ class _WordGridState extends State<WordGrid> {
       }
     }
 
-    return lineCount;
+    return lineCount + (penalty * 0.3);
   }
 
   @override
@@ -386,12 +406,54 @@ class _WordGridState extends State<WordGrid> {
     if (boxInfo != null) {
       boxInfo.setState(visible: true);
     } else {
-      _boxInfoList.add(
-        _createDragBoxInfo(word)
-      );
+      if (!_boxInfoList.any((boxInfo) => boxInfo.data.ext.label == word)) {
+        _boxInfoList.add(
+            _createDragBoxInfo(word)
+        );
+      }
     }
 
     _boxAreaController.refresh();
+  }
+
+  String _getVisibleWords() {
+    String result = '';
+
+    for (var boxInfo in _boxInfoList) {
+      if (!boxInfo.data.visible) continue;
+      if (result.isEmpty) {
+        result = boxInfo.data.ext.label;
+      } else {
+        result = '$result\n${boxInfo.data.ext.label}';
+      }
+    }
+
+    return result;
+  }
+
+  void _setVisibleWords(String words) {
+    final wordList = words.split('\n');
+
+    for (var boxInfo in _boxInfoList) {
+      bool newVisible = false;
+
+      final wordIndex = wordList.indexWhere((word) => word == boxInfo.data.ext.label);
+      if (wordIndex >= 0) {
+        wordList.removeAt(wordIndex);
+        newVisible = true;
+      }
+
+      if (boxInfo.data.visible != newVisible) {
+        boxInfo.setState(visible: newVisible);
+      }
+    }
+
+    for (var word in wordList) {
+      _boxInfoList.add(
+         _createDragBoxInfo(word)
+      );
+    }
+    _refresh();
   }
 
   DragBoxInfo<GridBoxExt> _createDragBoxInfo(String word){
