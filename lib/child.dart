@@ -90,6 +90,7 @@ class Child {
 
   Future<void> refreshRegulator() async {
     _regulator = await Regulator.fromFile( regulatorPath );
+    _regulator!.fillDifficultyLevels();
     _regulator!.applySetListToDB(dbSource);
   }
 

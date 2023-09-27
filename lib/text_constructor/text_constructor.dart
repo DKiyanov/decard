@@ -21,8 +21,8 @@ class TextConstructorWidget extends StatefulWidget {
   final TextConstructorData textConstructor;
   final RegisterAnswer onRegisterAnswer;
   final PrepareFilePath? onPrepareFilePath;
-  final int? quality;
-  const TextConstructorWidget({required this.textConstructor, required this.onRegisterAnswer, this.onPrepareFilePath, this.quality, Key? key}) : super(key: key);
+  final int? randomPercent;
+  const TextConstructorWidget({required this.textConstructor, required this.onRegisterAnswer, this.onPrepareFilePath, this.randomPercent, Key? key}) : super(key: key);
 
   @override
   State<TextConstructorWidget> createState() => _TextConstructorWidgetState();
@@ -93,12 +93,12 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
     var panelText = _textConstructorData.text;
     var basementText = widget.textConstructor.basement;
 
-    if (widget.quality != null) {
+    if (widget.randomPercent != null) {
       if (_textConstructorData.randomMixWord) {
-        panelText = _randomMixWord(panelText, widget.quality!);
+        panelText = _randomMixWord(panelText, widget.randomPercent!);
       }
       if (_textConstructorData.randomDelWord) {
-        final delResult = _randomDelWord(panelText, widget.quality!);
+        final delResult = _randomDelWord(panelText, widget.randomPercent!);
         panelText = delResult.text;
         basementText = '$basementText ${delResult.delWords}';
       }

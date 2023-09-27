@@ -126,7 +126,10 @@ class ServerConnect {
       return ChildAndDeviceNames(webFile.name!, deviceName);
     }
 
-    await client.mkdir(path_util.join(childName, deviceName));
+    await client.mkdir(childName);
+    final newPath = path_util.join(childName, deviceName);
+    await client.mkdir(newPath);
+
     return ChildAndDeviceNames(childName, deviceName);
   }
 

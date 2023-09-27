@@ -481,14 +481,16 @@ class Regulator {
       arguments.add(set.andTags!.length);
     }
 
-    if (andList.isEmpty) return;
+    var andWhere = '';
 
-    final where = andList.join(' AND ');
+    if (andList.isNotEmpty) {
+      andWhere = 'AND ${andList.join(' AND ')}';
+    }
 
     final sql = '''SELECT ${TabCardHead.tabName}.${TabCardHead.kCardID}
       FROM ${TabCardHead.tabName}
      WHERE ${TabCardHead.kJsonFileID} = ${dbSource.tabJsonFile.jsonFileID}
-       AND $where  
+      $andWhere  
     ''';
 
     final rows = await dbSource.db.rawQuery(sql, arguments);

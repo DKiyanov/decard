@@ -225,7 +225,7 @@ class _CardNavigatorState extends State<CardNavigator> {
                 setSelected();
               },
 
-              items: List<int>.generate(_selCard!.bodyCount, (i) => i + 1).map<DropdownMenuItem<int>>((bodyNum) {
+              items: List<int>.generate(_selCard!.bodyCount, (i) => i).map<DropdownMenuItem<int>>((bodyNum) {
                 return DropdownMenuItem<int>(
                   value: bodyNum,
                   child: Text('${bodyNum + 1}'),

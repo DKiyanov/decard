@@ -904,7 +904,7 @@ class _CardWidgetState extends State<CardWidget> {
         textConstructor   : textConstructor,
         onRegisterAnswer  : _onSelectAnswer,
         onPrepareFilePath : prepareFilePath,
-        quality           : widget.card.stat.quality,
+        randomPercent     : widget.card.stat.quality,
     );
   }
 

@@ -189,12 +189,24 @@ class ProcessCardController {
 
   /// Loading statistics from the database
   Future<void> _loadCardStat() async {
-    final rows = await db.query(TabCardStat.tabName,
-      columns   : [TabCardStat.kID, TabCardStat.kJsonFileID, TabCardStat.kCardID, TabCardStat.kCardGroupKey, TabCardStat.kQuality, TabCardStat.kLastResult],
-      where     : '${TabCardStat.kTestsCount} > ? AND ${TabCardStat.kQuality} < ?',
-      whereArgs : [0, Regulator.maxQuality],
-      orderBy   : TabCardStat.kID,
-    );
+    const String sql = '''
+      SELECT
+        ${TabCardStat.tabName}.${TabCardStat.kID}, 
+        ${TabCardStat.tabName}.${TabCardStat.kJsonFileID}, 
+        ${TabCardStat.tabName}.${TabCardStat.kCardID}, 
+        ${TabCardStat.tabName}.${TabCardStat.kCardGroupKey}, 
+        ${TabCardStat.tabName}.${TabCardStat.kQuality}, 
+        ${TabCardStat.tabName}.${TabCardStat.kLastResult}
+        FROM ${TabCardStat.tabName}
+        JOIN ${TabCardHead.tabName}
+          ON ${TabCardHead.tabName}.${TabCardHead.kCardID} = ${TabCardStat.tabName}.${TabCardStat.kCardID}
+       WHERE ${TabCardStat.tabName}.${TabCardStat.kTestsCount} > 0 
+         AND ${TabCardStat.tabName}.${TabCardStat.kQuality} < ${Regulator.maxQuality}
+         AND ${TabCardHead.tabName}.${TabCardHead.kExclude} = 0
+       ORDER BY ${TabCardStat.tabName}.${TabCardStat.kID}  
+    ''';
+
+    final rows = await db.rawQuery(sql);
 
     cardStatList.clear();
     cardStatList.addAll(rows.map((row) => ProcessCardStat.fromMap(row)));
