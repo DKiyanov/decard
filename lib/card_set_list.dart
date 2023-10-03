@@ -88,13 +88,16 @@ class _CardSetListState extends State<CardSetList> {
     _fileList.sort((a, b) => a.jsonFileID.compareTo(b.jsonFileID));
   }
 
+  void _setLastSetChangesBack() {
+    if (_selFile == null) return;
+    _regulator.cardSetList.removeWhere((testFile) => testFile.fileGUID == _selFile!.guid);
+    _regulator.cardSetList.addAll(_cardSetList);
+  }
+
   Future<void> _setSelFile(PacInfo file) async {
     if (_selFile != null && _selFile!.guid == file.guid) return;
 
-    if (_selFile != null) {
-      _regulator.cardSetList.removeWhere((testFile) => testFile.fileGUID == _selFile!.guid);
-      _regulator.cardSetList.addAll(_cardSetList);
-    }
+    _setLastSetChangesBack();
 
     _selFile = file;
 
@@ -259,8 +262,7 @@ class _CardSetListState extends State<CardSetList> {
 
   Future<void> _saveAndExit() async {
     if (_changed) {
-      _regulator.cardSetList.clear();
-      _regulator.cardSetList.addAll(_cardSetList);
+      _setLastSetChangesBack();
       await _regulator.saveToFile(widget.child.regulatorPath);
     }
     if (!mounted) return;

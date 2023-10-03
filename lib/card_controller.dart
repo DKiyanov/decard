@@ -387,7 +387,7 @@ class ProcessCardController {
       min( mainCard.${TabCardHead.kCardID} ) AS ${TabCardHead.kCardID}
     FROM ${TabCardHead.tabName} as mainCard
     
-    WHERE ${TabCardHead.kExclude} = 0 
+    WHERE mainCard.${TabCardHead.kExclude} = 0 
      
     AND NOT EXISTS ( --selecting cards that have not yet been studied
         SELECT 1

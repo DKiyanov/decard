@@ -50,12 +50,12 @@ class _DeCardState extends State<DeCard> {
                     child: Text(TextConst.txtDemo),
                   ),
 
-                  PopupMenuItem<VoidCallback>(
-                    value: () {
-                      appState.selfTest(appState.childList.first);
-                    },
-                    child: Text(TextConst.txtAutoTest),
-                  )
+                  // PopupMenuItem<VoidCallback>(
+                  //   value: () {
+                  //     appState.selfTest(appState.childList.first);
+                  //   },
+                  //   child: Text(TextConst.txtAutoTest),
+                  // )
 
                 ];
               },
