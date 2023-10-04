@@ -120,9 +120,9 @@ class _CardNavigatorState extends State<CardNavigator> {
     setSelected();
   }
 
-  void setSelected() {
+  void setSelected() async {
+    await widget.child.cardController.setCard(_selCard!.jsonFileID, _selCard!.cardID, bodyNum: _selBodyNum, forView: true);
     setState(() {});
-    widget.child.cardController.setCard(_selCard!.jsonFileID, _selCard!.cardID, bodyNum: _selBodyNum);
   }
 
   @override

@@ -92,6 +92,7 @@ class DjfCard { // element of DjfFile.cardList
 	static const String bodyList   = "bodyList";   // array of DjfCardBody
 	static const String introductoryCount = "introductoryCount";          // TODO the number of impressions at the beginning of the study without penalty
 	static const String notShowIfLearned  = "notShowIfLearned";           // TODO Do not show if the card is learned
+	static const String help       = "help"; // TODO optional, local path to html/markdown file, file can be a template
 }
 
 class DjfUpLink { // element of DjfCard.upLinks 
@@ -109,12 +110,12 @@ class DjfUpLink { // element of DjfCard.upLinks
 
 class DjfQuestionData { // structure of DjfCardBody.questionData
 	static const String text     = "text";     // optional, string, question text
-	static const String html     = "html";     // TODO optional, link to html file, file can be a template
-	static const String markdown = "markdown"; // TODO optional, link to markdown file, file can be a template
-	static const String textConstructor = "textConstructor"; // TODO optional, link to text constructor json file, file can be a template
-	static const String audio    = "audio";    // optional, link to audio resource
-	static const String video    = "video";    // TODO optional, link to video resource
-	static const String image    = "image";    // optional, link to image
+	static const String html     = "html";     // optional, local path to html file, file can be a template
+	static const String markdown = "markdown"; // optional, local path to markdown file, file can be a template
+	static const String textConstructor = "textConstructor"; // optional, local path to text constructor json file, file can be a template
+	static const String audio    = "audio";    // optional, local path to audio resource
+	static const String video    = "video";    // TODO optional, local path to video resource
+	static const String image    = "image";    // optional, local path to image
 }
 
 class DjfCardBody { // element of DjfCard.bodyList
@@ -124,4 +125,5 @@ class DjfCardBody { // element of DjfCard.bodyList
 	static const String answerList   = "answerList";   // array of answer values
 	static const String audioOnRightAnswer = "audioOnRightAnswer"; // TODO optional, link to audio resource
 	static const String audioOnWrongAnswer = "audioOnWrongAnswer"; // TODO optional, link to audio resource
+	static const String clue = "clue"; // TODO optional, local path to html/markdown file, file can be a template
 }

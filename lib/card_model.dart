@@ -305,6 +305,7 @@ class CardHead {
   final String cardKey;     // string, identifier of the card in the file
   final String group;
   final String title;
+  final String help;
   final int    difficulty;
   final int    bodyCount;
 
@@ -316,6 +317,7 @@ class CardHead {
     required this.cardKey,
     required this.group,
     required this.title,
+    required this.help,
     required this.difficulty,
     required this.bodyCount,
     required this.regulatorSetIndex
@@ -328,6 +330,7 @@ class CardHead {
       cardKey    : json[TabCardHead.kCardKey],
       group      : json[TabCardHead.kGroup],
       title      : json[TabCardHead.kTitle],
+      help       : json[TabCardHead.kHelp],
       difficulty : json[TabCardHead.kDifficulty]??0,
       bodyCount  : json[TabCardHead.kBodyCount],
       regulatorSetIndex : json[TabCardHead.kRegulatorSetIndex],

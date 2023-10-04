@@ -211,26 +211,33 @@ class DataLoader {
     _templateSourceRow = null;
   }
 
-  Future<void> _prepareQuestionFile(String paramName, Map<String, dynamic> questionData) async {
-    final fileName = (questionData[paramName]??'') as String;
+  Future<void> _prepareFileContent(String paramName, Map<String, dynamic> objectMap) async {
+    final fileName = (objectMap[paramName]??'') as String;
     if (fileName.isEmpty) return;
 
     final filePath = path_util.normalize( path_util.join(_jsonPath!, fileName) );
     final file = File(filePath);
 
     String? fileData;
+    bool isChanged = false;
 
-    if (await file.exists()) {
-      fileData = await file.readAsString();
+    if (_templateSourceRow != null && await file.exists()) {
+      final originalFileData = await file.readAsString();
+      fileData = originalFileData;
 
-      if (_templateSourceRow != null) {
-        _templateSourceRow!.forEach((key, value) {
-          fileData =  fileData!.replaceAll('${DjfTemplateSource.paramBegin}$key${DjfTemplateSource.paramEnd}', value);
-        });
-      }
+      _templateSourceRow!.forEach((key, value) {
+        fileData =  fileData!.replaceAll('${DjfTemplateSource.paramBegin}$key${DjfTemplateSource.paramEnd}', value);
+      });
+
+      isChanged = fileData != originalFileData;
     }
 
-    questionData[paramName] = fileData;
+    if (isChanged) {
+      objectMap[paramName] = fileData;
+      return;
+    }
+
+    objectMap[paramName] = 'file:$fileName';
   }
 
   Future<void> _processCardList({required int jsonFileID, required List cardList, required List<String> cardKeyList}) async {
@@ -246,10 +253,13 @@ class DataLoader {
 
       final bodyList = (card[DjfCard.bodyList]) as List;
 
+      await _prepareFileContent(DjfCard.help, card);
+
       final cardID = await dbSource.tabCardHead.insertRow(
         jsonFileID   : jsonFileID,
         cardKey      : cardKey,
         title        : card[DjfCard.title],
+        help         : card[DjfCard.help]??'',
         difficulty   : card[DjfCard.difficulty]??0,
         cardGroupKey : groupKey,
         bodyCount    : bodyList.length,
@@ -311,6 +321,7 @@ class DataLoader {
   Future<void> _processCardBodyList({ required int jsonFileID, required int cardID, required List bodyList }) async {
     int bodyNum = 0;
     for (var body in bodyList) {
+      await _prepareFileContent(DjfCardBody.clue, body);
       await _prepareBodyQuestionData(body);
 
       dbSource.tabCardBody.insertRow(
@@ -326,9 +337,9 @@ class DataLoader {
   Future<void> _prepareBodyQuestionData( Map<String, dynamic> cardBody) async {
     final questionData =  cardBody[DjfCardBody.questionData] as Map<String, dynamic>;
 
-    await _prepareQuestionFile(DjfQuestionData.markdown, questionData);
-    await _prepareQuestionFile(DjfQuestionData.html, questionData);
-    await _prepareQuestionFile(DjfQuestionData.textConstructor, questionData);
+    await _prepareFileContent(DjfQuestionData.markdown, questionData);
+    await _prepareFileContent(DjfQuestionData.html, questionData);
+    await _prepareFileContent(DjfQuestionData.textConstructor, questionData);
   }
 
   Future<void> _processCardTagList({ required int jsonFileID, required int cardID, required String cardKey, required String groupKey, required List? tagList }) async {

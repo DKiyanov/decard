@@ -34,20 +34,28 @@ class CardController {
   Listener<CardData>? _cardListener;
 
   /// Sets the current card data
-  Future<void> setCard(int jsonFileID, int cardID, {int? bodyNum, CardSetBody setBody = CardSetBody.random, int startTime = 0}) async {
+  Future<void> setCard(int jsonFileID, int cardID, {int? bodyNum, CardSetBody setBody = CardSetBody.random, int startTime = 0, bool forView = false}) async {
     if (_cardListener != null) {
       _cardListener!.dispose();
       _cardListener = null;
     }
 
     _card = await CardData.create(child, jsonFileID, cardID, bodyNum: bodyNum, setBody: setBody);
-    _cardListener = _card!.onResult.subscribe((listener, card) {
-      _onCardResult(card!);
-    });
+
+    if (!forView) {
+      if (_card!.exclude) {
+        _card = null;
+        return;
+      }
+
+      _cardListener = _card!.onResult.subscribe((listener, card) {
+        _onCardResult(card!);
+      });
+
+      await processCardController.setCard(cardID);
+    }
 
     _card!.startTime = startTime;
-
-    await processCardController.setCard(cardID);
     onChange.send();
   }
 

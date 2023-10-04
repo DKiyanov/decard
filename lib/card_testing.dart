@@ -161,6 +161,10 @@ class _DeCardState extends State<DeCard> {
   Future<void> _setTestCard(int jsonFileID, int cardID, int bodyNum, int startTime) async {
     try {
       await widget.child.cardController.setCard(jsonFileID, cardID, bodyNum: bodyNum, startTime : startTime);
+      if (widget.child.cardController.card == null) {
+        await _selectNextCard();
+        return;
+      }
       setState(() {});
     } catch (e) {
       await _selectNextCard();
