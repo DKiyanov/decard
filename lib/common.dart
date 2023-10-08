@@ -103,6 +103,7 @@ class TextConst{
   static String txtTryCount = "Кол-во попыток";
   static String txtSolveTime = "Длтельность решения";
   static String txtDialogInputText = "Введите текст";
+  static String txtHelp = "Помощь";
 
 
   static String djfFormatVersion = "Версия формата";

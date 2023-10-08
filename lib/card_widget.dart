@@ -5,10 +5,10 @@ import 'dart:math';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:decard/text_constructor/text_constructor.dart';
 import 'package:decard/text_constructor/word_panel_model.dart';
+import 'package:decard/view_source.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:path/path.dart' as path_util;
 
 import 'audio_widget.dart';
 import 'card_model.dart';
@@ -26,10 +26,10 @@ class CardWidget extends StatefulWidget {
   const CardWidget({required this.card, this.onPressSelectNextCard, this.demoMode = false,  Key? key}) : super(key: key);
 
   @override
-  State<CardWidget> createState() => _CardWidgetState();
+  State<CardWidget> createState() => CardWidgetState();
 }
 
-class _CardWidgetState extends State<CardWidget> {
+class CardWidgetState extends State<CardWidget> {
   int       _cardHashCode = 0;
 
   int       _tryCount = 0;
@@ -40,11 +40,22 @@ class _CardWidgetState extends State<CardWidget> {
 
   int       _costDuration = 0; // длительность в мимлисекундах
   double    _costValue = 0; // заработанное
+  int       _costMinusPercent = 0; // уменьшение заработаного
   double    _timeProgress = 0; // процент потраченого времени
   Timer?    _costTimer;
   DateTime? _startTime;
   final     _inputController = TextEditingController(); // Для полей ввода
   String    _widgetKeyboardText = '';
+
+  void setCostMinusPercent(int percent) {
+    if (!mounted) return;
+    setState((){
+      if (_costMinusPercent < percent) {
+        _costMinusPercent = percent;
+        _calcCostValue();
+      }
+    });
+  }
 
   void _prepareAnswerVariantList() {
     // списку из body отдаётся предпочтение
@@ -187,6 +198,7 @@ class _CardWidgetState extends State<CardWidget> {
 
     _startTime = null;
     _costValue = 0;
+    _costMinusPercent = 0;
     _costDuration = 0;
     _timeProgress = 0;
     _inputController.text = '';
@@ -219,19 +231,38 @@ class _CardWidgetState extends State<CardWidget> {
       if (!mounted) return;
 
       setState(() {
-        final time = DateTime.now().difference(_startTime!).inMilliseconds;
+        _calcCostValue();
 
-        if (time >= _costDuration) {
+        if (_costValue <= widget.card.lowCost) {
           _costValue = widget.card.lowCost.toDouble();
           _timeProgress = 1;
           timer.cancel();
-          return;
         }
 
-        _costValue = widget.card.cost - ( (widget.card.cost - widget.card.lowCost) * time ) / _costDuration;
-        _timeProgress = time / _costDuration;
       });
     });
+  }
+
+  void _calcCostValue() {
+    if (_costDuration > 0) {
+      final time = DateTime.now().difference(_startTime!).inMilliseconds;
+      _timeProgress = (time / _costDuration)  + (_costMinusPercent / 100);
+      if (_timeProgress > 1) {
+        _timeProgress = 1;
+      }
+
+      _costValue = widget.card.cost - (widget.card.cost - widget.card.lowCost) * _timeProgress;
+
+      if (time >= _costDuration) {
+        _costValue = widget.card.lowCost.toDouble();
+      }
+    } else {
+      _costValue = widget.card.cost - (widget.card.cost - widget.card.lowCost) * (_costMinusPercent / 100);
+    }
+
+    if (_costValue < widget.card.lowCost) {
+      _costValue = widget.card.lowCost.toDouble();
+    }
   }
 
   /// панель отображающая стоимость решения карточки, штраф за не верной решение
@@ -265,6 +296,41 @@ class _CardWidgetState extends State<CardWidget> {
   }
 
   Widget _getCostPanelEx() {
+    if (widget.demoMode) {
+      return Row(children: [
+        _costBox(widget.card.difficulty.maxCost, Colors.green),
+        Container(width: 4),
+        _costBox(widget.card.difficulty.minCost, Colors.lightGreen),
+        Container(width: 4),
+        _costBox( - widget.card.difficulty.maxPenalty, Colors.deepOrangeAccent),
+        Expanded(child: Container()),
+
+        if (widget.card.body.clue.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.only(left: 4, right: 4),
+            child: InkWell(
+                onTap: ()  {
+                  ViewContent.navigatorPush(context, widget.card.pacInfo.path, widget.card.body.clue, TextConst.txtHelp);
+                },
+                child: const Icon(Icons.live_help, color: Colors.lime)
+            ),
+          )
+        ],
+
+        if (widget.card.head.help.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.only(left: 4, right: 4),
+            child: InkWell(
+                onTap: () {
+                  ViewContent.navigatorPush(context, widget.card.pacInfo.path, widget.card.head.help, TextConst.txtHelp);
+                },
+                child: const Icon(Icons.help, color: Colors.white)
+            ),
+          )
+        ],
+      ]);
+    }
+
     if (_result != null) {
       if (_result!) {
         return Row(children: [ _costBox(_costValue, Colors.lightGreen) ]);
@@ -393,8 +459,8 @@ class _CardWidgetState extends State<CardWidget> {
 
       if ( urlType == UrlType.localPath ) {
         final absPath = prepareFilePath( widget.card.body.questionData.audio!);
-        final imgFile = File(absPath);
-        if (imgFile.existsSync()) {
+        final audioFile = File(absPath);
+        if (audioFile.existsSync()) {
           widgetList.add(
               AudioPanelWidget(
                 key:  ValueKey(widget.card.head.cardKey),
@@ -868,33 +934,13 @@ class _CardWidgetState extends State<CardWidget> {
   }
 
   Widget htmlViewer(String html) {
-    final regexp = RegExp(r'<img[^>]*src="([^"]+)"[^>]*>', caseSensitive: false, multiLine: true);
-
-    html = html.replaceAllMapped(regexp, (match) {
-      final matchStr = match[0]!;
-      final fileName = match[1];
-      if (fileName == null) return matchStr;
-
-      final str = matchStr.replaceFirst('src="$fileName', 'src="${path_util.join(widget.card.pacInfo.path, fileName)}');
-      return str;
-    });
-
-    return HtmlViewWidget(html: html, filesDir: widget.card.pacInfo.path);
+    final newHtml = FileExt.prepareHtml(widget.card.pacInfo.path, html);
+    return HtmlViewWidget(html: newHtml, filesDir: widget.card.pacInfo.path);
   }
 
   Widget markdownViewer(String markdown) {
-    final regexp = RegExp(r'!\[.*\]\((.*?)\s*(".*")?\s*\)', caseSensitive: false, multiLine: true);
-
-    markdown = markdown.replaceAllMapped(regexp, (match) {
-      final matchStr = match[0]!;
-      final fileName = match[1];
-      if (fileName == null) return matchStr;
-
-      final str = matchStr.replaceFirst(']($fileName', '](${path_util.join(widget.card.pacInfo.path, fileName)}');
-      return str;
-    });
-
-    return MarkdownBody(data: markdown);
+    final newMarkdown = FileExt.prepareMarkdown(widget.card.pacInfo.path, markdown);
+    return MarkdownBody(data: newMarkdown);
   }
 
   Widget textConstructor(String jsonStr) {
@@ -909,8 +955,7 @@ class _CardWidgetState extends State<CardWidget> {
   }
 
   String prepareFilePath(String fileName) {
-    final absPath = path_util.normalize( path_util.join(widget.card.pacInfo.path, fileName) );
-    return absPath;
+    return FileExt.prepareFilePath(widget.card.pacInfo.path, fileName);
   }
 }
 

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_archive/flutter_archive.dart';
 import 'package:path/path.dart' as path_util;
 
+import 'card_model.dart';
 import 'db.dart';
 import 'decardj.dart';
 
@@ -211,9 +212,25 @@ class DataLoader {
     _templateSourceRow = null;
   }
 
-  Future<void> _prepareFileContent(String paramName, Map<String, dynamic> objectMap) async {
+  Future<void> _prepareFileContent(String paramName, Map<String, dynamic> objectMap, {bool setSourceType = false}) async {
     final fileName = (objectMap[paramName]??'') as String;
     if (fileName.isEmpty) return;
+
+    final fileExt = FileExt.getFileExt(fileName);
+
+    if (fileExt.isEmpty) {
+      if (setSourceType) {
+        objectMap[paramName] = '${FileExt.contentText}:$fileName';
+      }
+      return;
+    }
+
+    if (!FileExt.textExtList.contains(fileExt)) {
+      if (setSourceType) {
+        objectMap[paramName] = '$fileExt:$fileName';
+      }
+      return;
+    }
 
     final filePath = path_util.normalize( path_util.join(_jsonPath!, fileName) );
     final file = File(filePath);
@@ -233,11 +250,15 @@ class DataLoader {
     }
 
     if (isChanged) {
+      if (setSourceType) {
+        fileData = '$fileExt:$fileData';
+      }
+
       objectMap[paramName] = fileData;
       return;
     }
 
-    objectMap[paramName] = 'file:$fileName';
+    objectMap[paramName] = '${FileExt.textFile}$fileName';
   }
 
   Future<void> _processCardList({required int jsonFileID, required List cardList, required List<String> cardKeyList}) async {
@@ -253,7 +274,7 @@ class DataLoader {
 
       final bodyList = (card[DjfCard.bodyList]) as List;
 
-      await _prepareFileContent(DjfCard.help, card);
+      await _prepareFileContent(DjfCard.help, card, setSourceType: true);
 
       final cardID = await dbSource.tabCardHead.insertRow(
         jsonFileID   : jsonFileID,
@@ -321,7 +342,7 @@ class DataLoader {
   Future<void> _processCardBodyList({ required int jsonFileID, required int cardID, required List bodyList }) async {
     int bodyNum = 0;
     for (var body in bodyList) {
-      await _prepareFileContent(DjfCardBody.clue, body);
+      await _prepareFileContent(DjfCardBody.clue, body, setSourceType: true);
       await _prepareBodyQuestionData(body);
 
       dbSource.tabCardBody.insertRow(

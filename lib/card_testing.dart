@@ -1,3 +1,4 @@
+import 'package:decard/view_source.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:simple_events/simple_events.dart';
@@ -26,6 +27,8 @@ class _DeCardState extends State<DeCard> {
   static const keyCardBodyNum   = 'CardBodyNum';
   static const keyCardStartTime = 'CardStartTime';
 
+  final cardWidgetKey = GlobalKey<CardWidgetState>();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -38,31 +41,60 @@ class _DeCardState extends State<DeCard> {
             ],
           ),
           actions: [
-            PopupMenuButton<VoidCallback>(
-              icon: const Icon(Icons.menu),
-              itemBuilder: (context) {
-                return [
-                  PopupMenuItem<VoidCallback>(
-                    value: () async {
-                      await DeCardDemo.navigatorPush(context, widget.child);
-                      _startFirstTest();
+            if (widget.child.cardController.card != null && widget.child.cardController.card!.body.clue.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.only(left: 4, right: 4),
+                child: InkWell(
+                    onTap: () async {
+                      await ViewContent.navigatorPush(context, widget.child.cardController.card!.pacInfo.path, widget.child.cardController.card!.body.clue, TextConst.txtHelp);
+                      final percent = (70 * widget.child.cardController.card!.stat.quality / 100).truncate();
+                      _setCostMinusPercent(percent);
                     },
-                    child: Text(TextConst.txtDemo),
-                  ),
+                    child: const Icon(Icons.live_help, color: Colors.lime)
+                ),
+              )
+            ],
 
-                  // PopupMenuItem<VoidCallback>(
-                  //   value: () {
-                  //     appState.selfTest(appState.childList.first);
-                  //   },
-                  //   child: Text(TextConst.txtAutoTest),
-                  // )
+            if (widget.child.cardController.card != null && widget.child.cardController.card!.head.help.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.only(left: 4, right: 4),
+                child: InkWell(
+                  onTap: () async {
+                    await ViewContent.navigatorPush(context, widget.child.cardController.card!.pacInfo.path, widget.child.cardController.card!.head.help, TextConst.txtHelp);
+                    final percent = (50 * widget.child.cardController.card!.stat.quality / 100).truncate();
+                    _setCostMinusPercent(percent);
+                  },
+                  child: const Icon(Icons.help)
+                ),
+              )
+            ],
 
-                ];
-              },
-              onSelected: (value){
-                value.call();
-              },
-            ),
+            if (widget.child.cardController.card == null) ...[
+              PopupMenuButton<VoidCallback>(
+                icon: const Icon(Icons.menu),
+                itemBuilder: (context) {
+                  return [
+                    PopupMenuItem<VoidCallback>(
+                      value: () {
+                        DeCardDemo.navigatorPush(context, widget.child);
+                      },
+                      child: Text(TextConst.txtDemo),
+                    ),
+
+                    // PopupMenuItem<VoidCallback>(
+                    //   value: () {
+                    //     appState.selfTest(appState.childList.first);
+                    //   },
+                    //   child: Text(TextConst.txtAutoTest),
+                    // )
+
+                  ];
+                },
+                onSelected: (value){
+                  value.call();
+                },
+              ),
+            ],
           ],
         ),
 
@@ -131,6 +163,7 @@ class _DeCardState extends State<DeCard> {
         if (widget.child.cardController.card == null) return Container();
 
         return CardWidget(
+          key                   : cardWidgetKey,
           card                  : widget.child.cardController.card!,
           onPressSelectNextCard : _selectNextCard,
           demoMode              : false,
@@ -191,5 +224,11 @@ class _DeCardState extends State<DeCard> {
     }
 
     _selectNextCard();
+  }
+
+  _setCostMinusPercent(int percents) {
+    final cardWidgetState = cardWidgetKey.currentState;
+    if (cardWidgetState == null || !cardWidgetState.mounted) return;
+    cardWidgetState.setCostMinusPercent(percents);
   }
 }
