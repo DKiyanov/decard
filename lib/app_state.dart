@@ -110,7 +110,7 @@ class AppState {
       fileSources = FileSources(prefs);
     }
 
-    synchronize();
+    await synchronize();
   }
 
   /// add new child if it not exists
@@ -164,16 +164,21 @@ class AppState {
   }
 
   Future<void> setUsingMode(UsingMode newUsingMode, String childName, String deviceName) async {
+    Child? child;
+
     if (newUsingMode == UsingMode.testing) {
       final names = await serverConnect.addChildDevice(childName, deviceName);
-      final child = await addChild(names.childName, names.deviceName);
-      child.updateStatFromServer(serverConnect);
+      child = await addChild(names.childName, names.deviceName);
     }
 
     prefs.setString(_kUsingMode, newUsingMode.name);
     _usingMode = newUsingMode;
 
     await _initFinish();
+
+    if (child != null) {
+      child.updateStatFromServer(serverConnect);
+    }
   }
 
   Future<void> synchronize() async {

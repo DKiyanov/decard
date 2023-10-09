@@ -348,6 +348,7 @@ class CardStyle {
   final int jsonFileID;                  // integer, identifier of the file in the database
   final String cardStyleKey;             // string, style identifier
   final bool dontShowAnswer;             // boolean, default false, will NOT show if the answer is wrong
+  final bool dontShowAnswerOnDemo;       // boolean, default false, do NOT show in demo mode
   final List<String> answerVariantList;  // list of answer choices
   final int answerVariantCount;          // the number of displayed answer variants
   final TextAlign answerVariantAlign;    // the text alignment when displaying the answer choices
@@ -365,6 +366,7 @@ class CardStyle {
     required this.jsonFileID,
     required this.cardStyleKey,
     this.dontShowAnswer = false,
+    this.dontShowAnswerOnDemo = false,
     required this.answerVariantList,
     this.answerVariantCount = -1,
     this.answerVariantAlign = TextAlign.center,
@@ -387,6 +389,7 @@ class CardStyle {
       jsonFileID                 : json[TabCardStyle.kJsonFileID],
       cardStyleKey               : json[TabCardStyle.kCardStyleKey],
       dontShowAnswer             : json[DjfCardStyle.dontShowAnswer]??false,
+      dontShowAnswerOnDemo       : json[DjfCardStyle.dontShowAnswerOnDemo]??false,
       answerVariantList          : json[DjfCardStyle.answerVariantList] != null ? List<String>.from(json[DjfCardStyle.answerVariantList].map((x) => x)) : [],
       answerVariantCount         : json[DjfCardStyle.answerVariantCount]??-1,
       answerVariantAlign         : TextAlign.values.firstWhere((x) => x.name == textAlignStr),

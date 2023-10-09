@@ -433,12 +433,14 @@ class TabCardHead {
     return result;
   }
 
-  Future<int> getCardIdFromKey(int jsonFileID, String cardKey) async {
+  Future<int?> getCardIdFromKey(int jsonFileID, String cardKey) async {
     final rows = await db.query(tabName, distinct: true,
         columns   : [kCardID],
         where     : '$kJsonFileID = ? AND $kCardKey = ?',
         whereArgs : [jsonFileID, cardKey]
     );
+
+    if (rows.isEmpty) return null;
 
     final cardID = rows.first.values.first as int;
 
@@ -709,8 +711,11 @@ class CardStatExchange {
     // server -> child
     // make map for save to DB tab TabCardStat
 
-    final jsonFileID = dbSource!.tabJsonFile.fileGuidToJsonFileId(fileGuid)!;
+    final jsonFileID = dbSource!.tabJsonFile.fileGuidToJsonFileId(fileGuid);
+    if (jsonFileID == null) return {};
+
     final cardDBID = await dbSource!.tabCardHead.getCardIdFromKey(jsonFileID, cardID);
+    if (cardDBID == null) return {};
 
     final row = (await dbSource!.tabCardHead.getRow(cardDBID))!;
     final String groupKey = row[TabCardHead.kGroup]??'';
@@ -867,11 +872,12 @@ class TabCardStat {
     return rows;
   }
 
-  Future<void> updateRow(int jsonFileID, int cardID, Map<String, Object?> map) async {
-    await db.update(tabName, map,
+  Future<bool> updateRow(int jsonFileID, int cardID, Map<String, Object?> map) async {
+    final count = await db.update(tabName, map,
       where: '$kJsonFileID = ? AND $kCardID = ?',
       whereArgs: [jsonFileID, cardID]
     );
+    return count > 0;
   }
 }
 

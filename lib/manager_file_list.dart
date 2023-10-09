@@ -36,6 +36,10 @@ class _FileListState extends State<FileList> {
 
   void _starting() async {
     _viewFileChild = appState.viewFileChild;
+    _refresh();
+  }
+
+  Future<void> _refresh() async {
     await scanFileSources();
     await getDbInfo();
 
@@ -106,12 +110,12 @@ class _FileListState extends State<FileList> {
             },
             onSelected: (value) async {
               if (value == TextConst.txtRefreshFileList) {
-                scanFileSources();
+                _refresh();
               }
 
               if (value == TextConst.txtFileSources) {
                 if (await appState.fileSources.edit(context)) {
-                  scanFileSources();
+                  _refresh();
                 }
               }
             },
@@ -169,7 +173,7 @@ class _FileListState extends State<FileList> {
 
     final fileList = await appState.serverConnect.synchronizeChild(appState.viewFileChild, fromCommonFolder : true);
     if (fileList.isNotEmpty) {
-      appState.viewFileChild.refreshCardsDB([appState.viewFileChild.downloadDir]);
+      await appState.viewFileChild.refreshCardsDB([appState.viewFileChild.downloadDir]);
     }
   }
 

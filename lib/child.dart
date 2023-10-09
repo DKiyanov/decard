@@ -97,6 +97,7 @@ class Child {
   Future<void> refreshCardsDB([List<String>? dirForScanList]) async {
     dirForScanList ??= [downloadDir];
     await cardFileLoader.refreshDB(dirForScanList: dirForScanList, selfDir: cardsDir, dbSource: dbSource);
+    await dbSource.init();
   }
 
   /// Synchronizes the contents of the child's directories on the server and on the device
@@ -104,16 +105,21 @@ class Child {
   /// missing directories, on server or device - NOT created
   Future<void> synchronize(ServerConnect serverConnect) async {
     final fileList = await serverConnect.synchronizeChild(this);
-    
+
+    bool updateRegulator = false;
     if (fileList.contains(regulatorFileName)) {
       final regFile = File(path_util.join(downloadDir, regulatorFileName));
       regFile.renameSync(path_util.join(rootDir, regulatorFileName));
-      await refreshRegulator();
+      updateRegulator = true;
       fileList.remove(regulatorFileName);
     }
 
     if (fileList.isNotEmpty) {
       await refreshCardsDB();
+    }
+
+    if (updateRegulator) {
+      await refreshRegulator();
     }
   }
 

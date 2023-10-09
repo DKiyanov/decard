@@ -31,8 +31,8 @@ class DjfFile{ // top json file structure
 
 class DjfCardStyle { // DjfFile.cardStyleList element
 	static const String id                         = "id";                         // string, style ID, unique within the file, used to reference the style from the card body
-	static const String dontShowAnswer             = "dontShowAnswer";             // boolean, default false, do NOT show in case of a wrong answer
-	static const String dontShowAnswerOnDemo       = "dontShowAnswerOnDemo";       // TODO boolean, default false, do NOT show in demo mode
+	static const String dontShowAnswer             = "dontShowAnswer";             // boolean, default false, do NOT show answer in case of a wrong answer
+	static const String dontShowAnswerOnDemo       = "dontShowAnswerOnDemo";       // boolean, default false, do NOT show answer in demo mode on child device
 	static const String answerVariantList          = "answerVariantList";          // list of answer choices
 	static const String answerVariantCount         = "answerVariantCount";         // Number of answer choices displayed
 	static const String answerVariantListRandomize = "answerVariantListRandomize"; // answer text align, values string left, right, center
@@ -90,9 +90,8 @@ class DjfCard { // element of DjfFile.cardList
 	static const String tags       = "tags";       // array of card tags
 	static const String upLinks    = "upLinks";    // array of DjfUpLink, links to the cards to be studied earlier (predecessors)
 	static const String bodyList   = "bodyList";   // array of DjfCardBody
-	static const String introductoryCount = "introductoryCount";          // TODO the number of impressions at the beginning of the study without penalty
 	static const String notShowIfLearned  = "notShowIfLearned";           // TODO Do not show if the card is learned
-	static const String help       = "help"; // TODO optional, local path to html/markdown file, file can be a template
+	static const String help       = "help"; // optional, local path to html/markdown file, file can be a template
 }
 
 class DjfUpLink { // element of DjfCard.upLinks 
@@ -114,7 +113,7 @@ class DjfQuestionData { // structure of DjfCardBody.questionData
 	static const String markdown = "markdown"; // optional, local path to markdown file, file can be a template
 	static const String textConstructor = "textConstructor"; // optional, local path to text constructor json file, file can be a template
 	static const String audio    = "audio";    // optional, local path to audio resource
-	static const String video    = "video";    // TODO optional, local path to video resource
+	static const String video    = "video";    // TODO optional, url/local path to video resource
 	static const String image    = "image";    // optional, local path to image
 }
 
@@ -125,5 +124,5 @@ class DjfCardBody { // element of DjfCard.bodyList
 	static const String answerList   = "answerList";   // array of answer values
 	static const String audioOnRightAnswer = "audioOnRightAnswer"; // TODO optional, link to audio resource
 	static const String audioOnWrongAnswer = "audioOnWrongAnswer"; // TODO optional, link to audio resource
-	static const String clue = "clue"; // TODO optional, local path to html/markdown file, file can be a template
+	static const String clue = "clue"; // optional, local path to html/markdown file, file can be a template
 }

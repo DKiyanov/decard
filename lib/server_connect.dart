@@ -219,13 +219,20 @@ class ServerConnect {
     final jsonStr = utf8.decode(fileData);
     final rows = jsonDecode(jsonStr) as List;
 
-    child.dbSource.tabCardStat.clear();
     CardStatExchange.dbSource = child.dbSource;
 
     for (var row in rows) {
       final statExchange = CardStatExchange.fromJson(row);
       final dbRowMap = await statExchange.toDbMap();
-      child.dbSource.tabCardStat.insertRowFromMap(dbRowMap);
+      if (dbRowMap.isEmpty) continue;
+
+      final int jsonFileID = dbRowMap[TabCardStat.kJsonFileID];
+      final int cardID     = dbRowMap[TabCardStat.kCardID];
+
+      final updateOk = await child.dbSource.tabCardStat.updateRow(jsonFileID, cardID, dbRowMap);
+      if (!updateOk) {
+        child.dbSource.tabCardStat.insertRowFromMap(dbRowMap);
+      }
     }
 
     return fileDate;

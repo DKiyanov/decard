@@ -48,7 +48,7 @@ class DataLoader {
     errorList.clear();
 
     for (var dir in dirForScanList) {
-      _scanDir(dir, regFiles : true);
+      await _scanDir(dir, regFiles : true);
     }
   }
 

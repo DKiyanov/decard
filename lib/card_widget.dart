@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
+import 'app_state.dart';
 import 'audio_widget.dart';
 import 'card_model.dart';
 import 'common.dart';
@@ -23,7 +24,7 @@ class CardWidget extends StatefulWidget {
   final VoidCallback? onPressSelectNextCard;
   final bool demoMode;
 
-  const CardWidget({required this.card, this.onPressSelectNextCard, this.demoMode = false,  Key? key}) : super(key: key);
+  const CardWidget({required this.card, this.onPressSelectNextCard, this.demoMode = false, Key? key}) : super(key: key);
 
   @override
   State<CardWidget> createState() => CardWidgetState();
@@ -569,7 +570,7 @@ class CardWidgetState extends State<CardWidget> {
       }
     }
 
-    if (widget.demoMode) {
+    if (widget.demoMode && (!widget.card.style.dontShowAnswerOnDemo || appState.usingMode == UsingMode.manager)) {
       widgetList.add(
         Container(
             decoration: const BoxDecoration(

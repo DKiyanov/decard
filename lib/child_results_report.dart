@@ -80,7 +80,7 @@ class _ChildResultsReportState extends State<ChildResultsReport> {
       _resultList.add(testResult);
 
       final jsonFileID = widget.child.dbSource.tabJsonFile.fileGuidToJsonFileId(testResult.fileGuid)!;
-      final cardID     = await widget.child.dbSource.tabCardHead.getCardIdFromKey(jsonFileID, testResult.cardID);
+      final cardID     = (await widget.child.dbSource.tabCardHead.getCardIdFromKey(jsonFileID, testResult.cardID))!;
       _resultCardIDMap[testResult] = cardID;
 
       CardData? card;
