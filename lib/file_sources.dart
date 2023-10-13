@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:filesystem_picker/filesystem_picker.dart';
 
 import 'common.dart';
+import 'common_widgets.dart';
 
 class LocalStorage {
   static Future<String?> getRootDir() async {
@@ -134,22 +135,24 @@ class _FileSourcesEditorState extends State<FileSourcesEditor> {
 
       body: SafeArea(child: ListView(
         children: _fileSourceList.map((path) {
-          return MyPopupMenu(
-            items: [
+          return longPressMenu(
+            context: context,
+            child: ListTile(title: Text(path)),
+            menuItemList: [
               PopupMenuItem<String>(
                   value: TextConst.txtDelete,
                   child: Text(TextConst.txtDelete)
               )
             ],
-            child: ListTile(title: Text(path)),
-            onSelected: (value){
+            onSelect: (value) {
               if (value == TextConst.txtDelete) {
                 setState(() {
                   _fileSourceList.remove(path);
                 });
               }
-            },
+            }
           );
+
         }).toList(),
       )),
 
@@ -173,51 +176,6 @@ class _FileSourcesEditorState extends State<FileSourcesEditor> {
         child: const Icon(Icons.add),
       ),
     );
-  }
-}
-
-class MyPopupMenu<T> extends StatefulWidget {
-  final Widget child;
-  final List<PopupMenuEntry<T>> items;
-  final PopupMenuItemSelected<T>? onSelected;
-  const MyPopupMenu({required this.child, required this.items, this.onSelected, Key? key}) : super(key: key);
-
-  @override
-  State<MyPopupMenu> createState() => _MyPopupMenuState<T>();
-}
-
-class _MyPopupMenuState<T> extends State<MyPopupMenu<T>> {
-  TapDownDetails? _tapPosition;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      child: widget.child,
-      onTapDown: (position) {
-        _tapPosition = position;
-      },
-      onLongPress: (){
-        _showContextMenu(context);
-      },
-    );
-  }
-
-  void _showContextMenu(BuildContext context) async {
-    final renderBox = Overlay.of(context)?.context.findRenderObject() as RenderBox;
-    final tapPosition = renderBox.globalToLocal(_tapPosition!.globalPosition);
-
-    final result = await showMenu<T>(
-        context: context,
-        position: RelativeRect.fromRect(
-          Rect.fromLTWH(tapPosition.dx, tapPosition.dy, 100, 100),
-          Rect.fromLTWH(0, 0, renderBox.paintBounds.size.width, renderBox.paintBounds.size.height)
-        ),
-        items: widget.items,
-    );
-
-    if (result == null) return;
-
-    widget.onSelected?.call(result);
   }
 }
 

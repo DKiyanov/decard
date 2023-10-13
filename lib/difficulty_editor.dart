@@ -42,6 +42,22 @@ class _DifficultyEditorState extends State<DifficultyEditor> {
   final minDurationLowCostPercent = TextEditingController();
 
   @override
+  void dispose() {
+    maxCost.dispose();
+    minCost.dispose();
+    maxPenalty.dispose();
+    minPenalty.dispose();
+    maxTryCount.dispose();
+    minTryCount.dispose();
+    maxDuration.dispose();
+    minDuration.dispose();
+    maxDurationLowCostPercent.dispose();
+    minDurationLowCostPercent.dispose();
+
+    super.dispose();
+  }
+
+  @override
   void initState() {
     super.initState();
 

@@ -23,6 +23,14 @@ class _UsingModeSelectorState extends State<UsingModeSelector> {
   bool _isStarting = true;
 
   @override
+  void dispose() {
+    _textControllerChildName.dispose();
+    _textControllerDeviceName.dispose();
+
+    super.dispose();
+  }
+
+  @override
   void initState() {
     super.initState();
 

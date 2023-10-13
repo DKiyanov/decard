@@ -904,6 +904,8 @@ class _TextConstructorWidgetState extends State<TextConstructorWidget> {
           );
         });
 
+    textController.dispose();
+
     if (result != null && result) return word;
 
     return '';

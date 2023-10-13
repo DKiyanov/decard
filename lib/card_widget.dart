@@ -48,6 +48,13 @@ class CardWidgetState extends State<CardWidget> {
   final     _inputController = TextEditingController(); // Для полей ввода
   String    _widgetKeyboardText = '';
 
+  @override
+  void dispose() {
+    _inputController.dispose();
+
+    super.dispose();
+  }
+
   void setCostMinusPercent(int percent) {
     if (!mounted) return;
     setState((){

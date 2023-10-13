@@ -53,6 +53,24 @@ class _OptionsEditorState extends State<OptionsEditor> {
   final minEarnTransferMinutes = TextEditingController();
 
   @override
+  void dispose() {
+    hotDayCount.dispose();
+    hotCardQualityTopLimit.dispose();
+    maxCountHotCard.dispose();
+    hotGroupMinQualityTopLimit.dispose();
+    hotGroupAvgQualityTopLimit.dispose();
+    minCountHotQualityGroup.dispose();
+    lowGroupAvgQualityTopLimit.dispose();
+    maxCountLowQualityGroup.dispose();
+    lowTryCount.dispose();
+    lowDayCount.dispose();
+    negativeLastResultMaxQualityLimit.dispose();
+    minEarnTransferMinutes.dispose();
+
+    super.dispose();
+  }
+
+  @override
   void initState() {
     super.initState();
 
