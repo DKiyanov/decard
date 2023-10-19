@@ -96,6 +96,7 @@ class _DifficultyEditorState extends State<DifficultyEditor> {
           centerTitle: true,
           title: Text(TextConst.txtRegDifficultyTuning),
           actions: [
+            IconButton(icon: const Icon(Icons.help_outline), onPressed: ()=> showHelp(context, TextConst.txtDifficultyHelp) ),
             IconButton(icon: const Icon(Icons.check, color: Colors.lightGreen), onPressed: ()=> _saveAndExit() )
           ],
         ),
@@ -111,23 +112,34 @@ class _DifficultyEditorState extends State<DifficultyEditor> {
       padding: const EdgeInsets.all(8.0),
       child: Column(children: [
         _levelSelector(),
-        _editParam(TextConst.drfDifficultyCost    , minCost,     maxCost),
-        _editParam(TextConst.drfDifficultyPenalty , minPenalty,  maxPenalty),
-        _editParam(TextConst.drfDifficultyTryCount, minTryCount, maxTryCount),
-        _editParam(TextConst.drfDifficultyDuration, minDuration, maxDuration),
-        _editParam(TextConst.drfDifficultyDurationLowCostPercent, minDurationLowCostPercent, maxDurationLowCostPercent),
+
+        DefaultTextStyle(
+          style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+          child: Row(children: [
+            Expanded(child: Text(TextConst.txtDifficultyColumn1)),
+            Expanded(child: Align(child: Text(TextConst.txtDifficultyColumn2))),
+            Container(width: 6),
+            Expanded(child: Align(child: Text(TextConst.txtDifficultyColumn3))),
+          ]),
+        ),
+
+        _editParam(TextConst.drfDifficultyCost    , maxCost,     minCost    ),
+        _editParam(TextConst.drfDifficultyPenalty , minPenalty,  maxPenalty ),
+        _editParam(TextConst.drfDifficultyTryCount, maxTryCount, minTryCount),
+        _editParam(TextConst.drfDifficultyDuration, maxDuration, minDuration),
+        _editParam(TextConst.drfDifficultyDurationLowCostPercent, maxDurationLowCostPercent, minDurationLowCostPercent),
       ]),
     );
   }
 
-  Widget _editParam(String title, TextEditingController tecValueMin, TextEditingController tecValueMax) {
+  Widget _editParam(String title, TextEditingController tecValueLeft, TextEditingController tecValueRight) {
     return Padding(
       padding: const EdgeInsets.only(top: 6),
       child: Row( children: [
         Expanded(child: Text(title)),
-        Expanded(child: intFiled(tecValueMin)),
+        Expanded(child: intFiled(tecValueLeft)),
         Container(width: 6),
-        Expanded(child: intFiled(tecValueMax)),
+        Expanded(child: intFiled(tecValueRight)),
       ]),
     );
   }

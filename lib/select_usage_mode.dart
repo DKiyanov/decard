@@ -196,7 +196,7 @@ class _UsingModeSelectorState extends State<UsingModeSelector> {
 
     try {
       await appState.setUsingMode(_usingMode!, _textControllerChildName.text, _textControllerDeviceName.text);
-      widget.onUsingModeSelectOk();
+      widget.onUsingModeSelectOk.call();
     } catch (e) {
       Fluttertoast.showToast(msg: e.toString());
     }

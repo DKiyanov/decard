@@ -162,7 +162,7 @@ class _OptionsEditorState extends State<OptionsEditor> {
       paramTitle = GestureDetector(
         child: Text(title, style: const TextStyle( color: Colors.blue)),
         onTap: () {
-          _showParamHelp(paramHelp);
+          showHelp(context, paramHelp);
         },
       );
     }
@@ -176,15 +176,6 @@ class _OptionsEditorState extends State<OptionsEditor> {
         Expanded(child: intFiled(tecValue)),
       ]),
     );
-  }
-
-  void _showParamHelp(String paramHelp){
-    showDialog(context: context, builder: (BuildContext context){
-      return AlertDialog(
-        content: Text(paramHelp),
-        backgroundColor: Colors.yellowAccent,
-      );
-    });
   }
 
   Future<void> _saveAndExit() async {

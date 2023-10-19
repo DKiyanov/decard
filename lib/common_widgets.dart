@@ -46,3 +46,12 @@ Widget longPressMenu<T>({
 
 }
 
+void showHelp(BuildContext context, String help){
+  showDialog(context: context, builder: (BuildContext context){
+    return AlertDialog(
+      content: Text(help),
+      backgroundColor: Colors.yellowAccent,
+    );
+  });
+}
+

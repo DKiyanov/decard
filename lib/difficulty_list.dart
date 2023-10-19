@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'child.dart';
 import 'common.dart';
+import 'common_widgets.dart';
 import 'difficulty_editor.dart';
 
 class DifficultyList extends StatefulWidget {
@@ -62,6 +63,7 @@ class _DifficultyListState extends State<DifficultyList> {
           centerTitle: true,
           title: Text(TextConst.txtRegDifficultyLevelsTuning),
           actions: [
+            IconButton(icon: const Icon(Icons.help_outline), onPressed: ()=> showHelp(context, TextConst.txtDifficultyHelp) ),
             IconButton(icon: const Icon(Icons.check, color: Colors.lightGreen), onPressed: ()=> _saveAndExit() )
           ],
         ),
@@ -85,6 +87,26 @@ class _DifficultyListState extends State<DifficultyList> {
   List<Widget> _body() {
     final result = <Widget>[];
 
+    result.add(ListTile(
+      title: DefaultTextStyle(
+        style: const TextStyle(fontSize: 12, color: Colors.blue, fontWeight: FontWeight.bold),
+        child: Row(children: [
+          Expanded(
+            flex: 2,
+            child: Text(TextConst.txtDifficultyColumn1 )
+          ),
+
+          Expanded(
+              child: Align(alignment: Alignment.centerRight, child: Text(TextConst.txtDifficultyColumn2)),
+          ),
+
+          Expanded(
+            child: Align(alignment: Alignment.centerRight, child: Text(TextConst.txtDifficultyColumn3)),
+          ),
+        ]),
+      ),
+    ));
+
     for (var item in _regulator.difficultyList) {
       result.add(_getItemWidget(item));
     }
@@ -102,11 +124,11 @@ class _DifficultyListState extends State<DifficultyList> {
           ],
         ),
 
-        _viewParam(TextConst.drfDifficultyCost    , item.minCost,     item.maxCost),
+        _viewParam(TextConst.drfDifficultyCost    , item.maxCost,     item.minCost),
         _viewParam(TextConst.drfDifficultyPenalty , item.minPenalty,  item.maxPenalty),
-        _viewParam(TextConst.drfDifficultyTryCount, item.minTryCount, item.maxTryCount),
-        _viewParam(TextConst.drfDifficultyDuration, item.minDuration, item.maxDuration),
-        _viewParam(TextConst.drfDifficultyDurationLowCostPercent, item.minDurationLowCostPercent, item.maxDurationLowCostPercent),
+        _viewParam(TextConst.drfDifficultyTryCount, item.maxTryCount, item.minTryCount),
+        _viewParam(TextConst.drfDifficultyDuration, item.maxDuration, item.minDuration),
+        _viewParam(TextConst.drfDifficultyDurationLowCostPercent, item.maxDurationLowCostPercent, item.minDurationLowCostPercent),
       ]),
 
       onLongPress: () {

@@ -860,7 +860,22 @@ class CardWidgetState extends State<CardWidget> {
   }
 
   Widget _widgetKeyboard(String keyStr){
-    final rowList = keyStr.split('\n');
+    final keyBoard = keyStr.split('\n').map((row) {
+      return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: row.split('\t').map((key) => Padding(
+            padding: const EdgeInsets.only(left: 5, right: 5),
+            child: ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    _widgetKeyboardText += key;
+                  });
+                },
+                child: _valueWidget(key.trim()) ),
+          )
+          ).toList());
+    }).toList();
+
     return Column(
       children: [
         Padding(
@@ -920,21 +935,7 @@ class CardWidgetState extends State<CardWidget> {
 
         ListView(
           shrinkWrap: true,
-          children: rowList.map((row) {
-            return Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: row.split('\t').map((key) => Padding(
-                padding: const EdgeInsets.only(left: 5, right: 5),
-                child: ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _widgetKeyboardText += key;
-                    });
-                  },
-                  child: _valueWidget(key.trim()) ),
-              )
-              ).toList());
-          }).toList()
+          children: keyBoard,
 
         ),
       ],
