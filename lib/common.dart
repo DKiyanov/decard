@@ -222,3 +222,14 @@ String getEarnedText(double earnedSeconds){
   final seconds = (earnedSeconds - minutes * 60).truncate();
   return '$minutes:$seconds';
 }
+
+double inLimit(double value, {double? low, double? high}) {
+  if (low  != null && value < low ) return low;
+  if (high != null && value > high) return high;
+  return value;
+}
+
+double lineValue(double x, double x1, double y1, double x2, double y2) {
+  final y = y1 + (x - x1) * (y2 - y1) / (x2 - x1);
+  return y;
+}

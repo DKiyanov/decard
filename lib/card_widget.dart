@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:decard/context_extension.dart';
 import 'package:decard/text_constructor/text_constructor.dart';
 import 'package:decard/text_constructor/word_panel_model.dart';
 import 'package:decard/view_source.dart';
@@ -364,7 +365,7 @@ class CardWidgetState extends State<CardWidget> {
                   backgroundColor: Colors.green,
                   valueColor: const AlwaysStoppedAnimation<Color>(Colors.lightGreen),
                   value: _timeProgress,
-                  minHeight: 18,
+                  minHeight: 18 * context.scale,
                 ),
               ),
               Text(_costToStr(_costValue)),
@@ -390,9 +391,10 @@ class CardWidgetState extends State<CardWidget> {
     final costStr = _costToStr(cost);
 
     if (costStr.length <= 2) {
+      final size = context.scale * 25;
       return Container(
-        width: 25,
-        height: 25,
+        width: size,
+        height: size,
         decoration: BoxDecoration(
           color: color,
           border: Border.all(
@@ -434,7 +436,7 @@ class CardWidgetState extends State<CardWidget> {
 
     if (widget.card.body.questionData.image != null) {
       final urlType = getUrlType(widget.card.body.questionData.image!);
-      final maxHeight = MediaQuery.of(context).size.height * widget.card.style.imageMaxHeight / 100;
+      final maxHeight = context.screenSize.height * widget.card.style.imageMaxHeight / 100;
 
       if ( urlType == UrlType.httpUrl ) {
         widgetList.add(
@@ -483,7 +485,7 @@ class CardWidgetState extends State<CardWidget> {
       widgetList.add(
         AutoSizeText(
           widget.card.body.questionData.text!,
-          style: const TextStyle(fontSize: 30),
+          style: TextStyle(fontSize: context.textTheme.headlineMedium!.fontSize),
           textAlign: TextAlign.center,
         ),
       );
@@ -917,7 +919,7 @@ class CardWidgetState extends State<CardWidget> {
                       padding: const EdgeInsets.only(left: 4, right: 4),
                       child: AutoSizeText(
                         _widgetKeyboardText,
-                        style: const TextStyle(fontSize: 30, color: Colors.blue),
+                        style: TextStyle(fontSize: context.textTheme.headlineMedium!.fontSize, color: Colors.blue),
 //                  textAlign: TextAlign.center,
                       ),
                     ),
