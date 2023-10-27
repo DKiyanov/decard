@@ -1,4 +1,5 @@
 import 'package:decard/regulator.dart';
+import 'package:decard/simple_menu.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 
@@ -253,26 +254,23 @@ class _CardSetWidgetState extends State<CardSetWidget> {
           )),
 
           if (_editing) ...[
-            PopupMenuButton<String>(
-              icon: Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.blue,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.add, color: Colors.white)
-              ),
-              itemBuilder: (context) {
-                return allTags.where((tag) => !tags.contains(tag)).map<PopupMenuItem<String>>((menuTag) => PopupMenuItem<String>(
-                  value: menuTag,
+            popupMenu(
+                icon: Container(
+                    decoration: const BoxDecoration(
+                      color: Colors.blue,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.add, color: Colors.white)
+                ),
+                menuItemList: allTags.where((tag) => !tags.contains(tag)).map<SimpleMenuItem>((menuTag) => SimpleMenuItem(
                   child: Container(color: widget.selTagList.contains('$prefix$menuTag')? Colors.yellow : null, child: Text(menuTag)),
-                )).toList();
-              },
-              onSelected: (value){
-                setState(() {
-                  tags.add(value);
-                });
-              },
-            )
+                  onPress: () {
+                    setState(() {
+                      tags.add(menuTag);
+                    });
+                  }
+                )).toList()
+            ),
           ]
         ]),
       ),

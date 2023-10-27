@@ -1,3 +1,4 @@
+import 'package:decard/simple_menu.dart';
 import 'package:flutter/material.dart';
 
 import 'app_state.dart';
@@ -108,18 +109,16 @@ class _UsingModeSelectorState extends State<UsingModeSelector> {
                               borderRadius: BorderRadius.circular(15),
                             ),
                             suffixIcon: _childNameList.isEmpty? null :
-                              PopupMenuButton<String>(
-                                itemBuilder: (context) {
-                                  return _childNameList.map<PopupMenuItem<String>>((childName) => PopupMenuItem<String>(
-                                    value: childName,
+                              popupMenu(
+                                  icon: const Icon(Icons.menu),
+                                  menuItemList: _childNameList.map<SimpleMenuItem>((childName) => SimpleMenuItem(
                                     child: Text(childName),
-                                  )).toList();
-                                },
-                                onSelected: (childName) {
-                                  setState(() {
-                                    _textControllerChildName.text = childName != TextConst.txtAddNewChild?childName:'';
-                                  });
-                                },
+                                    onPress: () {
+                                      setState(() {
+                                        _textControllerChildName.text = childName != TextConst.txtAddNewChild?childName:'';
+                                      });
+                                    }
+                                  )).toList()
                               )
                         ),
                         onChanged: ((_) {
@@ -144,18 +143,16 @@ class _UsingModeSelectorState extends State<UsingModeSelector> {
                           borderRadius: BorderRadius.circular(15),
                         ),
                         suffixIcon: deviceNameList.isEmpty? null :
-                          PopupMenuButton<String>(
-                            itemBuilder: (context) {
-                            return deviceNameList.map<PopupMenuItem<String>>((deviceName) => PopupMenuItem<String>(
-                              value: deviceName,
-                              child: Text(deviceName),
-                            )).toList();
-                            },
-                            onSelected: (deviceName) {
-                            setState(() {
-                              _textControllerDeviceName.text = deviceName != TextConst.txtAddNewDevice?deviceName:'';
-                            });
-                            },
+                          popupMenu(
+                              icon: const Icon(Icons.menu),
+                              menuItemList: deviceNameList.map<SimpleMenuItem>((deviceName) => SimpleMenuItem(
+                                child: Text(deviceName),
+                                onPress: () {
+                                  setState(() {
+                                    _textControllerDeviceName.text = deviceName != TextConst.txtAddNewDevice?deviceName:'';
+                                  });
+                                }
+                              )).toList()
                           )
                       ),
                       onChanged: ((_) {

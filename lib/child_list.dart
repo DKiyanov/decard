@@ -1,4 +1,5 @@
 import 'package:decard/app_state.dart';
+import 'package:decard/simple_menu.dart';
 import 'package:flutter/material.dart';
 
 import 'card_set_list.dart';
@@ -25,22 +26,17 @@ class _ChildListState extends State<ChildList> {
         centerTitle: true,
         title: Text(TextConst.txtManagement),
         actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.menu),
-            itemBuilder: (context) {
-              return [
-                PopupMenuItem<String>(
-                  value: TextConst.txtSelectFile,
-                  child: Text(TextConst.txtSelectFile),
+          popupMenu(
+              icon: const Icon(Icons.menu),
+              menuItemList: [
+                SimpleMenuItem(
+                    child: Text(TextConst.txtSelectFile),
+                    onPress: () {
+                      FileList.navigatorPush(context);
+                      setState(() {});
+                    }
                 )
-              ];
-            },
-            onSelected: (value){
-              if (value == TextConst.txtSelectFile) {
-                FileList.navigatorPush(context);
-                setState(() {});
-              }
-            },
+              ]
           ),
         ],
       ),
@@ -52,45 +48,39 @@ class _ChildListState extends State<ChildList> {
             DeCardDemo.navigatorPush(context, child);
           },
           trailing: Row( mainAxisSize: MainAxisSize.min, children: [
-            PopupMenuButton<VoidCallback>(
-              icon: const Icon(Icons.tune),
-              itemBuilder: (context) {
-                return [
-                  PopupMenuItem<VoidCallback>(
-                    value: () async {
-                      final result = await OptionsEditor.navigatorPush(context, child);
-                      if (result != null && result) {
-                        refreshChildRegulator(child);
+            popupMenu(
+                icon: const Icon(Icons.tune),
+                menuItemList: [
+                  SimpleMenuItem(
+                      child: Text(TextConst.txtRegOptions),
+                      onPress: () async {
+                        final result = await OptionsEditor.navigatorPush(context, child);
+                        if (result != null && result) {
+                          refreshChildRegulator(child);
+                        }
                       }
-                    },
-                    child: Text(TextConst.txtRegOptions),
                   ),
 
-                  PopupMenuItem<VoidCallback>(
-                    value: () async {
-                      final result = await CardSetList.navigatorPush(context, child);
-                      if (result != null && result) {
-                        refreshChildRegulator(child);
+                  SimpleMenuItem(
+                      child: Text(TextConst.txtRegCardSet),
+                      onPress: () async {
+                        final result = await CardSetList.navigatorPush(context, child);
+                        if (result != null && result) {
+                          refreshChildRegulator(child);
+                        }
                       }
-                    },
-                    child: Text(TextConst.txtRegCardSet),
                   ),
 
-                  PopupMenuItem<VoidCallback>(
-                    value: () async {
-                      final result = await DifficultyList.navigatorPush(context, child);
-                      if (result != null && result) {
-                        refreshChildRegulator(child);
+                  SimpleMenuItem(
+                      child: Text(TextConst.txtRegDifficultyLevelsTuning),
+                      onPress: () async {
+                        final result = await DifficultyList.navigatorPush(context, child);
+                        if (result != null && result) {
+                          refreshChildRegulator(child);
+                        }
                       }
-                    },
-                    child: Text(TextConst.txtRegDifficultyLevelsTuning),
                   ),
-
-                ];
-              },
-              onSelected: (value){
-                value.call();
-              },
+                ]
             ),
 
             IconButton(

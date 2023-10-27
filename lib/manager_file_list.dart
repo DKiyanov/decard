@@ -1,5 +1,6 @@
 import 'package:decard/app_state.dart';
 import 'package:decard/db.dart';
+import 'package:decard/simple_menu.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'card_demo.dart';
@@ -94,31 +95,25 @@ class _FileListState extends State<FileList> {
         centerTitle: true,
         title: Text(TextConst.txtAvailableFiles),
         actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.menu),
-            itemBuilder: (context) {
-              return [
-                PopupMenuItem<String>(
-                  value: TextConst.txtRefreshFileList,
-                  child: Text(TextConst.txtRefreshFileList)
+          popupMenu(
+              icon: const Icon(Icons.menu),
+              menuItemList: [
+                SimpleMenuItem(
+                  child: Text(TextConst.txtRefreshFileList),
+                  onPress: () {
+                    _refresh();
+                  }
                 ),
-                PopupMenuItem(
-                  value: TextConst.txtFileSources,
-                  child: Text(TextConst.txtFileSources)
-                )
-              ];
-            },
-            onSelected: (value) async {
-              if (value == TextConst.txtRefreshFileList) {
-                _refresh();
-              }
 
-              if (value == TextConst.txtFileSources) {
-                if (await appState.fileSources.edit(context)) {
-                  _refresh();
-                }
-              }
-            },
+                SimpleMenuItem(
+                  child: Text(TextConst.txtFileSources),
+                  onPress: () async {
+                    if (await appState.fileSources.edit(context)) {
+                    _refresh();
+                    }
+                  }
+                )
+              ]
           ),
         ],
       ),
@@ -130,34 +125,27 @@ class _FileListState extends State<FileList> {
             onTap: () {
               DeCardDemo.navigatorPush(context, _viewFileChild, fileGuid: file.guid, onlyThatFile: true);
             },
-            trailing: PopupMenuButton<String>(
-              icon: const Icon(Icons.arrow_drop_down_outlined),
-              itemBuilder: (context) {
-                return [
-                  PopupMenuItem<String>(
-                    value: TextConst.txtUploadFileToChild,
+            trailing: popupMenu(
+                icon: const Icon(Icons.arrow_drop_down_outlined),
+                menuItemList: [
+                  SimpleMenuItem(
                     child: Text(TextConst.txtUploadFileToChild),
+                    onPress: () async {
+                      await setFileToChildWithDialog(context, file);
+                      setState(() {});
+                    }
                   ),
-                  PopupMenuItem<String>(
-                    value: TextConst.txtDelete,
-                    child: Text(TextConst.txtDelete),
-                  )
-                ];
-              },
-              onSelected: (value) async {
-                if (value == TextConst.txtUploadFileToChild) {
-                  await setFileToChildWithDialog(context, file);
-                  setState(() {});
-                }
 
-                if (value == TextConst.txtDelete) {
-                  if (!mounted) return;
-                  if (await deleteFileWithDialog(context, file)) {
-                    setState(() {});
-                  }
-                }
-              },
-            ),
+                  SimpleMenuItem(
+                    child: Text(TextConst.txtDelete),
+                    onPress: () async {
+                      if (await deleteFileWithDialog(context, file)) {
+                        setState(() {});
+                      }
+                    }
+                  )
+                ]
+            )
           );
         }).toList(),
       )),

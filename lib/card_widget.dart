@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:math';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:decard/context_extension.dart';
+import 'package:decard/simple_menu.dart';
 import 'package:decard/text_constructor/text_constructor.dart';
 import 'package:decard/text_constructor/word_panel_model.dart';
 import 'package:decard/view_source.dart';
@@ -739,19 +740,16 @@ class CardWidgetState extends State<CardWidget> {
               borderRadius: BorderRadius.circular(15),
             ),
             suffixIcon : Row( mainAxisSize: MainAxisSize.min, children: [
-              PopupMenuButton<String>(
-                icon: const Icon(Icons.arrow_drop_down_outlined),
-                itemBuilder: (context) {
-                  return _answerVariantList.map<PopupMenuItem<String>>((value) => PopupMenuItem<String>(
-                    value: value,
+              popupMenu(
+                  icon: const Icon(Icons.arrow_drop_down_outlined),
+                  menuItemList: _answerVariantList.map<SimpleMenuItem>((value) => SimpleMenuItem(
                     child: _valueWidget(value),
-                  )).toList();
-                },
-                onSelected: (value){
-                  setState(() {
-                    _inputController.text = value;
-                  });
-                },
+                    onPress: () {
+                      setState(() {
+                        _inputController.text = value;
+                      });
+                    }
+                  )).toList()
               ),
 
               IconButton(

@@ -1,3 +1,4 @@
+import 'package:decard/simple_menu.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
@@ -9,7 +10,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:filesystem_picker/filesystem_picker.dart';
 
 import 'common.dart';
-import 'common_widgets.dart';
 
 class LocalStorage {
   static Future<String?> getRootDir() async {
@@ -139,20 +139,16 @@ class _FileSourcesEditorState extends State<FileSourcesEditor> {
             context: context,
             child: ListTile(title: Text(path)),
             menuItemList: [
-              PopupMenuItem<String>(
-                  value: TextConst.txtDelete,
-                  child: Text(TextConst.txtDelete)
+              SimpleMenuItem(
+                  child: Text(TextConst.txtDelete),
+                  onPress: () {
+                    setState(() {
+                      _fileSourceList.remove(path);
+                    });
+                  }
               )
             ],
-            onSelect: (value) {
-              if (value == TextConst.txtDelete) {
-                setState(() {
-                  _fileSourceList.remove(path);
-                });
-              }
-            }
           );
-
         }).toList(),
       )),
 

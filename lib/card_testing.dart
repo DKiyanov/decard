@@ -1,4 +1,5 @@
 import 'package:decard/context_extension.dart';
+import 'package:decard/simple_menu.dart';
 import 'package:decard/view_source.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -73,29 +74,24 @@ class _DeCardState extends State<DeCard> {
             ],
 
             if (widget.child.cardController.card == null) ...[
-              PopupMenuButton<VoidCallback>(
-                icon: const Icon(Icons.menu),
-                itemBuilder: (context) {
-                  return [
-                    PopupMenuItem<VoidCallback>(
-                      value: () {
-                        DeCardDemo.navigatorPush(context, widget.child);
-                      },
-                      child: Text(TextConst.txtDemo),
+              popupMenu(
+                  icon: const Icon(Icons.menu),
+                  menuItemList: [
+                    SimpleMenuItem(
+                        child: Text(TextConst.txtDemo),
+                        onPress: () {
+                          DeCardDemo.navigatorPush(context, widget.child);
+                        }
                     ),
 
-                    // PopupMenuItem<VoidCallback>(
-                    //   value: () {
-                    //     appState.selfTest(appState.childList.first);
-                    //   },
-                    //   child: Text(TextConst.txtAutoTest),
-                    // )
+                    // SimpleMenuItem(
+                    //     child: Text(TextConst.txtAutoTest),
+                    //     onPress: () {
+                    //       appState.selfTest(appState.childList.first);
+                    //     }
+                    // ),
 
-                  ];
-                },
-                onSelected: (value){
-                  value.call();
-                },
+                  ]
               ),
             ],
           ],

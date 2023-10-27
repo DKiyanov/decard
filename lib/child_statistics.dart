@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:decard/app_state.dart';
 import 'package:decard/regulator.dart';
+import 'package:decard/simple_menu.dart';
 import 'package:flutter/material.dart';
 
 import 'bar_chart.dart';
@@ -147,20 +148,16 @@ class _ChildStatisticsState extends State<ChildStatistics> {
         centerTitle: true,
         title: Text(TextConst.txtStatistics),
         actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.multiline_chart),
-            itemBuilder: (context) {
-              return _chartTitleMap.keys.map<PopupMenuItem<String>>((chartTitle) => PopupMenuItem(
-                value: chartTitle,
+          popupMenu(
+              icon: const Icon(Icons.multiline_chart),
+              menuItemList: _chartTitleMap.keys.map<SimpleMenuItem>((chartTitle) => SimpleMenuItem(
                 child: Text(chartTitle),
-              )).toList();
-            },
-
-            onSelected: (chartTitle) async {
-              final chartKey = _chartTitleMap[chartTitle]!;
-              final chartContext = chartKey.currentContext!;
-              await Scrollable.ensureVisible(chartContext);
-            },
+                onPress: () async {
+                  final chartKey = _chartTitleMap[chartTitle]!;
+                  final chartContext = chartKey.currentContext!;
+                  await Scrollable.ensureVisible(chartContext);
+                }
+              )).toList()
           ),
 
           IconButton(icon: const Icon(Icons.nearby_error ), onPressed: () async {
