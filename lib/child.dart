@@ -103,7 +103,7 @@ class Child {
   /// Synchronizes the contents of the child's directories on the server and on the device
   /// Server -> Child
   /// missing directories, on server or device - NOT created
-  Future<void> synchronize(ServerConnect serverConnect) async {
+  Future<void> synchronize(ServerFunctions serverConnect) async {
     final fileList = await serverConnect.synchronizeChild(this);
 
     bool updateRegulator = false;
@@ -124,7 +124,7 @@ class Child {
   }
 
   /// saves tests results to server
-  Future<void> saveTestsResultsToServer(ServerConnect serverConnect) async {
+  Future<void> saveTestsResultsToServer(ServerFunctions serverConnect) async {
     serverConnect.saveTestsResults(this);
 
     final curDate = dateToInt(DateTime.now());
@@ -136,7 +136,7 @@ class Child {
   }
 
   /// load last test results from server
-  Future<void> updateTestResultFromServer(ServerConnect serverConnect) async {
+  Future<void> updateTestResultFromServer(ServerFunctions serverConnect) async {
     final from = await dbSource.tabTestResult.getLastTime();
     final to   = dateTimeToInt(DateTime.now());
 
@@ -152,7 +152,7 @@ class Child {
   /// load stat data from server
   /// to download statistics to the parent device
   /// to download statistics to the child's device when installing the application
-  Future<void> updateStatFromServer(ServerConnect serverConnect) async {
+  Future<void> updateStatFromServer(ServerFunctions serverConnect) async {
     final curDate = dateToInt(DateTime.now());
     if (_lastStatDate >= curDate) return;
 

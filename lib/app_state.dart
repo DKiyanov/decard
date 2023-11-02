@@ -3,7 +3,9 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:collection/collection.dart';
+import 'package:decard/parse_connect.dart';
 import 'package:decard/server_connect.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -14,6 +16,7 @@ import 'package:simple_events/simple_events.dart';
 
 import 'child.dart';
 import 'card_controller.dart';
+import 'common.dart';
 import 'file_sources.dart';
 import 'loader.dart';
 import 'package:path/path.dart' as path_util;
@@ -31,7 +34,6 @@ enum AppMode {
 final appState = AppState();
 
 class AppState {
-  static const String _kUsingMode               = 'usingMode';
   static const String _kViewFileChildName       = 'fileViewer';
   static const String _kViewFileChildDeviceName = 'this';
 
@@ -40,16 +42,17 @@ class AppState {
   late SharedPreferences prefs;
   late PackageInfo packageInfo;
 
+  late String deviceUniqueID;
+
   late String _appDir;
 
-  UsingMode? _usingMode;
-  UsingMode get usingMode => _usingMode!;
-
-  bool get firstRun => _usingMode == null;
+  late LoginMode loginMode;
+  late UsingMode usingMode;
 
   late DataLoader _dataLoader;
 
-  late ServerConnect serverConnect;
+  late ParseConnect serverConnect;
+  late ServerFunctions serverFunctions;
 
   final childList = <Child>[];
 
@@ -66,22 +69,25 @@ class AppState {
 
   AppState._();
 
-  Future<void> init() async {
+  Future<void> initialization(ParseConnect serverConnect, LoginMode loginMode) async {
+    this.serverConnect = serverConnect;
+    this.loginMode     = loginMode;
+    usingMode = loginMode == LoginMode.child ? UsingMode.testing : UsingMode.manager;
+
     prefs = await SharedPreferences.getInstance();
 
     packageInfo = await PackageInfo.fromPlatform();
 
+    final deviceInfo = DeviceInfoPlugin();
+    final androidDeviceInfo = await deviceInfo.androidInfo;
+    deviceUniqueID = androidDeviceInfo.id;
+
     Directory appDocDir = await getApplicationDocumentsDirectory();
     _appDir =  appDocDir.path;
 
-    serverConnect = ServerConnect(prefs);
+    serverFunctions = ServerFunctions(serverConnect.serverURL, serverConnect.user!.objectId!);
 
     _dataLoader = DataLoader();
-
-    final usingModeStr = prefs.getString(_kUsingMode)??'';
-    if (usingModeStr.isEmpty) return; // first run
-
-    _usingMode = UsingMode.values.firstWhere((usingMode) => usingMode.name == usingModeStr);
 
     await _initFinish();
   }
@@ -93,7 +99,7 @@ class AppState {
       earnController = EarnController(prefs, packageInfo);
 
       earnController.onSendEarn.subscribe((listener, data) {
-        childList.first.saveTestsResultsToServer(serverConnect);
+        childList.first.saveTestsResultsToServer(serverFunctions);
       });
 
       childList.first.cardController.onAddEarn.subscribe((listener, earn){
@@ -153,7 +159,7 @@ class AppState {
 
   /// Search for new children on the server and create them locally
   Future<void> _searchNewChildrenInServer() async {
-    final serverChildMap = await appState.serverConnect.getChildDeviceMap();
+    final serverChildMap = await appState.serverFunctions.getChildDeviceMap();
 
     for (var childName in serverChildMap.keys) {
       final deviceList = serverChildMap[childName]!;
@@ -163,26 +169,17 @@ class AppState {
     }
   }
 
-  Future<void> setUsingMode(UsingMode newUsingMode, String childName, String deviceName) async {
-    Child? child;
-
-    if (newUsingMode == UsingMode.testing) {
-      final names = await serverConnect.addChildDevice(childName, deviceName);
-      child = await addChild(names.childName, names.deviceName);
-    }
-
-    prefs.setString(_kUsingMode, newUsingMode.name);
-    _usingMode = newUsingMode;
+  Future<void> firstRunOkPrepare(String childName, String deviceName) async {
+    final names = await serverFunctions.addChildDevice(childName, deviceName);
+    final child = await addChild(names.childName, names.deviceName);
 
     await _initFinish();
 
-    if (child != null) {
-      child.updateStatFromServer(serverConnect);
-    }
+    child.updateStatFromServer(serverFunctions);
   }
 
   Future<void> synchronize() async {
-    final serverChildMap = await serverConnect.getChildDeviceMap();
+    final serverChildMap = await serverFunctions.getChildDeviceMap();
     for (var childName in serverChildMap.keys) {
       final deviceList = serverChildMap[childName]!;
 
@@ -190,7 +187,7 @@ class AppState {
         final child = childList.firstWhereOrNull((child) => child.name == childName && child.deviceName == deviceName);
         if (child == null) continue;
 
-        await child.synchronize(serverConnect);
+        await child.synchronize(serverFunctions);
       }
     }
   }
@@ -276,7 +273,7 @@ class AppState {
         testCardController.card!.setResult(result, 0, 1, 0);
       }
 
-      serverConnect.saveTestsResults(child);
+      serverFunctions.saveTestsResults(child);
     }
 
     print('tstres finish');

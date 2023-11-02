@@ -159,15 +159,15 @@ class _FileListState extends State<FileList> {
       }
     }
 
-    final fileList = await appState.serverConnect.synchronizeChild(appState.viewFileChild, fromCommonFolder : true);
+    final fileList = await appState.serverFunctions.synchronizeChild(appState.viewFileChild, fromCommonFolder : true);
     if (fileList.isNotEmpty) {
       await appState.viewFileChild.refreshCardsDB([appState.viewFileChild.downloadDir]);
     }
   }
 
   Future<void> setFileToChild(Child child, PacInfo file) async {
-    await appState.serverConnect.putFileToServer(child, _pathMap[file]!);
-    await child.synchronize(appState.serverConnect);
+    await appState.serverFunctions.putFileToServer(child, _pathMap[file]!);
+    await child.synchronize(appState.serverFunctions);
   }
 
   Future<void> setFileToChildWithDialog(BuildContext context, PacInfo file) async {

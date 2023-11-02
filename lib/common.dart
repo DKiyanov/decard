@@ -1,4 +1,12 @@
+enum LoginMode{
+  masterParent,
+  slaveParent,
+  child
+}
+
 class TextConst{
+  static String versionDateStr    = '19.09.2023';
+  static String version           = 'Версия';
   static String defaultURL        = 'http://192.168.0.142:8765';
   static String defaultLogin      = 'decard_stat_writer';
   static String txtServerURL      = 'Адрес сервера';
@@ -14,6 +22,7 @@ class TextConst{
   static String errServerConnection1 = 'Соединение с сервером не настроено';
   static String txtAppTitle       = 'Карточник';
   static String txtStarting       = 'Запуск';
+  static String txtLoading        = 'Загрузка';
   static String txtTuningFileSourceList = 'Настройка источников для загрузки карточек';
   static String txtDelete         = 'Удалить';
   static String txtEdit           = 'Редактировать';
@@ -165,6 +174,37 @@ class TextConst{
   static String drfOptionNegativeLastResultMaxQualityLimit = 'Максимально возможное качество с отрицательным последним результатом';
 
   static String drfOptionMinEarnTransferMinutes = 'Минимальное количество заработанного времени которое может быть зафиксировано';
+
+  static String errServerUrlEmpty  = 'Не указан адрес сервера';
+  static String errServerUnavailable  = 'Сервер недоступен';
+  static String errFailedLogin   = 'Не удалось подключиться к серверу';
+  static String errFailedSignUp   = 'Не удалось создать учётную запись на сервере';
+  static String errInvalidPassword = 'Не правильный пароль';
+  static String errInvalidPasswordPinCode = 'Не правильный пароль/пинкод';
+
+  static String txtLoginModeTitle      = 'Выбор режима использования устройства';
+  static String txtLoginModeInvitation = 'Выбирите пожалуйста кем будет использоваться это устойство';
+  static String txtLoginModeMasterParent = 'Это устройство будет использоваться РОДИТЕЛЕМ\n(организатором группы)';
+  static String txtLoginModeSlaveParent = 'Это устройство будет использоваться РОДИТЕЛЕМ\n(участником группы)';
+  static String txtLoginModeChild      = 'Это устройство будет использоваться РЕБЁНКОМ';
+
+  static String txtConnecting     = 'Подключение к серверу';
+  static String txtCancel            = 'Отменить';
+  static String txtEmailAddress   = 'Адрес электронной почты родителя';
+
+  static String txtInvite              = 'Приглашение';
+  static String txtInviteExpiration1   = 'Приглашение будет действовать';
+  static String txtInviteExpiration2   = 'минут';
+  static String txtInviteExpiration3   = 'до';
+  static String txtInviteForChildTitle = 'для Ребёнка';
+  static String txtInviteChild         = 'Пригласить ребёнка';
+  static String txtInviteParent         = 'Пригласить другого родителя';
+  static String txtInviteForChildText  = 'введите этот код на устройстве ребёнка при установке приложения или при входе в настройки';
+  static String txtInviteForParentTitle = 'для Родителя';
+  static String txtInviteForParentText  = 'введите этот код на устройстве другого родителя при установке приложения или при повторном входе';
+  static String txtInviteCopied         = 'Код скопирован в буффер обмена';
+  static String txtInviteLoginHelp      = 'Получите код приглашения у родителя\nорганизатора группы';
+  static String txtInviteKey      = 'Код приглашения';
 }
 
 int dateToInt(DateTime date){
@@ -232,4 +272,10 @@ double inLimit(double value, {double? low, double? high}) {
 double lineValue(double x, double x1, double y1, double x2, double y2) {
   final y = y1 + (x - x1) * (y2 - y1) / (x2 - x1);
   return y;
+}
+
+String timeToStr(DateTime time){
+  // конечно нужно использовать intl, но пока так сделаем
+  return
+    '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
 }

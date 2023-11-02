@@ -1,162 +1,162 @@
-import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
-import 'package:decard/common.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:webdav_client/webdav_client.dart' as webdav;
+import 'package:parse_server_sdk_flutter/parse_server_sdk.dart';
 import 'package:path/path.dart' as path_util;
 
 import 'child.dart';
+import 'common.dart';
 import 'db.dart';
 
-class ServerConnect {
-  static const String _statDirName    = "stat";
-  static const String _statFilePrefix = "stat-";
-  static const String _statFileName   = "stat.json";
+class ServerFunctions {
   static const String _commonFolderName = "common_folder";
 
-  final SharedPreferences prefs;
+  static const String _clsChild      = 'Child';
+  static const String _clsDevice     = 'Device';
 
-  String serverURL = '';
-  String login = '';
-  String _password = '';
+  static const String _clsFile       = 'DecardFile';
+  static const String _clsTestResult = 'DecardTestResult';
+  static const String _clsStat       = 'DecardStat';
 
-  bool   loggedIn = false;
+  static const String _fldUserID     = 'UserID';
+  static const String _fldName       = 'Name';
+  static const String _fldChildID    = 'ChildID';
 
-  String lastError = '';
+  static const String _fldPath     = 'Path';
+  static const String _fldFileName = 'FileName';
+  static const String _fldSize     = 'Size';
+  static const String _fldContent  = 'Content';
 
-  ServerConnect(this.prefs){
-    readConnectionParam();
-  }
+  static const String _fldDateTime = 'DateTime';
 
-  Future<bool> setConnectionParam(String url, String newLogin, String password, bool signUp) async {
-    serverURL = url;
-    login     = newLogin;
-    _password = password;
+  static const String _fldFileGuid = 'FileGuid';
+  static const String _fldCardID   = 'CardID';
 
-    await _saveConnectionParam();
-    return await connectToServer();
-  }
+  final Map<String, String> _childName2IdMap = {};
 
-  Future<bool> connectToServer() async {
-    if (serverURL.isEmpty || login.isEmpty || _password.isEmpty) {
-      lastError = TextConst.errServerConnection1;
-      return false;
+  final String serverURL;
+  final String userID;
+  ServerFunctions(this.serverURL, this.userID);
+
+  Future<String> _getChildID(String childName) async {
+    var result = _childName2IdMap[childName];
+    if (result != null) {
+      return result;
     }
 
-    final client = getClient();
+    final query =  QueryBuilder<ParseObject>(ParseObject(_clsChild));
+    query.whereEqualTo(_fldUserID, userID);
+    query.whereEqualTo(_fldName, childName);
 
-    try {
-      await client.ping();
-      loggedIn = true;
-    } catch (e) {
-      loggedIn = false;
-      lastError = e.toString();
-    }
+    final child = await query.first();
+    result = child!.objectId!;
 
-    return loggedIn;
+    _childName2IdMap[childName] = result;
+
+    return result;
   }
 
-  webdav.Client getClient() {
-    return webdav.newClient(
-      serverURL,
-      user     : login,
-      password : _password,
-    );
-  }
-
-  Future<void> _saveConnectionParam() async {
-    final map = {
-      "url"      : serverURL,
-      "login"    : login,
-      "password" : _password,
-    };
-
-    await prefs.setString("serverConnect", jsonEncode(map));
-  }
-
-  void readConnectionParam(){
-    final json = prefs.getString("serverConnect") ?? "";
-    if (json.isEmpty) return;
-    final map = jsonDecode(json);
-
-    serverURL = map["url"]??"";
-    login     = map["login"]??"";
-    _password = map["password"]??"";
-  }
-
+  /// Returns a list of children and devices associated with the child
+  /// Server -> Client
+  /// Future<Map<Child.name, List<Device.name>>>
   Future<Map<String, List<String>>> getChildDeviceMap() async {
-    final client = getClient();
-
     final Map<String, List<String>> result = {};
 
-    final fileList = await client.readDir('');
+    final query =  QueryBuilder<ParseObject>(ParseObject(_clsChild));
+    query.whereEqualTo(_fldUserID, userID);
 
-    for (var webFile in fileList) {
-      if (webFile.isDir!) {
-        if (webFile.name! == _commonFolderName) continue;
-        final subFileList = await client.readDir(webFile.path!);
-        final deviceDirList = subFileList.where((webSubFile) => webSubFile.isDir!).map((webSubFile) => webSubFile.name!).toList();
-        result[webFile.name!] = deviceDirList;
-      }
+    final childList = await query.find();
+    for (var child in childList) {
+      final childName = child.get<String>(_fldName)!;
+
+      final query =  QueryBuilder<ParseObject>(ParseObject(_clsDevice));
+      query.whereEqualTo(_fldChildID, child.objectId);
+
+      final deviceList = await query.find();
+
+      result[childName] = deviceList.map<String>((device) => device.get<String>(_fldName)!).toList();
     }
 
     return result;
   }
 
-  Future<ChildAndDeviceNames> addChildDevice(String childName, String deviceName) async {
-    final client = getClient();
+  /// Adds a new child - device
+  /// Child -> Server
+  /// returns the names of the created child/device in the structure
+  Future<ChildAndDeviceNames> addChildDevice(String newChildName, String newDeviceName) async {
+    final query =  QueryBuilder<ParseObject>(ParseObject(_clsChild));
+    query.whereEqualTo(_fldUserID, userID);
 
-    final fileList = await client.readDir('');
+    final childList = await query.find();
 
-    if (!fileList.any((webFile) => webFile.name! == _commonFolderName)) {
-      await client.mkdir(_commonFolderName);
+    var child = childList.firstWhereOrNull((child) => child.get<String>(_fldName)!.toLowerCase() == newChildName.toLowerCase());
+
+    if (child != null) {
+      final query =  QueryBuilder<ParseObject>(ParseObject(_clsDevice));
+      query.whereEqualTo(_fldChildID, child.objectId);
+
+      final deviceList = await query.find();
+      final device = deviceList.firstWhereOrNull((device) => device.get<String>(_fldName)!.toLowerCase() == newDeviceName.toLowerCase());
+
+      if (device != null) {
+        return ChildAndDeviceNames(child.get<String>(_fldName)!, device.get<String>(_fldName)!);
+      }
     }
 
-    final webFile = fileList.firstWhereOrNull((webFile) => webFile.name!.toLowerCase() == childName.toLowerCase());
-    if (webFile != null) {
-      final subFileList = await client.readDir(webFile.path!);
-      final webSubFile = subFileList.firstWhereOrNull((webSubFile) => webSubFile.name!.toLowerCase() == deviceName.toLowerCase());
-      if (webSubFile != null) return ChildAndDeviceNames(webFile.name!, webSubFile.name!);
-
-      await client.mkdir(path_util.join(webFile.path!, deviceName));
-      await client.mkdir(path_util.join(webFile.path!, deviceName, _statDirName));
-      return ChildAndDeviceNames(webFile.name!, deviceName);
+    if (child == null) {
+      child = ParseObject(_clsChild);
+      child.set<String>(_fldUserID, userID);
+      child.set<String>(_fldName  , newChildName);
+      await child.save();
     }
 
-    await client.mkdir(childName);
-    final newPath = path_util.join(childName, deviceName);
-    await client.mkdir(newPath);
+    final device = ParseObject(_clsDevice);
+    device.set<String>(_fldUserID , userID);
+    device.set<String>(_fldChildID, child.objectId!);
+    device.set<String>(_fldName   , newDeviceName);
+    await device.save();
 
-    return ChildAndDeviceNames(childName, deviceName);
+    return ChildAndDeviceNames(child.get<String>(_fldName)!, device.get<String>(_fldName)!);
   }
 
   /// Synchronizes the contents of the child's directories on the server and on the device
   /// Server -> Child
   /// missing directories, on server or device - NOT created
+  /// returns a list of updated/added files
   Future<List<String>> synchronizeChild(Child child, {bool fromCommonFolder = false}) async {
-    final client = getClient();
-
     var netPath = path_util.join(child.name, child.deviceName);
     if (fromCommonFolder) netPath = _commonFolderName;
 
-    final fileList = await client.readDir(netPath);
+    final query =  QueryBuilder<ParseObject>(ParseObject(_clsFile));
+    query.whereEqualTo(_fldUserID, userID);
+    query.whereEqualTo(_fldPath, netPath);
+
+    final fileList = await query.find();
+
     final newFileList = <String>[];
 
     for (var file in fileList) {
-      if (file.isDir!) continue;
 
-      final fileName = path_util.basename(file.path!);
+      final fileName = file.get<String>(_fldFileName)!;
+      final fileTime = file.updatedAt!;
+      final fileSize = file.get<int>(_fldSize)!;
+
       final netFilePath = path_util.join(serverURL, netPath, fileName);
 
-      if (!await child.dbSource.tabSourceFile.checkFileRegisteredEx(netFilePath, file.mTime!, file.size!)) {
+      if (!await child.dbSource.tabSourceFile.checkFileRegisteredEx(netFilePath, fileTime, fileSize)) {
         final filePath = path_util.join(child.downloadDir, fileName);
         final localFile = File(filePath);
         if (localFile.existsSync()) localFile.deleteSync();
-        await client.read2File(file.path!, filePath);
-        await child.dbSource.tabSourceFile.registerFileEx(netFilePath, file.mTime!, file.size!);
+
+        final content = file.get<ParseFile>(_fldContent)!;
+        await content.loadStorage();
+        if ( content.file == null){
+          await content.download();
+        }
+
+        await content.file!.copy(filePath);
+
+        await child.dbSource.tabSourceFile.registerFileEx(netFilePath, fileTime, fileSize);
 
         newFileList.add(fileName);
       }
@@ -165,12 +165,38 @@ class ServerConnect {
     return newFileList;
   }
 
-  Future<void> _saveJson(Object object, String filePath) async {
-    final jsonStr = jsonEncode(object);
-    final fileData = Uint8List.fromList(jsonStr.codeUnits);
+  /// sends file to the server
+  /// manager -> server
+  Future<void> putFileToServer(Child child, String path) async {
+    final fileName = path_util.basename(path);
+    final netPath = path_util.join(child.name, child.deviceName);
 
-    final client = getClient();
-    await client.write(filePath, fileData);
+    final query =  QueryBuilder<ParseObject>(ParseObject(_clsFile));
+    query.whereEqualTo(_fldUserID, userID);
+    query.whereEqualTo(_fldPath, netPath);
+    query.whereEqualTo(_fldFileName, fileName);
+
+    {
+      final serverFile = await query.first();
+      if (serverFile != null) {
+        await serverFile.delete();
+      }
+    }
+
+    final localFile   =  File(path);
+    final fileContent = localFile.readAsBytesSync();
+    final fileSize    = await localFile.length();
+
+    final serverFileContent = ParseWebFile(fileContent, name : fileName);
+    await serverFileContent.save();
+
+    final serverFile = ParseObject(_clsFile);
+    serverFile.set<String>(_fldUserID  , userID);
+    serverFile.set<String>(_fldPath    , netPath);
+    serverFile.set<String>(_fldFileName, fileName);
+    serverFile.set<int>(_fldSize, fileSize);
+    serverFile.set<ParseWebFile>(_fldContent, serverFileContent);
+    await serverFile.save();
   }
 
   /// saves tests results
@@ -179,50 +205,106 @@ class ServerConnect {
     final resultList = child.cardController.cardResultList;
     if (resultList.isEmpty) return;
 
-    final fileName = '$_statFilePrefix${resultList.first.dateTime}-${resultList.last.dateTime.toString().substring(8)}.json';
-    final filePath = path_util.join(child.name, child.deviceName, _statDirName, fileName);
+    final childID = await _getChildID(child.name);
 
-    await _saveJson(resultList, filePath);
+    for (var row in resultList) {
+      final json = row.toJson();
+
+      final testResult = ParseObject(_clsTestResult);
+      testResult.fromJson(json);
+      testResult.set<String>(_fldUserID , userID);
+      testResult.set<String>(_fldChildID, childID);
+
+      testResult.save();
+    }
 
     resultList.clear();
+  }
+
+  /// Returns test results for a period
+  /// server -> manager
+  Future<List<TestResult>> getTestsResultsFromServer(Child child, int from, int to) async {
+    final result = <TestResult>[];
+
+    final childID = await _getChildID(child.name);
+
+    final query =  QueryBuilder<ParseObject>(ParseObject(_clsTestResult));
+    query.whereEqualTo(_fldUserID, userID);
+    query.whereEqualTo(_fldChildID, childID);
+    query.whereGreaterThanOrEqualsTo(_fldDateTime, from);
+    query.whereLessThanOrEqualTo(_fldDateTime, to);
+
+    final resultList = await query.find();
+
+    for (var row in resultList) {
+      final json = row.toJson();
+      final testResult = TestResult.fromMap(json);
+      result.add(testResult);
+    }
+
+    return result;
   }
 
   /// saves statistics
   /// data from table stat
   /// child -> server
   Future<void> saveStatToServer(Child child) async {
+    final childID = await _getChildID(child.name);
+
+    final query =  QueryBuilder<ParseObject>(ParseObject(_clsStat));
+    query.whereEqualTo(_fldUserID, userID);
+    query.whereEqualTo(_fldChildID, childID);
+
+    final statList = await query.find();
+
     final rows = await child.dbSource.tabCardStat.getAllRows();
 
-    final statList = <CardStatExchange>[];
-    CardStatExchange.dbSource = child.dbSource;
     for (var row in rows) {
-      statList.add(CardStatExchange.fromDbMap(row));
+      final cse = CardStatExchange.fromDbMap(row);
+
+      var stat = statList.firstWhereOrNull((stat) => stat.get(_fldFileGuid)! == cse.fileGuid && stat.get(_fldCardID)! == cse.cardID );
+      if (stat == null) {
+        stat = ParseObject(_clsStat);
+        stat.set<String>(_fldUserID , userID);
+        stat.set<String>(_fldChildID, childID);
+      }
+
+      final json = cse.toJson();
+      stat.fromJson(json);
+      stat.save();
     }
 
-    final filePath = path_util.join(child.name, child.deviceName, _statFileName);
-
-    await _saveJson(statList, filePath);
   }
 
   /// load statistics
   /// update data in table stat
-  /// server -> child
+  /// server -> client
   Future<int> updateStatFromServer(Child child, int lastStatDate) async {
-    final filePath = path_util.join(child.name, child.deviceName, _statFileName);
-    final client = getClient();
-    final webFile = await client.readProps(filePath);
-    final fileDate = dateToInt(webFile.mTime!);
+    final childID = await _getChildID(child.name);
 
-    if (lastStatDate >= fileDate) return 0;
+    final query =  QueryBuilder<ParseObject>(ParseObject(_clsStat));
+    query.whereEqualTo(_fldUserID, userID);
+    query.whereEqualTo(_fldChildID, childID);
 
-    final fileData = await client.read(filePath);
-    final jsonStr = utf8.decode(fileData);
-    final rows = jsonDecode(jsonStr) as List;
+    final statList = await query.find();
+    if (statList.isEmpty) return 0;
+
+    DateTime? lastUpdateDate;
+    for (var stat in statList) {
+      if (lastUpdateDate == null || stat.updatedAt!.compareTo(lastUpdateDate) > 0 ){
+        lastUpdateDate = stat.updatedAt;
+      }
+    }
+
+    final lastUpdateIntDate = dateToInt(lastUpdateDate!);
+    if (lastStatDate >= lastUpdateIntDate) return 0;
 
     CardStatExchange.dbSource = child.dbSource;
 
-    for (var row in rows) {
-      final statExchange = CardStatExchange.fromJson(row);
+    for (var stat in statList) {
+      final json = stat.toJson();
+
+      final statExchange = CardStatExchange.fromJson(json);
       final dbRowMap = await statExchange.toDbMap();
       if (dbRowMap.isEmpty) continue;
 
@@ -235,50 +317,7 @@ class ServerConnect {
       }
     }
 
-    return fileDate;
+    return lastUpdateIntDate;
   }
 
-  /// sends file to the server
-  /// manager -> server
-  Future<void> putFileToServer(Child child, String path) async {
-    final client = getClient();
-    final fileName = path_util.basename(path);
-    await client.writeFromFile(path, path_util.join(child.name, child.deviceName, fileName));
-  }
-
-  /// Returns test results for a period
-  /// server -> manager
-  Future<List<TestResult>> getTestsResultsFromServer(Child child, int from, int to) async {
-	  final result = <TestResult>[];
-	
-    final client = getClient();
-
-    final fileList = await client.readDir(path_util.join(child.name, child.deviceName, _statDirName));
-	
-    for (var file in fileList) {
-      if (file.isDir!) continue;
-	  
-      final fileName = file.name!;
-
-      if (fileName.substring(0,5).toLowerCase() != _statFilePrefix) continue;
-
-      final fileFrom = int.parse(fileName.substring(5,19));
-      if (fileFrom > to) continue;
-
-      final fileTo   = int.parse('${ fileName.substring(5,13) }${ fileName.substring(20,26) }');
-      if (fileTo <= from) continue;
-
-      final fileData = await client.read(file.path!);
-      final jsonStr = utf8.decode(fileData);
-      final jsonDataList = jsonDecode(jsonStr) as List;
-
-      for (var row in jsonDataList) {
-        final cardResult = TestResult.fromMap(row);
-        if (cardResult.dateTime < from || cardResult.dateTime > to) continue;
-        result.add(cardResult);
-      }
-    }
-
-	  return result;
-  }
 }

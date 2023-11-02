@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:decard/app_state.dart';
 import 'package:decard/regulator.dart';
 import 'package:decard/simple_menu.dart';
@@ -55,7 +53,7 @@ class _ChildStatisticsState extends State<ChildStatistics> {
   }
 
   void _starting() async {
-    await widget.child.updateTestResultFromServer(appState.serverConnect);
+    await widget.child.updateTestResultFromServer(appState.serverFunctions);
     _childTestResults = await widget.child.testResults;
 
     _initQualityRanges();

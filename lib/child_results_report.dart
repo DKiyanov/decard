@@ -54,7 +54,7 @@ class _ChildResultsReportState extends State<ChildResultsReport> {
   void _starting() async {
     _reportMode = widget.reportMode;
 
-    await widget.child.updateTestResultFromServer(appState.serverConnect);
+    await widget.child.updateTestResultFromServer(appState.serverFunctions);
     _childTestResults = await widget.child.testResults;
 
     await _refreshData();

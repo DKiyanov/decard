@@ -97,6 +97,6 @@ class _ChildListState extends State<ChildList> {
 
   Future<void> refreshChildRegulator(Child child) async {
     await child.refreshRegulator();
-    await appState.serverConnect.putFileToServer(child, child.regulatorPath);
+    await appState.serverFunctions.putFileToServer(child, child.regulatorPath);
   }
 }
