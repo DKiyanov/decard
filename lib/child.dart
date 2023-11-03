@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:decard/regulator.dart';
-import 'package:decard/server_connect.dart';
+import 'package:decard/server_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:shared_preferences/shared_preferences.dart';

@@ -8,6 +8,7 @@ import 'child.dart';
 import 'child_statistics.dart';
 import 'common.dart';
 import 'difficulty_list.dart';
+import 'invite_key_present.dart';
 import 'manager_file_list.dart';
 import 'options_editor.dart';
 
@@ -21,24 +22,80 @@ class ChildList extends StatefulWidget {
 class _ChildListState extends State<ChildList> {
   @override
   Widget build(BuildContext context) {
+    final menuItemList = <SimpleMenuItem>[];
+
+    menuItemList.add(
+        SimpleMenuItem(
+            child: Text(TextConst.txtSelectFile),
+            onPress: () {
+              FileList.navigatorPush(context);
+              setState(() {});
+            }
+        )
+    );
+
+    if (appState.loginMode == LoginMode.masterParent) {
+      menuItemList.addAll([
+        SimpleMenuItem(
+            child: Text(TextConst.txtInviteChild),
+            onPress: () {
+              Invite.navigatorPush(
+                  context, const Duration(minutes: 30), LoginMode.child);
+            }
+        ),
+
+        SimpleMenuItem(
+            child: Text(TextConst.txtInviteParent),
+            onPress: () {
+              Invite.navigatorPush(
+                  context, const Duration(minutes: 30), LoginMode.slaveParent);
+            }
+        ),
+      ]);
+    }
+
+    final actions = <Widget>[];
+    actions.add(
+        popupMenu(
+            icon: const Icon(Icons.menu),
+            menuItemList: menuItemList
+        )
+    );
+
+    if (appState.childList.isEmpty){
+      String msg = TextConst.msgChildList1;
+      if (appState.loginMode == LoginMode.masterParent) {
+        msg = '${TextConst.msgChildList1}\n${TextConst.msgChildList2}';
+      }
+
+      return Scaffold(
+        appBar: AppBar(
+          centerTitle: true,
+          title: Text(TextConst.txtManagement),
+          actions: actions,
+        ),
+
+        body: SafeArea(
+          child: Row(children: [
+            Expanded(
+              child: Card(
+                color: Colors.amberAccent,
+                child: Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: Text(msg, textAlign: TextAlign.center),
+                ),
+              ),
+            )
+          ]),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
         title: Text(TextConst.txtManagement),
-        actions: [
-          popupMenu(
-              icon: const Icon(Icons.menu),
-              menuItemList: [
-                SimpleMenuItem(
-                    child: Text(TextConst.txtSelectFile),
-                    onPress: () {
-                      FileList.navigatorPush(context);
-                      setState(() {});
-                    }
-                )
-              ]
-          ),
-        ],
+        actions: actions,
       ),
 
       body: SafeArea(child: ListView(

@@ -4,8 +4,7 @@ import 'dart:math';
 
 import 'package:collection/collection.dart';
 import 'package:decard/parse_connect.dart';
-import 'package:decard/server_connect.dart';
-import 'package:device_info_plus/device_info_plus.dart';
+import 'package:decard/server_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -42,8 +41,6 @@ class AppState {
   late SharedPreferences prefs;
   late PackageInfo packageInfo;
 
-  late String deviceUniqueID;
-
   late String _appDir;
 
   late LoginMode loginMode;
@@ -78,10 +75,6 @@ class AppState {
 
     packageInfo = await PackageInfo.fromPlatform();
 
-    final deviceInfo = DeviceInfoPlugin();
-    final androidDeviceInfo = await deviceInfo.androidInfo;
-    deviceUniqueID = androidDeviceInfo.id;
-
     Directory appDocDir = await getApplicationDocumentsDirectory();
     _appDir =  appDocDir.path;
 
@@ -96,15 +89,17 @@ class AppState {
     await _initChildren();
 
     if (usingMode == UsingMode.testing) {
-      earnController = EarnController(prefs, packageInfo);
+      if (childList.isNotEmpty) {
+        earnController = EarnController(prefs, packageInfo);
 
-      earnController.onSendEarn.subscribe((listener, data) {
-        childList.first.saveTestsResultsToServer(serverFunctions);
-      });
+        earnController.onSendEarn.subscribe((listener, data) {
+          childList.first.saveTestsResultsToServer(serverFunctions);
+        });
 
-      childList.first.cardController.onAddEarn.subscribe((listener, earn){
-        earnController.addEarn(earn!);
-      });
+        childList.first.cardController.onAddEarn.subscribe((listener, earn){
+          earnController.addEarn(earn!);
+        });
+      }
 
       appMode = AppMode.testing;
     }

@@ -1,11 +1,10 @@
-import 'package:decard/app_state.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:parse_server_sdk_flutter/parse_server_sdk.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 import '../common.dart';
-//import '../platform_service.dart';
+
 
 class ParseConnect {
   static const String _applicationId   = 'dk_parental_control';
@@ -99,10 +98,10 @@ class ParseConnect {
   Future<bool> loginWithInvite(String serverURL, String inviteKey, LoginMode loginMode) async {
     await _setServerURL(serverURL);
 
-    final sendKeyStr = inviteKey.replaceAll('\\D', '');
+    final sendKeyStr = inviteKey.replaceAll(RegExp('\\D'), '');
     final sendKeyInt = int.tryParse(sendKeyStr);
 
-    final deviceID = appState.deviceUniqueID;
+    final deviceID = await getDeviceID();
     const uuid  = Uuid();
     final token = uuid.v4();
 

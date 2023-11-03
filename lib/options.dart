@@ -43,6 +43,12 @@ class _OptionsState extends State<Options> {
 	  _childDeviceMap = await appState.serverFunctions.getChildDeviceMap();
 	  _childNameList  = _childDeviceMap.keys.toList();
 
+    final cdNames = await appState.serverFunctions.getChildDeviceFromDeviceID();
+    if (cdNames != null) {
+      _textControllerChildName.text = cdNames.childName;
+      _textControllerDeviceName.text = cdNames.deviceName;
+    }
+
     setState(() {
       _isStarting = false;
     });
@@ -65,7 +71,7 @@ class _OptionsState extends State<Options> {
     return Scaffold(
         appBar: AppBar(
           centerTitle: true,
-          title: Text(TextConst.txtUsingModeTitle),
+          title: Text(TextConst.txtOptions),
         ),
 
         body: SafeArea(
@@ -106,7 +112,7 @@ class _OptionsState extends State<Options> {
                       }),
                     ),
 
-                    Container(height: 6),
+                    Container(height: 10),
 
                     // Child device name
                     TextField(

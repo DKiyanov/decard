@@ -18,16 +18,18 @@ class ServerFunctions {
   static const String _clsTestResult = 'DecardTestResult';
   static const String _clsStat       = 'DecardStat';
 
+  static const String _fldObjectID   = 'objectId';
   static const String _fldUserID     = 'UserID';
   static const String _fldName       = 'Name';
   static const String _fldChildID    = 'ChildID';
+  static const String _fldDeviceOSID = 'DeviceOSID';
 
   static const String _fldPath     = 'Path';
   static const String _fldFileName = 'FileName';
   static const String _fldSize     = 'Size';
   static const String _fldContent  = 'Content';
 
-  static const String _fldDateTime = 'DateTime';
+  static const String _fldDateTime = 'dateTime';
 
   static const String _fldFileGuid = 'FileGuid';
   static const String _fldCardID   = 'CardID';
@@ -54,6 +56,27 @@ class ServerFunctions {
     _childName2IdMap[childName] = result;
 
     return result;
+  }
+
+  /// returns childName and deviceName associated with the device ID
+  /// Server -> Child
+  Future<ChildAndDeviceNames?> getChildDeviceFromDeviceID() async {
+    final deviceID = await getDeviceID();
+
+    final query =  QueryBuilder<ParseObject>(ParseObject(_clsDevice));
+    query.whereEqualTo(_fldDeviceOSID, deviceID);
+    final device = await query.first();
+    if (device == null) return null;
+
+    final childID = device.get<String>(_fldChildID)!;
+
+    final query2 =  QueryBuilder<ParseObject>(ParseObject(_clsChild));
+    query2.whereEqualTo(_fldObjectID, childID);
+
+
+    final child = (await query2.first())!;
+
+    return ChildAndDeviceNames(child.get<String>(_fldName)!, device.get<String>(_fldName)!);
   }
 
   /// Returns a list of children and devices associated with the child
@@ -110,10 +133,13 @@ class ServerFunctions {
       await child.save();
     }
 
+    final deviceID = await getDeviceID();
+
     final device = ParseObject(_clsDevice);
-    device.set<String>(_fldUserID , userID);
-    device.set<String>(_fldChildID, child.objectId!);
-    device.set<String>(_fldName   , newDeviceName);
+    device.set<String>(_fldUserID    , userID);
+    device.set<String>(_fldChildID   , child.objectId!);
+    device.set<String>(_fldName      , newDeviceName);
+    device.set<String>(_fldDeviceOSID, deviceID);
     await device.save();
 
     return ChildAndDeviceNames(child.get<String>(_fldName)!, device.get<String>(_fldName)!);
@@ -186,8 +212,9 @@ class ServerFunctions {
     final localFile   =  File(path);
     final fileContent = localFile.readAsBytesSync();
     final fileSize    = await localFile.length();
+    final techFileName = '${DateTime.now().millisecondsSinceEpoch}.data';
 
-    final serverFileContent = ParseWebFile(fileContent, name : fileName);
+    final serverFileContent = ParseWebFile(fileContent, name : techFileName);
     await serverFileContent.save();
 
     final serverFile = ParseObject(_clsFile);
@@ -197,6 +224,12 @@ class ServerFunctions {
     serverFile.set<int>(_fldSize, fileSize);
     serverFile.set<ParseWebFile>(_fldContent, serverFileContent);
     await serverFile.save();
+  }
+
+  void _setFromJson(ParseObject object, Map<String, dynamic> json) {
+    for (var key in json.keys) {
+      object.set(key, json[key]);
+    }
   }
 
   /// saves tests results
@@ -211,7 +244,7 @@ class ServerFunctions {
       final json = row.toJson();
 
       final testResult = ParseObject(_clsTestResult);
-      testResult.fromJson(json);
+      _setFromJson(testResult, json);
       testResult.set<String>(_fldUserID , userID);
       testResult.set<String>(_fldChildID, childID);
 
@@ -259,6 +292,8 @@ class ServerFunctions {
 
     final rows = await child.dbSource.tabCardStat.getAllRows();
 
+    CardStatExchange.dbSource = child.dbSource;
+
     for (var row in rows) {
       final cse = CardStatExchange.fromDbMap(row);
 
@@ -270,7 +305,7 @@ class ServerFunctions {
       }
 
       final json = cse.toJson();
-      stat.fromJson(json);
+      _setFromJson(stat, json);
       stat.save();
     }
 

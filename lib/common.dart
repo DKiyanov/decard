@@ -1,3 +1,5 @@
+import 'package:device_info_plus/device_info_plus.dart';
+
 enum LoginMode{
   masterParent,
   slaveParent,
@@ -7,7 +9,7 @@ enum LoginMode{
 class TextConst{
   static String versionDateStr    = '19.09.2023';
   static String version           = 'Версия';
-  static String defaultURL        = 'http://192.168.0.142:8765';
+  static String defaultURL        = 'http://192.168.0.202:1337/parse';
   static String defaultLogin      = 'decard_stat_writer';
   static String txtServerURL      = 'Адрес сервера';
   static String txtSignUp         = 'Зарегистрироваться';
@@ -121,6 +123,9 @@ class TextConst{
 Параметр "Длительность" опредяляет время в течении которого будет уменьшаться стоимость.\n
 Параметр "Процент снижения стоимости" определяет минимальное значение до которого уменьшится стоимость, за время "Длительность", значение рассчитывается от текущего максимального значения''';
 
+
+  static String msgChildList1  = 'Ещё нет ни одного ребёнка';
+  static String msgChildList2  = 'Выбирите пункт меню "Пригласить ребёнка"';
 
   static String djfFormatVersion = "Версия формата";
   static String djfTitle         = "Заголовок";
@@ -278,4 +283,10 @@ String timeToStr(DateTime time){
   // конечно нужно использовать intl, но пока так сделаем
   return
     '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+}
+
+Future<String> getDeviceID() async {
+  final deviceInfo = DeviceInfoPlugin();
+  final androidDeviceInfo = await deviceInfo.androidInfo;
+  return androidDeviceInfo.id;
 }
