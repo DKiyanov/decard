@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:collection/collection.dart';
+import 'package:decard/platform_service.dart';
 import 'package:parse_server_sdk_flutter/parse_server_sdk.dart';
 import 'package:path/path.dart' as path_util;
 
@@ -61,7 +62,7 @@ class ServerFunctions {
   /// returns childName and deviceName associated with the device ID
   /// Server -> Child
   Future<ChildAndDeviceNames?> getChildDeviceFromDeviceID() async {
-    final deviceID = await getDeviceID();
+    final deviceID = await PlatformService.getDeviceID();
 
     final query =  QueryBuilder<ParseObject>(ParseObject(_clsDevice));
     query.whereEqualTo(_fldDeviceOSID, deviceID);
@@ -133,7 +134,7 @@ class ServerFunctions {
       await child.save();
     }
 
-    final deviceID = await getDeviceID();
+    final deviceID = await PlatformService.getDeviceID();
 
     final device = ParseObject(_clsDevice);
     device.set<String>(_fldUserID    , userID);

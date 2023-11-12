@@ -58,7 +58,6 @@ dependencies:
   flutter_markdown: ^0.6.11
   flutter_inappwebview: ^5.7.1
   parse_server_sdk_flutter: ^3.1.2
-  device_info_plus: ^8.0.0
   uuid: ^3.0.7
   google_sign_in: ^5.4.2
   async: ^2.9.0

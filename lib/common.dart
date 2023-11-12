@@ -1,5 +1,3 @@
-import 'package:device_info_plus/device_info_plus.dart';
-
 enum LoginMode{
   masterParent,
   slaveParent,
@@ -283,10 +281,4 @@ String timeToStr(DateTime time){
   // конечно нужно использовать intl, но пока так сделаем
   return
     '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
-}
-
-Future<String> getDeviceID() async {
-  final deviceInfo = DeviceInfoPlugin();
-  final androidDeviceInfo = await deviceInfo.androidInfo;
-  return androidDeviceInfo.id;
 }

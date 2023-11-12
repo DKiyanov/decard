@@ -1,3 +1,4 @@
+import 'package:decard/platform_service.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:parse_server_sdk_flutter/parse_server_sdk.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -101,7 +102,7 @@ class ParseConnect {
     final sendKeyStr = inviteKey.replaceAll(RegExp('\\D'), '');
     final sendKeyInt = int.tryParse(sendKeyStr);
 
-    final deviceID = await getDeviceID();
+    final deviceID = await PlatformService.getDeviceID();
     const uuid  = Uuid();
     final token = uuid.v4();
 
