@@ -1,11 +1,9 @@
 import 'dart:convert';
-import 'dart:io';
-import 'package:flutter_archive/flutter_archive.dart';
 import 'package:path/path.dart' as path_util;
 
-import 'card_model.dart';
 import 'db.dart';
 import 'decardj.dart';
+import 'media_widgets.dart';
 
 enum DecardFileType {
   json,
@@ -15,138 +13,95 @@ enum DecardFileType {
 
 DecardFileType getDecardFileType(String fileName){
   final fileExt = path_util.extension(fileName).toLowerCase();
-  if (fileExt == '.decardj') return DecardFileType.json;
-  if (fileExt == '.decardz') return DecardFileType.zip;
+  if (fileExt == DjfFileExtension.json) return DecardFileType.json;
+  if (fileExt == DjfFileExtension.zip) return DecardFileType.zip;
   return DecardFileType.notDecardFile;
 }
 
+typedef LoadPackAddInfoCallback = Function(String jsonStr, String jsonPath, String rootPath, Map<String, String> fileUrlMap);
+
+Future<int?> loadPack(DbSource dbSource, String sourceFileID, Map<String, String> fileUrlMap, {bool onlyLastVersion = false, bool reInitDB = true, LoadPackAddInfoCallback? addInfoCallback}) async {
+  String? jsonUrl;
+  late String jsonPath;
+
+  for (var fileUrlMapEntry in fileUrlMap.entries) {
+    if (fileUrlMapEntry.key.toLowerCase().endsWith(DjfFileExtension.json)) {
+      jsonPath = fileUrlMapEntry.key;
+      jsonUrl  = fileUrlMapEntry.value;
+      break;
+    }
+  }
+
+  if (jsonUrl == null) return null;
+
+  fileUrlMap.remove(jsonPath);
+  final rootPath = path_util.dirname(jsonPath);
+
+  final fileUrlMapOk = <String, String>{};
+
+  for (var fileUrlMapEntry in fileUrlMap.entries) {
+    final newPath = path_util.relative(fileUrlMapEntry.key, from: rootPath);
+    fileUrlMapOk[newPath] = fileUrlMapEntry.value;
+  }
+
+  final jsonStr = await getTextFromUrl(jsonUrl);
+
+  if (jsonStr == null) return null;
+
+  final jsonMap = jsonDecode(jsonStr);
+
+  final jsonFileID = await dbSource.loadJson(sourceFileID: sourceFileID, rootPath: rootPath, jsonMap: jsonMap, fileUrlMap: fileUrlMapOk);
+
+  if (jsonFileID == null) return null;
+
+  if (addInfoCallback != null) {
+    addInfoCallback.call(jsonStr, jsonPath, rootPath, fileUrlMapOk);
+  }
+
+  return jsonFileID;
+}
+
 class DataLoader {
-  String _selfDir = '';
-  int _dirIndex = 0;
   final errorList = <String>[];
 
-  int _lastSourceFileID = 0;
+  final DbSource dbSource;
 
-  static const String _subDirPrefix    = 'j'; // subdirectory name prefix
+  DataLoader(this.dbSource);
 
-  DbSource? _dbSource;
-  DbSource get dbSource => _dbSource!;
+  Future<int?> loadJson(String sourceFileID, String rootPath, Map<String, dynamic> jsonMap, [bool onlyLastVersion = false]) async {
 
-  Map<String, dynamic>? _templateSourceRow;
-  String? _jsonPath;
-
-  DataLoader();
-  
-
-  /// Scans the list of directories and selects files with extensions: '.decardz', '.decardj'
-  /// The '.decardz' files are unpacked into subdirectories, prefix for subdirectories [_subDirPrefix]
-  /// The '.decardj' data is stored in the database
-  /// version control is performed compared to what was previously loaded into the database
-  Future<void> refreshDB({ required List<String> dirForScanList, required String selfDir, required DbSource dbSource}) async {
-    _selfDir = selfDir;
-    _dbSource = dbSource;
-    errorList.clear();
-
-    for (var dir in dirForScanList) {
-      await _scanDir(dir, regFiles : true);
-    }
-  }
-
-  Future<bool> _scanDir(String dir, {bool regFiles = false}) async {
-    bool result = false;
-
-    // in API 33 problem with receive file list on external storage
-    // need permission MANAGE_EXTERNAL_STORAGE
-    // https://android-tools.ru/coding/poluchaem-razreshenie-manage_external_storage-dlya-prilozheniya/
-    final fileList = Directory(dir).listSync( recursive: true);
-
-    for (var object in fileList) {
-      if (object is File){
-        final File file = object;
-        final fileType = getDecardFileType(file.path);
-
-        if (fileType == DecardFileType.zip) {
-          if (await _checkFileIsNoRegistered(file)) {
-            if (regFiles) await _registerFile(file);
-            if (await _processZip(file)) {
-              result = true;
-            }
-          }
-        }
-
-        if (fileType == DecardFileType.json) {
-          if (await _checkFileIsNoRegistered(file)) {
-            if (regFiles) await _registerFile(file);
-            if (await _processJson(file)) {
-              result = true;
-            }
-          }
-        }
-
-      }
+    final jsonFileRow = await dbSource.tabJsonFile.getRowBySourceID(sourceFileID: sourceFileID);
+    if (jsonFileRow != null) {
+      return jsonFileRow[TabJsonFile.kJsonFileID];
     }
 
-    return result;
-  }
-
-  Future<void> _registerFile(File file) async {
-    _lastSourceFileID = await dbSource.tabSourceFile.registerFile(file);
-  }
-
-  Future<bool> _checkFileIsNoRegistered(File file) async {
-    return ! await dbSource.tabSourceFile.checkFileRegistered(file);
-  }
-
-  Future<bool> _processZip(File zipFile) async {
-    bool result = false;
-
-    Directory dir;
-    do {
-      _dirIndex ++;
-      dir = Directory(path_util.join(_selfDir, '$_subDirPrefix$_dirIndex' ));
-    } while (await dir.exists());
-    await dir.create();
-
-    try {
-      await ZipFile.extractToDirectory(zipFile: zipFile, destinationDir: dir);
-      result = await _scanDir(dir.path);
-      if (!result){
-        dir.delete(recursive: true);
-      }
-    } catch (e) {
-      errorList.add(e.toString());
-    }
-
-    return result;
-  }
-
-  Future<bool> _processJson(File jsonFile) async {
-    final fileData = await jsonFile.readAsString();
-    final json = jsonDecode(fileData);
-
-    final String guid = json[TabJsonFile.kGuid]??'';
+    final String guid = jsonMap[TabJsonFile.kGuid]??'';
     if (guid.isEmpty) {
-      errorList.add('in file ${jsonFile.path} filed ${TabJsonFile.kGuid} not found');
-      return false;
+      errorList.add('filed ${TabJsonFile.kGuid} not found');
+      return null;
     }
 
-    final int fileVersion = json[TabJsonFile.kVersion]??0;
+    final int fileVersion = jsonMap[TabJsonFile.kVersion]??0;
 
     bool isNew = true;
 
-    if (await dbSource.tabJsonFile.getRowByGuid(guid)) {
-      if (fileVersion <= dbSource.tabJsonFile.version) return false;
-      isNew = false;
-      await _clearJsonFileID(dbSource.tabJsonFile.jsonFileID);
+    if (onlyLastVersion) {
+      final rows = await dbSource.tabJsonFile.getRowByGuid(guid);
+
+      for (var row in rows) {
+        final rowVersion = (row[TabJsonFile.kVersion]??0) as int;
+        if (fileVersion <= rowVersion) return null;
+
+        isNew = false;
+
+        final rowJsonFileID = row[TabJsonFile.kJsonFileID] as int;
+        clearJsonFileID(rowJsonFileID);
+      }
     }
 
-    _jsonPath = path_util.dirname(jsonFile.path);
-    dbSource.tabJsonFile.setRow(_lastSourceFileID, _jsonPath!, path_util.basename(jsonFile.path), json);
-    await dbSource.tabJsonFile.save();
+    final jsonFileID = await dbSource.tabJsonFile.insertRow(sourceFileID, rootPath, jsonMap);
 
-    final int jsonFileID = dbSource.tabJsonFile.jsonFileID;
-
-    final styleList = (json[DjfFile.cardStyleList]) as List;
+    final styleList = (jsonMap[DjfFile.cardStyleList]??[]) as List;
     for (Map<String, dynamic> cardStyle in styleList) {
       await dbSource.tabCardStyle.insertRow(
         jsonFileID   : jsonFileID,
@@ -155,7 +110,7 @@ class DataLoader {
       );
     }
 
-    final qualityLevelList = (json[DjfFile.qualityLevelList]) as List;
+    final qualityLevelList = (jsonMap[DjfFile.qualityLevelList]??[]) as List;
     for (Map<String, dynamic> qualityLevel in qualityLevelList) {
       await dbSource.tabQualityLevel.insertRow(
           jsonFileID   : jsonFileID,
@@ -167,13 +122,13 @@ class DataLoader {
 
     final cardKeyList = <String>[];
 
-    final templateList = (json[DjfFile.templateList]) as List?;
-    final templatesSources = (json[DjfFile.templatesSources]) as List?;
-    if (templateList != null && templatesSources != null) {
+    final templateList = (jsonMap[DjfFile.templateList]??[]) as List;
+    final templatesSources = (jsonMap[DjfFile.templatesSources]??[]) as List;
+    if (templateList.isNotEmpty && templatesSources.isNotEmpty) {
       await _processTemplateList(jsonFileID: jsonFileID, templateList : templateList, sourceList: templatesSources, cardKeyList : cardKeyList);
     }
 
-    final cardList = (json[DjfFile.cardList]) as List?;
+    final cardList = (jsonMap[DjfFile.cardList]??[]) as List?;
     if (cardList != null) {
       await _processCardList(jsonFileID: jsonFileID, cardList : cardList, cardKeyList : cardKeyList);
     }
@@ -182,7 +137,7 @@ class DataLoader {
       await dbSource.tabCardStat.removeOldCard(jsonFileID, cardKeyList);
     }
 
-    return true;
+    return jsonFileID;
   }
 
   Future<void> _processTemplateList({required int jsonFileID, required List templateList, required List sourceList, required List<String> cardKeyList}) async {
@@ -194,74 +149,22 @@ class DataLoader {
       for (Map<String, dynamic> sourceRow in sourceList) {
         if (sourceRow[DjfTemplateSource.templateName] == templateName) {
 
+          final sourceRowId = await dbSource.tabTemplateSource.insertRow(jsonFileID: jsonFileID, source: sourceRow);
+
           String curTemplate = cardsTemplatesJsonStr;
 
           sourceRow.forEach((key, value) {
             curTemplate =  curTemplate.replaceAll('${DjfTemplateSource.paramBegin}$key${DjfTemplateSource.paramEnd}', value);
           });
 
-          _templateSourceRow = sourceRow;
-
           final cardList = jsonDecode(curTemplate) as List;
-          await _processCardList(jsonFileID: jsonFileID, cardList : cardList, cardKeyList : cardKeyList);
-
+          await _processCardList(jsonFileID: jsonFileID, cardList : cardList, cardKeyList : cardKeyList, sourceRowId: sourceRowId);
         }
       }
     }
-
-    _templateSourceRow = null;
   }
 
-  Future<void> _prepareFileContent(String paramName, Map<String, dynamic> objectMap, {bool setSourceType = false}) async {
-    final fileName = (objectMap[paramName]??'') as String;
-    if (fileName.isEmpty) return;
-
-    final fileExt = FileExt.getFileExt(fileName);
-
-    if (fileExt.isEmpty) {
-      if (setSourceType) {
-        objectMap[paramName] = '${FileExt.contentText}:$fileName';
-      }
-      return;
-    }
-
-    if (!FileExt.textExtList.contains(fileExt)) {
-      if (setSourceType) {
-        objectMap[paramName] = '$fileExt:$fileName';
-      }
-      return;
-    }
-
-    final filePath = path_util.normalize( path_util.join(_jsonPath!, fileName) );
-    final file = File(filePath);
-
-    String? fileData;
-    bool isChanged = false;
-
-    if (_templateSourceRow != null && await file.exists()) {
-      final originalFileData = await file.readAsString();
-      fileData = originalFileData;
-
-      _templateSourceRow!.forEach((key, value) {
-        fileData =  fileData!.replaceAll('${DjfTemplateSource.paramBegin}$key${DjfTemplateSource.paramEnd}', value);
-      });
-
-      isChanged = fileData != originalFileData;
-    }
-
-    if (isChanged) {
-      if (setSourceType) {
-        fileData = '$fileExt:$fileData';
-      }
-
-      objectMap[paramName] = fileData;
-      return;
-    }
-
-    objectMap[paramName] = '${FileExt.textFile}$fileName';
-  }
-
-  Future<void> _processCardList({required int jsonFileID, required List cardList, required List<String> cardKeyList}) async {
+  Future<void> _processCardList({required int jsonFileID, required List cardList, required List<String> cardKeyList, int? sourceRowId}) async {
     for (Map<String, dynamic> card in cardList) {
       final String cardKey = card[DjfCard.id];
 
@@ -274,8 +177,6 @@ class DataLoader {
 
       final bodyList = (card[DjfCard.bodyList]) as List;
 
-      await _prepareFileContent(DjfCard.help, card, setSourceType: true);
-
       final cardID = await dbSource.tabCardHead.insertRow(
         jsonFileID   : jsonFileID,
         cardKey      : cardKey,
@@ -284,6 +185,7 @@ class DataLoader {
         difficulty   : card[DjfCard.difficulty]??0,
         cardGroupKey : groupKey,
         bodyCount    : bodyList.length,
+        sourceRowId  : sourceRowId,
       );
 
       await _processCardBodyList(
@@ -342,9 +244,6 @@ class DataLoader {
   Future<void> _processCardBodyList({ required int jsonFileID, required int cardID, required List bodyList }) async {
     int bodyNum = 0;
     for (var body in bodyList) {
-      await _prepareFileContent(DjfCardBody.clue, body, setSourceType: true);
-      await _prepareBodyQuestionData(body);
-
       dbSource.tabCardBody.insertRow(
         jsonFileID : jsonFileID,
         cardID     : cardID,
@@ -353,14 +252,6 @@ class DataLoader {
       );
       bodyNum++;
     }
-  }
-
-  Future<void> _prepareBodyQuestionData( Map<String, dynamic> cardBody) async {
-    final questionData =  cardBody[DjfCardBody.questionData] as Map<String, dynamic>;
-
-    await _prepareFileContent(DjfQuestionData.markdown, questionData);
-    await _prepareFileContent(DjfQuestionData.html, questionData);
-    await _prepareFileContent(DjfQuestionData.textConstructor, questionData);
   }
 
   Future<void> _processCardTagList({ required int jsonFileID, required int cardID, required String cardKey, required String groupKey, required List? tagList }) async {
@@ -398,7 +289,7 @@ class DataLoader {
     );
   }
 
-  Future<void> _clearJsonFileID(int jsonFileID) async {
+  Future<void> clearJsonFileID(int jsonFileID) async {
     await dbSource.tabCardStyle.deleteJsonFile(jsonFileID);
     await dbSource.tabCardHead.deleteJsonFile(jsonFileID);
     await dbSource.tabCardBody.deleteJsonFile(jsonFileID);
@@ -406,5 +297,7 @@ class DataLoader {
     await dbSource.tabCardLink.deleteJsonFile(jsonFileID);
     await dbSource.tabCardLinkTag.deleteJsonFile(jsonFileID);
     await dbSource.tabQualityLevel.deleteJsonFile(jsonFileID);
+    await dbSource.tabTemplateSource.deleteJsonFile(jsonFileID);
+    await dbSource.tabFileUrlMap.deleteJsonFile(jsonFileID);
   }
 }

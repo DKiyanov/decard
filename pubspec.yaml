@@ -57,6 +57,8 @@ dependencies:
   fl_chart: ^0.55.0
   flutter_markdown: ^0.6.11
   flutter_inappwebview: ^5.7.1
+  webviewx_plus: ^0.3.3
+  http: ^0.13.4
   parse_server_sdk_flutter: ^3.1.2
   uuid: ^3.0.7
   google_sign_in: ^5.4.2

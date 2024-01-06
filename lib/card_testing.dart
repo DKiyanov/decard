@@ -44,13 +44,13 @@ class _DeCardState extends State<DeCard> {
             ],
           ),
           actions: [
-            if (widget.child.cardController.card != null && widget.child.cardController.card!.body.clue.isNotEmpty) ...[
+            if (widget.child.cardController.card != null && widget.child.cardController.card!.body.clue != null) ...[
               Padding(
                 padding: const EdgeInsets.only(left: 4, right: 4),
                 child: InkWell(
                     onTap: () async {
                       if (!helpAvailability) return;
-                      await ViewContent.navigatorPush(context, widget.child.cardController.card!.pacInfo.path, widget.child.cardController.card!.body.clue, TextConst.txtHelp);
+                      await ViewContent.navigatorPush(context, widget.child.cardController.card!, widget.child.cardController.card!.body.clue!, TextConst.txtHelp);
                       final percent = (70 * widget.child.cardController.card!.stat.quality / 100).truncate();
                       _setCostMinusPercent(percent);
                     },
@@ -59,12 +59,12 @@ class _DeCardState extends State<DeCard> {
               )
             ],
 
-            if (widget.child.cardController.card != null && widget.child.cardController.card!.head.help.isNotEmpty) ...[
+            if (widget.child.cardController.card != null && widget.child.cardController.card!.head.help != null) ...[
               Padding(
                 padding: const EdgeInsets.only(left: 4, right: 4),
                 child: InkWell(
                   onTap: () async {
-                    await ViewContent.navigatorPush(context, widget.child.cardController.card!.pacInfo.path, widget.child.cardController.card!.head.help, TextConst.txtHelp);
+                    await ViewContent.navigatorPush(context, widget.child.cardController.card!, widget.child.cardController.card!.head.help!, TextConst.txtHelp);
                     final percent = (50 * widget.child.cardController.card!.stat.quality / 100).truncate();
                     _setCostMinusPercent(percent);
                   },
@@ -83,13 +83,6 @@ class _DeCardState extends State<DeCard> {
                           DeCardDemo.navigatorPush(context, widget.child);
                         }
                     ),
-
-                    // SimpleMenuItem(
-                    //     child: Text(TextConst.txtAutoTest),
-                    //     onPress: () {
-                    //       appState.selfTest(appState.childList.first);
-                    //     }
-                    // ),
 
                   ]
               ),
@@ -159,19 +152,25 @@ class _DeCardState extends State<DeCard> {
   }
 
   Widget _cardWidget() {
-    return EventReceiverWidget(
-      builder: (_) {
-        if (widget.child.cardController.card == null) return Container();
-
-        return CardWidget(
-          key                   : cardWidgetKey,
-          card                  : widget.child.cardController.card!,
-          onPressSelectNextCard : _selectNextCard,
-          demoMode              : false,
-        );
-      },
-      events: [widget.child.cardController.onChange],
-    );
+    return widget.child.cardController.cardListenWidgetBuilder((card, cardParam, cardViewController) {
+      return CardWidget(
+        key        : ValueKey(card),
+        card       : card,
+        cardParam  : cardParam,
+        controller : cardViewController,
+        whenResultChild: Row(
+          children: [
+            Expanded(child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: ElevatedButton(
+                  onPressed: ()=> _selectNextCard(),
+                  child: Text(TextConst.txtSetNextCard)
+              ),
+            )),
+          ],
+        ),
+      );
+    });
   }
 
   Future<void> _saveSelCard() async {
@@ -184,7 +183,7 @@ class _DeCardState extends State<DeCard> {
 
   Future<void> _selectNextCard() async {
     helpAvailability = false;
-    final ok = await widget.child.cardController.selectNextCard();
+    final ok = await widget.child.cardController.setNextCard();
     if (ok) {
       afterSetCard();
       await _saveSelCard();
@@ -240,8 +239,6 @@ class _DeCardState extends State<DeCard> {
   }
 
   _setCostMinusPercent(int percents) {
-    final cardWidgetState = cardWidgetKey.currentState;
-    if (cardWidgetState == null || !cardWidgetState.mounted) return;
-    cardWidgetState.setCostMinusPercent(percents);
+    widget.child.cardController.cardViewController!.setCostMinusPercent(percents) ;
   }
 }

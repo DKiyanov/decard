@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:convert';
 
 import 'db.dart';
+import 'db_flt.dart';
 
 /// Manage the selection and execution of cards on the child's device
 class DrfRegulator {
@@ -437,7 +438,9 @@ class Regulator {
   }
 
   Future<void> _applySetItemToDB(DbSource dbSource, RegCardSet set, int setIndex) async {
-    if (!await dbSource.tabJsonFile.getRowByGuid(set.fileGUID)) return;
+    final jsonFileID = dbSource.tabJsonFile.fileGuidToJsonFileId(set.fileGUID);
+
+    if (jsonFileID == null) return;
 
     final andList = <String>[];
     final arguments = <Object>[];
@@ -489,11 +492,11 @@ class Regulator {
 
     final sql = '''SELECT ${TabCardHead.tabName}.${TabCardHead.kCardID}
       FROM ${TabCardHead.tabName}
-     WHERE ${TabCardHead.kJsonFileID} = ${dbSource.tabJsonFile.jsonFileID}
+     WHERE ${TabCardHead.kJsonFileID} = $jsonFileID
       $andWhere  
     ''';
 
-    final rows = await dbSource.db.rawQuery(sql, arguments);
+    final rows = await (dbSource as DbSourceFlt).db.rawQuery(sql, arguments);
 
     for (var row in rows) {
       final cardID = row.values.first as int;

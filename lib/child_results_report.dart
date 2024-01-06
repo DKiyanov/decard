@@ -80,14 +80,14 @@ class _ChildResultsReportState extends State<ChildResultsReport> {
       _resultList.add(testResult);
 
       final jsonFileID = widget.child.dbSource.tabJsonFile.fileGuidToJsonFileId(testResult.fileGuid)!;
-      final cardID     = (await widget.child.dbSource.tabCardHead.getCardIdFromKey(jsonFileID, testResult.cardID))!;
+      final cardID     = (await widget.child.dbSource.tabCardHead.getCardIdFromKey(jsonFileID: jsonFileID, cardKey: testResult.cardID))!;
       _resultCardIDMap[testResult] = cardID;
 
       CardData? card;
       card = _cardMap[cardID];
 
       if (card == null) {
-        card = await CardData.create(widget.child, jsonFileID, cardID, bodyNum: testResult.bodyNum);
+        card = await CardData.create(widget.child.dbSource, widget.child.regulator, jsonFileID, cardID, bodyNum: testResult.bodyNum);
         await card.fillTags();
         _cardMap[cardID] = card;
       }
@@ -262,7 +262,7 @@ class _ChildResultsReportState extends State<ChildResultsReport> {
             if (!result.result) ...[
               const Icon(Icons.cancel_outlined, color: Colors.red),
             ],
-            Text(card.body.questionData.text??card.head.title),
+            Text(card.head.title),
           ],
         ),
         onTap: (){
@@ -274,8 +274,8 @@ class _ChildResultsReportState extends State<ChildResultsReport> {
         paramRow(TextConst.txtEarned,     result.earned.toString()),
         paramRow(TextConst.txtTryCount,   result.tryCount.toString()),
         paramRow(TextConst.txtSolveTime,  result.solveTime.toString()),
-        paramRow(TextConst.txtStartDate,  dateToStr(intDateToDateTime(card.stat.startDate)) ),
-        paramRow(TextConst.txtTestCount,  card.stat.testsCount.toString() ),
+        paramRow(TextConst.txtStartDate,  dateToStr(intDateToDateTime(card.stat!.startDate)) ),
+        paramRow(TextConst.txtTestCount,  card.stat!.testsCount.toString() ),
       ],
     );
   }

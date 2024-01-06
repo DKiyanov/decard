@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:math';
 
 import 'package:collection/collection.dart';
 import 'package:decard/parse_connect.dart';
@@ -14,10 +13,8 @@ import 'package:flutter_broadcasts/flutter_broadcasts.dart';
 import 'package:simple_events/simple_events.dart';
 
 import 'child.dart';
-import 'card_controller.dart';
 import 'common.dart';
 import 'file_sources.dart';
-import 'loader.dart';
 import 'package:path/path.dart' as path_util;
 
 enum UsingMode {
@@ -45,8 +42,6 @@ class AppState {
 
   late LoginMode loginMode;
   late UsingMode usingMode;
-
-  late DataLoader _dataLoader;
 
   late ParseConnect serverConnect;
   late ServerFunctions serverFunctions;
@@ -79,8 +74,6 @@ class AppState {
     _appDir =  appDocDir.path;
 
     serverFunctions = ServerFunctions(serverConnect.serverURL, serverConnect.user!.objectId!);
-
-    _dataLoader = DataLoader();
 
     await _initFinish();
   }
@@ -120,7 +113,7 @@ class AppState {
     final child = childList.firstWhereOrNull((child) => child.name == childName && child.deviceName == deviceName);
     if (child != null) return child;
 
-    final newChild = Child(childName, deviceName, _appDir, _dataLoader, prefs);
+    final newChild = Child(childName, deviceName, _appDir, prefs);
     await newChild.init();
 
     childList.add(newChild);
@@ -145,7 +138,7 @@ class AppState {
       childList.remove(specChild);
       viewFileChild = specChild;
     } else {
-      viewFileChild = Child(_kViewFileChildName, _kViewFileChildDeviceName, _appDir, _dataLoader, prefs);
+      viewFileChild = Child(_kViewFileChildName, _kViewFileChildDeviceName, _appDir, prefs);
       await viewFileChild.init();
     }
 
@@ -223,55 +216,6 @@ class AppState {
         );
       },
     );
-  }
-
-  /// testing and debugging the card selection algorithm
-  Future<void> selfTest(Child child) async {
-    const int daysCount = 100;
-    const int maxCountTestPerDay = 100;
-    const int speed = 20; // number of shows for great memory
-
-    DateTime curDate = DateTime.now();
-
-    final random = Random();
-
-    await child.dbSource.tabCardStat.clear();
-    await child.processCardController.init();
-
-    final testCardController = CardController(
-      child: child,
-      processCardController: child.processCardController,
-    );
-
-    print('tstres start');
-
-    for( var dayNum = 1 ; dayNum <= daysCount; dayNum++ ) {
-      curDate = curDate.add(const Duration(days: 1));
-      child.processCardController.setTestDate(curDate);
-
-      final testsCount =  random.nextInt(maxCountTestPerDay);
-
-      for( var testNum = 1 ; testNum <= testsCount; testNum++ ) {
-        final cardSelected = await testCardController.selectNextCard();
-        if (!cardSelected) return;
-
-        final rnd = random.nextInt(100);
-        bool result = false;
-
-        // The probability of a correct answer increases as the number of tests increases
-        if (testCardController.card!.stat.testsCount < speed) {
-          result = rnd <= 100 * ( testCardController.card!.stat.testsCount / speed );
-        } else {
-          result = rnd <= 98;
-        }
-
-        testCardController.card!.setResult(result, 0, 1, 0);
-      }
-
-      serverFunctions.saveTestsResults(child);
-    }
-
-    print('tstres finish');
   }
 }
 

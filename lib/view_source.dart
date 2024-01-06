@@ -1,89 +1,62 @@
+import 'media_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-
-import 'audio_widget.dart';
 import 'card_model.dart';
-import 'html_widget.dart';
-import 'dart:io';
 
 class ViewContent extends StatefulWidget {
-  static Future<Object?> navigatorPush(BuildContext context, String path, String content, String title) async {
-    return Navigator.push(context, MaterialPageRoute( builder: (_) => ViewContent(path: path, content: content, title: title)));
+  static Future<Object?> navigatorPush(BuildContext context, CardData card, CardSource content, String title) async {
+    return Navigator.push(context, MaterialPageRoute( builder: (_) => ViewContent(card: card, content: content, title: title)));
   }
 
-  final String path;
-  final String content;
+  final CardData card;
+  final CardSource content;
   final String title;
-  const ViewContent({required this.path, required this.content, required this.title, Key? key}) : super(key: key);
+  const ViewContent({required this.card, required this.content, required this.title, Key? key}) : super(key: key);
 
   @override
   State<ViewContent> createState() => _ViewContentState();
 }
 
 class _ViewContentState extends State<ViewContent> {
-  late String contentExt;
   late String content;
 
   @override
   void initState() {
     super.initState();
 
-    contentExt = FileExt.getContentExt(widget.content);
-
-    if (contentExt.isEmpty) {
-      content = widget.content;
+    if (widget.content.type == FileExt.contentMarkdown) {
+      content = FileExt.prepareMarkdown(widget.card, widget.content.data);
       return;
     }
 
-    final str = widget.content.substring(contentExt.length + 1);
-
-    if (contentExt == FileExt.contentText) {
-      content = str;
+    if (widget.content.type == FileExt.contentHtml) {
+      content = FileExt.prepareHtml(widget.card, widget.content.data);
       return;
     }
 
-    if (contentExt == FileExt.contentMarkdown) {
-      content = FileExt.prepareMarkdown(widget.path, str);
-      return;
-    }
-
-    if (contentExt == FileExt.contentHtml) {
-      content = FileExt.prepareHtml(widget.path, str);
-      return;
-    }
-
-    content = str;
+    content = widget.content.data;
   }
 
   @override
   Widget build(BuildContext context) {
     Widget? body;
 
-    if (contentExt == FileExt.contentMarkdown) {
+    if (widget.content.type == FileExt.contentMarkdown) {
       body = MarkdownBody(data: content);
     }
 
-    if (contentExt == FileExt.contentHtml) {
-      body = HtmlViewWidget(html: content, filesDir: widget.path);
+    if (widget.content.type == FileExt.contentHtml) {
+      body = htmlView(content, widget.card.pacInfo.sourceDir);
     }
 
-    if (FileExt.imageExtList.contains(contentExt)) {
-      final path = FileExt.prepareFilePath(widget.path, content);
-      final imgFile = File(path);
-      if (imgFile.existsSync()) {
-        body = Image.file( imgFile );
-      }
+    if (widget.content.type == FileExt.contentImage) {
+      final fileUrl = getFileUrl(content);
+      body = imageFromUrl(fileUrl);
     }
 
-    if (FileExt.audioExtList.contains(contentExt)) {
-      final path = FileExt.prepareFilePath(widget.path, content);
-      final audioFile = File(path);
-      if (audioFile.existsSync()) {
-        body = AudioPanelWidget(
-          key:  ValueKey(path),
-          localFilePath : path
-        );
-      }
+    if (widget.content.type == FileExt.contentAudio) {
+      final fileUrl = getFileUrl(content);
+      body = audioPanelFromUrl(fileUrl, ValueKey(fileUrl));
     }
 
     if (body == null && content.isNotEmpty) {
@@ -98,5 +71,9 @@ class _ViewContentState extends State<ViewContent> {
       ),
       body: body
     );
+  }
+
+  String getFileUrl(String fileName) {
+    return widget.card.dbSource.getFileUrl(widget.card.pacInfo.jsonFileID, fileName)??fileName;
   }
 }

@@ -12,6 +12,12 @@
 
 ///The json file has the following format:
 
+class DjfFileExtension{
+	static const String json = ".decardj";
+	static const String zip  = ".decardz";
+	static const values = [json, zip];
+}
+
 class DjfFile{ // top json file structure
 	static const String formatVersion    = "formatVersion";    // TODO format version
 	static const String title            = "title";            // the name of the file content
@@ -20,7 +26,10 @@ class DjfFile{ // top json file structure
 	static const String author           = "author";           // author
 	static const String site             = "site";             // site
 	static const String email            = "email";            // email address
+	static const String tags             = "tags";             // string list of tags, separator ","
 	static const String license          = "license";          // license
+	static const String targetAgeLow     = "targetAgeLow";     // target age low
+	static const String targetAgeHigh    = "targetAgeHigh";    // target age high
 
 	static const String cardStyleList    = "cardStyleList";    // array of DjfCardStyle
 	static const String qualityLevelList = "qualityLevelList"; // array of DjfQualityLevel
@@ -104,9 +113,6 @@ class DjfUpLink { // element of DjfCard.upLinks
 	static const String groupTagPrefix = "grp@";   // prefix for make tag from card.group
 }
 
-/// html: for correct operation, the html must contain the line
-/// <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 class DjfQuestionData { // structure of DjfCardBody.questionData
 	static const String text     = "text";     // optional, string, question text
 	static const String html     = "html";     // optional, local path to html file, file can be a template
@@ -120,9 +126,30 @@ class DjfQuestionData { // structure of DjfCardBody.questionData
 class DjfCardBody { // element of DjfCard.bodyList
 	static const String styleIdList  = "styleIdList";  // array of DjfCardStyle.id
 	static const String style        = "style";        // embedded structure DjfCardStyle
-	static const String questionData = "questionData"; // embedded structure DjfQuestionData
+	static const String questionData = "questionData"; // array with source with data for question
 	static const String answerList   = "answerList";   // array of answer values
 	static const String audioOnRightAnswer = "audioOnRightAnswer"; // TODO optional, link to audio resource
 	static const String audioOnWrongAnswer = "audioOnWrongAnswer"; // TODO optional, link to audio resource
 	static const String clue = "clue"; // optional, local path to html/markdown file, file can be a template
 }
+
+/// DjfCardBody.questionData:
+/// each row of the array contains a separate resource for forming a question
+/// it could be:
+/// line of text
+/// path to the file located in the package
+/// link to a resource on the Internet
+/// It is advisable to indicate the resource type before resources, using the separator ":"
+/// the program can infer the type from the file extension or file link
+/// The following types of resources are provided:
+/// * image
+/// * audio
+/// * video
+/// * html
+/// * md
+/// * decardtc - text constructor json
+/// * txt - text file
+/// * text - text in field
+///
+/// html: for correct operation, the html must contain the line
+/// <meta name="viewport" content="width=device-width, initial-scale=1.0">

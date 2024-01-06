@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:decard/db_flt.dart';
 import 'package:decard/regulator.dart';
 import 'package:decard/server_functions.dart';
 import 'package:flutter/material.dart';
@@ -9,9 +10,11 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart' as path_util;
 
 import 'card_controller.dart';
+import 'card_model.dart';
+import 'card_process_controller.dart';
 import 'common.dart';
 import 'db.dart';
-import 'loader.dart';
+import 'local_pack_load.dart';
 
 class ChildAndDeviceNames {
   final String childName;
@@ -28,7 +31,6 @@ class Child {
   final String name;
   final String deviceName;
 
-  late DecardDB decardDB;
   late Database db;
   late DbSource dbSource;
 
@@ -44,6 +46,8 @@ class Child {
   late String downloadDir;
   late String cardsDir;
 
+  final cardResultList = <TestResult>[];
+
   ChildTestResults? _testResults;
   Future<ChildTestResults> get testResults async {
     if (_testResults != null) return _testResults!;
@@ -52,12 +56,13 @@ class Child {
     return _testResults!;
   }
 
-  final DataLoader cardFileLoader;
   final SharedPreferences prefs;
 
   int _lastStatDate = 0;
 
-  Child(this.name, this.deviceName, this.appDir, this.cardFileLoader, this.prefs);
+  final localPackLoader = LocalPackLoader();
+
+  Child(this.name, this.deviceName, this.appDir, this.prefs);
 
   Future<void> init() async {
     rootDir = join(appDir, '$name$namesSeparator$deviceName');
@@ -67,11 +72,9 @@ class Child {
     downloadDir = (await Directory( join(rootDir, 'download') ).create()).path;
     cardsDir    = (await Directory( join(rootDir, 'cards') ).create()).path;
 
-    decardDB = DecardDB(dbDir.path);
-    await decardDB.init();
-
-    db = decardDB.database;
-    dbSource = decardDB.source;
+    final dbSourceFlt = await DbSourceFlt.create(dbDir.path);
+    db = dbSourceFlt.db;
+    dbSource = dbSourceFlt;
 
     regulatorPath = join(rootDir, regulatorFileName );
     _regulator = await Regulator.fromFile( regulatorPath );
@@ -81,11 +84,54 @@ class Child {
     await processCardController.init();
 
     cardController = CardController(
-      child: this,
-      processCardController: processCardController,
+      dbSource: dbSource,
+      regulator: regulator,
+      onSelectNextCard: _selectNextCard,
+      onSetCard: (cardID) {
+        processCardController.setCard(cardID);
+      },
+      onCardResult: _onCardResult,
     );
 
     _lastStatDate = prefs.getInt(_kLastStatDate)??0;
+  }
+
+  Future<CardPointer?> _selectNextCard() async {
+    CardPointer? newCard;
+
+    for (int i = 0; i < 10; i++) { // so that the last issued card is not reissued
+      newCard = await processCardController.getCardForTest();
+      if (newCard == null) return null;
+
+      if (cardController.card?.head.cardID != newCard.cardID || cardController.card?.head.jsonFileID != newCard.jsonFileID){
+        break;
+      }
+    }
+
+    if (newCard == null) return null;
+    return CardPointer( newCard.jsonFileID, newCard.cardID );
+  }
+
+  void _onCardResult(CardData card, CardParam cardParam, bool result, int tryCount, int solveTime, double earned) async {
+    final newStat = await processCardController.registerResult(card.head.jsonFileID, card.head.cardID, result);
+
+    final testResult = TestResult(
+        fileGuid      : card.pacInfo.guid,
+        fileVersion   : card.pacInfo.version,
+        cardID        : card.head.cardKey,
+        bodyNum       : card.body.bodyNum,
+        result        : result,
+        earned        : earned,
+        tryCount      : tryCount,
+        solveTime     : solveTime,
+        dateTime      : dateTimeToInt(DateTime.now()),
+        qualityBefore : card.stat.quality,
+        qualityAfter  : newStat.quality,
+        difficulty    : card.head.difficulty
+    );
+
+    cardResultList.add(testResult);
+    dbSource.tabTestResult.insertRow(testResult);
   }
 
   Future<void> refreshRegulator() async {
@@ -96,8 +142,7 @@ class Child {
 
   Future<void> refreshCardsDB([List<String>? dirForScanList]) async {
     dirForScanList ??= [downloadDir];
-    await cardFileLoader.refreshDB(dirForScanList: dirForScanList, selfDir: cardsDir, dbSource: dbSource);
-    await dbSource.init();
+    await localPackLoader.refreshDB(dirForScanList: dirForScanList, selfDir: cardsDir, dbSource: dbSource);
   }
 
   /// Synchronizes the contents of the child's directories on the server and on the device

@@ -16,11 +16,12 @@ Future<void> playAudio(String fileName) async {
 }
 
 class SimpleAudioButton extends StatefulWidget {
-  final String localFilePath;
+  final String? localFilePath;
+  final String? httpUrl;
   final Color color;
   final Color playColor;
 
-  const SimpleAudioButton({required this.localFilePath, this.color = Colors.white, this.playColor = Colors.lightGreenAccent, Key? key}) : super(key: key);
+  const SimpleAudioButton({this.localFilePath, this.httpUrl, this.color = Colors.white, this.playColor = Colors.lightGreenAccent, Key? key}) : super(key: key);
 
   @override
   State<SimpleAudioButton> createState() => _SimpleAudioButtonState();
@@ -76,7 +77,14 @@ class _SimpleAudioButtonState extends State<SimpleAudioButton> {
     });
 
 
-    await _player!.setSourceDeviceFile(widget.localFilePath);
+    if (widget.localFilePath != null) {
+      await _player!.setSourceDeviceFile(widget.localFilePath!);
+    }
+
+    if (widget.httpUrl != null) {
+      await _player!.setSourceUrl(widget.httpUrl!);
+    }
+
     _player!.resume();
 
     setState(() {

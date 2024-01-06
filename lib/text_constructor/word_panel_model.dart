@@ -32,7 +32,7 @@ class JrfSpecText {
   static const String hideMenuItem = '-'; // Special text for popup menu item, it is hide this menu item from menu
 }
 
-class JtfWordObject {
+class JrfWordObject {
   static const String name         = 'name';
   static const String viewIndex    = 'viewIndex';
   static const String nonRemovable = 'nonRemovable';
@@ -175,18 +175,18 @@ class WordObject {
 
   factory WordObject.fromMap(Map<String, dynamic> json) {
     return WordObject(
-      name         : json[JtfWordObject.name],
-      viewIndex    : json[JtfWordObject.viewIndex]??0,
-      nonRemovable : json[JtfWordObject.nonRemovable]??false,
-      views        : valueListFromMapList<String>(json[JtfWordObject.views]),
+      name         : json[JrfWordObject.name],
+      viewIndex    : json[JrfWordObject.viewIndex]??0,
+      nonRemovable : json[JrfWordObject.nonRemovable]??false,
+      views        : valueListFromMapList<String>(json[JrfWordObject.views]),
     );
   }
 
   Map<String, dynamic> toJson() => {
-    JtfWordObject.name         :name,
-    JtfWordObject.viewIndex    :viewIndex,
-    JtfWordObject.nonRemovable :nonRemovable,
-    JtfWordObject.views        :views,
+    JrfWordObject.name         :name,
+    JrfWordObject.viewIndex    :viewIndex,
+    JrfWordObject.nonRemovable :nonRemovable,
+    JrfWordObject.views        :views,
   };
 }
 

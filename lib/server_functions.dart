@@ -170,7 +170,7 @@ class ServerFunctions {
 
       final netFilePath = path_util.join(serverURL, netPath, fileName);
 
-      if (!await child.dbSource.tabSourceFile.checkFileRegisteredEx(netFilePath, fileTime, fileSize)) {
+      if (!await child.dbSource.tabSourceFile.checkFileRegistered(netFilePath, fileTime, fileSize)) {
         final filePath = path_util.join(child.downloadDir, fileName);
         final localFile = File(filePath);
         if (localFile.existsSync()) localFile.deleteSync();
@@ -183,7 +183,7 @@ class ServerFunctions {
 
         await content.file!.copy(filePath);
 
-        await child.dbSource.tabSourceFile.registerFileEx(netFilePath, fileTime, fileSize);
+        await child.dbSource.tabSourceFile.registerFile(netFilePath, fileTime, fileSize);
 
         newFileList.add(fileName);
       }
@@ -236,7 +236,7 @@ class ServerFunctions {
   /// saves tests results
   /// child -> server
   Future<void> saveTestsResults(Child child) async {
-    final resultList = child.cardController.cardResultList;
+    final resultList = child.cardResultList;
     if (resultList.isEmpty) return;
 
     final childID = await _getChildID(child.name);

@@ -1,14 +1,36 @@
 import 'dart:math';
 import 'dart:ui';
-import 'dart:io';
+import 'regulator.dart';
 import 'package:path/path.dart' as path_util;
 
-import 'package:simple_events/simple_events.dart';
-
-import 'child.dart';
 import 'db.dart';
 import 'decardj.dart';
-import 'regulator.dart';
+import 'media_widgets.dart';
+
+class CardParam {
+  final RegDifficulty difficulty;
+  final int quality;
+
+  late int cost;
+  late int penalty;
+  late int tryCount;
+  late int duration;
+  late int lowCost;
+
+  CardParam(this.difficulty, this.quality) {
+    cost     = _getValueForQuality(difficulty.maxCost,     difficulty.minCost,     quality);
+    penalty  = _getValueForQuality(difficulty.minPenalty,  difficulty.maxPenalty,  quality); // penalty moves in the opposite direction to all others
+    tryCount = _getValueForQuality(difficulty.maxTryCount, difficulty.minTryCount, quality);
+    duration = _getValueForQuality(difficulty.maxDuration, difficulty.minDuration, quality);
+
+    lowCost = (cost * _getValueForQuality(difficulty.maxDurationLowCostPercent, difficulty.minDurationLowCostPercent, quality) / 100).round();
+  }
+
+  int _getValueForQuality(int maxValue, int minValue, int quality){
+    final int result = (maxValue - (( (maxValue - minValue) * quality ) / 100 ) ).round();
+    return result;
+  }
+}
 
 class TagPrefix {
   static String cardKey    = 'id@';
@@ -16,16 +38,60 @@ class TagPrefix {
   static String difficulty = 'dfy@';
 }
 
+class CardSource {
+  String? _type;
+  String? _data;
+
+  String get type => _type!;
+  String get data => _data!;
+  String get source => '$_type:$_data';
+
+  CardSource(String source) {
+    _type = FileExt.getContentExt(source);
+    _data = FileExt.getContentData(_type!, source);
+
+    if (_type!.isNotEmpty) return;
+
+    final fileExt = FileExt.getFileExt(source);
+    _type = FileExt.contentUnknown;
+
+    if (fileExt.isNotEmpty) {
+      if (FileExt.imageExtList.contains(fileExt)) {
+        _type = FileExt.contentImage;
+      }
+      if (FileExt.audioExtList.contains(fileExt)) {
+        _type = FileExt.contentAudio;
+      }
+      if (FileExt.videoExtList.contains(fileExt)) {
+        _type = FileExt.contentVideo;
+      }
+
+      if (FileExt.txtExtList.contains(fileExt)) {
+        _type = fileExt;
+      }
+    }
+  }
+}
+
 class FileExt {
   static const String textFile = "text:";
-  static const textExtList  = <String>['md', 'html', 'json'];
-  static const imageExtList = <String>['apng', 'avif', 'gif', 'jpg', 'jpeg', 'jfif', 'pjpeg', 'pjp', 'png', 'svg', 'webp', 'bmp', 'tif', 'tiff'];
-  static const audioExtList = <String>['m4a', 'flac', 'mp3', 'mp4', 'wav', 'wma', 'aac'];
+  static const txtExtList    = <String>['txt', 'md', 'html'];
+  static const imageExtList  = <String>['apng', 'avif', 'gif', 'jpg', 'jpeg', 'jfif', 'pjpeg', 'pjp', 'png', 'svg', 'webp', 'bmp', 'tif', 'tiff'];
+  static const audioExtList  = <String>['m4a', 'flac', 'mp3', 'mp4', 'wav', 'wma', 'aac'];
+  static const videoExtList  = <String>['mp4'];
+  static const sourceExtList = <String>[...txtExtList, ...imageExtList, ...audioExtList, ...videoExtList];
 
+  static const contentUnknown  = 'unknown';
+  static const contentImage    = 'image';
+  static const contentAudio    = 'audio';
+  static const contentVideo    = 'video';
   static const contentHtml     = 'html';
   static const contentMarkdown = 'md';
-  static const contentJson     = 'json';
-  static const contentText     = 'txt';
+  static const contentTextConstructor = 'decardtc';
+  static const contentTxt      = 'txt'; // text file
+  static const contentText     = 'text'; // text in field
+  static const contentValues    = <String>[contentImage, contentAudio, contentVideo, contentHtml, contentMarkdown, contentTxt, contentText];
+  static const contentTextFiles = <String>[contentHtml, contentMarkdown, contentTxt, contentTextConstructor];
 
   static String getFileExt(String fileName) {
     final fileExt = path_util.extension(fileName);
@@ -34,7 +100,7 @@ class FileExt {
 
     final extension = fileExt.toLowerCase().substring(1);
 
-    if (!textExtList.contains(extension) && !imageExtList.contains(extension) && !audioExtList.contains(extension)) {
+    if (!sourceExtList.contains(extension)) {
       return '';
     }
 
@@ -50,13 +116,49 @@ class FileExt {
     }
 
     if (subStr.contains(':')){
-      return subStr.split(':').first.toLowerCase();
+      final contentExt = subStr.split(':').first.toLowerCase();
+      if (contentValues.contains(contentExt)) return contentExt;
     }
 
     return '';
   }
 
-  static String prepareMarkdown(String path, String markdown) {
+  static String getContentType(String content) {
+    final contentExt = getContentExt(content);
+    if (contentExt.isNotEmpty) {
+      if (contentValues.contains(contentExt)) {
+        return contentExt;
+      }
+      return contentUnknown;
+    }
+
+    final fileExt = getFileExt(content);
+
+    if (fileExt.isEmpty) return contentUnknown;
+
+
+    if (imageExtList.contains(fileExt)) {
+      return contentImage;
+    }
+    if (audioExtList.contains(fileExt)) {
+      return contentAudio;
+    }
+    if (videoExtList.contains(fileExt)) {
+      return contentVideo;
+    }
+    if (txtExtList.contains(fileExt)) {
+      return fileExt;
+    }
+
+    return contentUnknown;
+  }
+
+  static String getContentData(String contentExt, String content) {
+    if (contentExt.isEmpty) return content;
+    return content.substring(contentExt.length + 1);
+  }
+
+  static String prepareMarkdown(CardData card, String markdown) {
     final regexp = RegExp(r'!\[.*\]\((.*?)\s*(".*")?\s*\)', caseSensitive: false, multiLine: true);
 
     final newMarkdown = markdown.replaceAllMapped(regexp, (match) {
@@ -64,14 +166,15 @@ class FileExt {
       final fileName = match[1];
       if (fileName == null) return matchStr;
 
-      final str = matchStr.replaceFirst(']($fileName', '](${path_util.join(path, fileName)}');
+      final fileUrl = getFileUrl(card, fileName)??fileName;
+      final str = matchStr.replaceFirst(']($fileName', ']($fileUrl');
       return str;
     });
 
     return newMarkdown;
   }
 
-  static String prepareHtml(String path, String html) {
+  static String prepareHtml(CardData card, String html) {
     final regexp = RegExp(r'<img[^>]*src="([^"]+)"[^>]*>', caseSensitive: false, multiLine: true);
 
     final newHtml = html.replaceAllMapped(regexp, (match) {
@@ -79,41 +182,84 @@ class FileExt {
       final fileName = match[1];
       if (fileName == null) return matchStr;
 
-      final str = matchStr.replaceFirst('src="$fileName', 'src="${path_util.join(path, fileName)}');
+      final fileUrl = getFileUrl(card, fileName)??fileName;
+      final str = matchStr.replaceFirst('src="$fileName', 'src="$fileUrl');
       return str;
     });
 
     return newHtml;
   }
 
-  static Future<String?> getFileContent(String path, String? source, {bool setSourceType = false}) async {
-    if (source == null || source.isEmpty) return source;
+  static Future<String?> prepareFieldContent(DbSource dbSource, int jsonFileID, String? source, Map<String, dynamic>? convertMap) async {
+    if (source == null || source.isEmpty) return null;
 
-    if (source.startsWith(FileExt.textFile)) {
-      final fileName = source.substring(FileExt.textFile.length);
-      final filePath = prepareFilePath(path, fileName);
-      final file = File(filePath);
-      final fileContent = await file.readAsString();
+    final fileExt     = FileExt.getFileExt(source);
+    var   contentExt  = FileExt.getContentExt(source);
+    final contentData = FileExt.getContentData(contentExt, source);
 
-      if (setSourceType) {
-        final fileExt = FileExt.getFileExt(fileName);
-        return '$fileExt:$fileContent';
+    if (( fileExt.isEmpty    || FileExt.txtExtList.contains(fileExt)  ) &&
+        ( contentExt.isEmpty || contentTextFiles.contains(contentExt) ) &&
+        ( fileExt.isNotEmpty || contentExt.isNotEmpty)
+    ){
+
+      String? fileContent;
+
+      var fileUrl = dbSource.getFileUrl(jsonFileID, contentData);
+
+      if (fileUrl != null) {
+        fileContent = await getTextFromUrl(fileUrl);
+
+        if (convertMap != null && fileContent != null) {
+          convertMap.forEach((key, value) {
+            fileContent =  fileContent!.replaceAll('${DjfTemplateSource.paramBegin}$key${DjfTemplateSource.paramEnd}', value);
+          });
+        }
       }
 
-      return fileContent;
+      fileContent ??= contentData;
+
+      if (contentExt.isEmpty) {
+        if (fileExt == contentTxt) {
+          contentExt = contentText;
+        } else {
+          contentExt = fileExt;
+        }
+      }
+
+      return '$contentExt:$fileContent';
     }
 
-    return source;
+    if (contentExt.isNotEmpty) return source;
+
+    String newContentExt = contentUnknown;
+
+    if (fileExt.isNotEmpty) {
+      if (imageExtList.contains(fileExt)) {
+        newContentExt = contentImage;
+      }
+      if (audioExtList.contains(fileExt)) {
+        newContentExt = contentAudio;
+      }
+      if (videoExtList.contains(fileExt)) {
+        newContentExt = contentVideo;
+      }
+
+      if (txtExtList.contains(fileExt)) {
+        newContentExt = fileExt;
+      }
+    }
+
+    return '$newContentExt:$source';
   }
 
-  static String prepareFilePath(String path, String fileName) {
-    final absPath = path_util.normalize( path_util.join(path, fileName) );
-    return absPath;
+  static String? getFileUrl(CardData card, String fileName) {
+    return card.dbSource.getFileUrl(card.pacInfo.jsonFileID, fileName);
   }
 }
 
 class CardData {
-  final Child     child;
+  final DbSource  dbSource;
+
   final PacInfo   pacInfo;
   final CardHead  head;
   final CardBody  body;
@@ -122,69 +268,25 @@ class CardData {
 
   final RegDifficulty difficulty;
 
+  final RegCardSet?  regSet;
+
   List<String>? _tagList;
   List<String> get tagList => _tagList??[];
 
-  late int cost;
-  late int penalty;
-  late int tryCount;
-  late int duration;
-  late int lowCost;
-
-  int startTime = 0;
-
-  final RegCardSet?  regSet;
-
-  final onResult = SimpleEvent<CardData>();
-
-  bool?  _result;
-  bool? get result => _result;
-
-  double _earned = 0;
-  double get earned => _earned;
-
-  int _resultTryCount = 0;
-  int get resultTryCount => _resultTryCount;
-
-  int _solveTime = 0;
-  int get solveTime => _solveTime;
-
-  bool get exclude => regSet != null && regSet!.exclude;
-
   CardData({
-    required this.child,
+    required this.dbSource,
     required this.head,
     required this.style,
     required this.body,
-    required this.stat,
     required this.pacInfo,
+    required this.stat,
     required this.difficulty,
     this.regSet,
-  }) {
-    cost     = _getValueForQuality(difficulty.maxCost,     difficulty.minCost,     stat.quality);
-    penalty  = _getValueForQuality(difficulty.minPenalty,  difficulty.maxPenalty,  stat.quality); // penalty moves in the opposite direction to all others
-    tryCount = _getValueForQuality(difficulty.maxTryCount, difficulty.minTryCount, stat.quality);
-    duration = _getValueForQuality(difficulty.maxDuration, difficulty.minDuration, stat.quality);
-
-    lowCost = (cost * _getValueForQuality(difficulty.maxDurationLowCostPercent, difficulty.minDurationLowCostPercent, stat.quality) / 100).round();
-  }
-
-  int _getValueForQuality(int maxValue, int minValue, int quality){
-    final int result = (maxValue - (( (maxValue - minValue) * quality ) / 100 ) ).round();
-    return result;
-  }
-
-  void setResult(bool result, double earned, int tryCount, int solveTime){
-    _result         = result;
-    _earned         = earned;
-    _resultTryCount = tryCount;
-    _solveTime      = solveTime;
-
-    onResult.send(this);
-  }
+  });
 
   static Future<CardData> create(
-    Child child,
+    DbSource dbSource,
+    Regulator regulator,
     int jsonFileID,
     int cardID,
     {
@@ -193,21 +295,20 @@ class CardData {
     }
   ) async {
 
-    final card = await _CardGenerator.createCard(child, jsonFileID, cardID, bodyNum: bodyNum, setBody: setBody);
+    final card = await _CardGenerator.createCard(dbSource, regulator, jsonFileID, cardID, bodyNum: bodyNum, setBody: setBody);
     return card;
   }
 
   Future<void> fillTags() async {
     if (_tagList != null) return;
 
-    _tagList = await child.dbSource.tabCardTag.getCardTags(jsonFileID: head.jsonFileID, cardID: head.cardID);
+    _tagList = await dbSource.tabCardTag.getCardTags(jsonFileID: head.jsonFileID, cardID: head.cardID);
     _tagList!.add('${TagPrefix.cardKey}${head.cardKey}');
     if (head.group.isNotEmpty){
       _tagList!.add('${TagPrefix.group}${head.group}');
     }
     _tagList!.add('${TagPrefix.difficulty}${head.difficulty}');
   }
-
 }
 
 enum CardSetBody {
@@ -218,19 +319,22 @@ enum CardSetBody {
 }
 
 class _CardGenerator {
-  static Child?     _child;
+  static DbSource?     _dbSource;
 
   static PacInfo?   _pacInfo;
   static CardHead?  _cardHead;
   static CardBody?  _cardBody;
   static CardStyle? _cardStyle;
 
-  static RegCardSet?    _regSet;
+  static RegCardSet? _regSet;
+
+  static Map<String, dynamic>? _convertMap;
 
   static final _random = Random();
 
   static Future<CardData> createCard(
-      Child child,
+      DbSource dbSource,
+      Regulator regulator,
       int jsonFileID,
       int cardID,
       {
@@ -238,24 +342,28 @@ class _CardGenerator {
         CardSetBody setBody = CardSetBody.random,
       }) async {
 
-    _child     = child;
-    _pacInfo   = null;
-    _cardHead  = null;
-    _cardBody  = null;
-    _cardStyle = null;
-    _regSet    = null;
+    _dbSource   = dbSource;
+    _pacInfo    = null;
+    _cardHead   = null;
+    _cardBody   = null;
+    _cardStyle  = null;
+    _regSet     = null;
+    _convertMap = null;
 
-    final pacData = await child.dbSource.tabJsonFile.getRow(jsonFileID: jsonFileID);
+    final pacData = await dbSource.tabJsonFile.getRow(jsonFileID: jsonFileID);
     _pacInfo = PacInfo.fromMap(pacData!);
 
-    final headData = (await child.dbSource.tabCardHead.getRow(cardID))!;
-    await CardHead.prepareMap(_pacInfo!.path, headData);
-    _cardHead = CardHead.fromMap(headData);
+    final headData = (await dbSource.tabCardHead.getRow(cardID))!;
 
-    if (_cardHead!.regulatorSetIndex != null) {
-      _regSet = child.regulator.cardSetList[_cardHead!.regulatorSetIndex!];
+
+    final templateSourceRowId = headData[TabCardHead.kSourceRowId];
+    if (templateSourceRowId != null) {
+      _convertMap = await dbSource.tabTemplateSource.getRow(jsonFileID: jsonFileID, sourceId: templateSourceRowId);
     }
 
+    await CardHead.prepareMap(dbSource, _pacInfo!.jsonFileID, headData, _convertMap);
+    _cardHead = CardHead.fromMap(headData);
+    
     if (bodyNum != null) {
       await _setBodyNum(bodyNum);
     } else {
@@ -274,23 +382,26 @@ class _CardGenerator {
       }
     }
 
-    final statData = await child.dbSource.tabCardStat.getRow(cardID);
+    final statData = await dbSource.tabCardStat.getRow(cardID);
     final cardStat = CardStat.fromMap(statData!);
 
+    if (_cardHead!.regulatorSetIndex != null) {
+      _regSet = regulator.cardSetList[_cardHead!.regulatorSetIndex!];
+    }
     RegDifficulty? difficulty;
     if (_regSet != null && _regSet!.difficultyLevel != null) {
-      difficulty = child.regulator.getDifficulty(_regSet!.difficultyLevel!);
+      difficulty = regulator.getDifficulty(_regSet!.difficultyLevel!);
     } else {
-      difficulty = child.regulator.getDifficulty(_cardHead!.difficulty);
+      difficulty = regulator.getDifficulty(_cardHead!.difficulty);
     }
-
+    
     final card = CardData(
-        child      : child,
+        dbSource   : dbSource,
         head       : _cardHead!,
         body       : _cardBody!,
         style      : _cardStyle!,
-        stat       : cardStat,
         pacInfo    : _pacInfo!,
+        stat       : cardStat,
         difficulty : difficulty,
         regSet     : _regSet,
     );
@@ -299,13 +410,13 @@ class _CardGenerator {
   }
 
   static Future<void> _setBodyNum(int bodyNum) async {
-    final bodyData = (await _child!.dbSource.tabCardBody.getRow(jsonFileID: _cardHead!.jsonFileID, cardID: _cardHead!.cardID, bodyNum: bodyNum))!;
-    await CardBody.prepareMap(_pacInfo!.path, bodyData);
+    final bodyData = (await _dbSource!.tabCardBody.getRow(jsonFileID: _cardHead!.jsonFileID, cardID: _cardHead!.cardID, bodyNum: bodyNum))!;
+    await CardBody.prepareMap(_dbSource!, _pacInfo!.jsonFileID, bodyData, _convertMap);
     _cardBody = CardBody.fromMap(bodyData);
 
     final Map<String, dynamic> styleMap = {};
     for (var styleKey in _cardBody!.styleKeyList) {
-      final styleData = await _child!.dbSource.tabCardStyle.getRow(jsonFileID: _cardHead!.jsonFileID, cardStyleKey: styleKey );
+      final styleData = await _dbSource!.tabCardStyle.getRow(jsonFileID: _cardHead!.jsonFileID, cardStyleKey: styleKey );
       styleMap.addEntries(styleData!.entries.where((element) => element.value != null));
     }
 
@@ -411,7 +522,7 @@ class CardHead {
   final String cardKey;     // string, identifier of the card in the file
   final String group;
   final String title;
-  final String help;
+  final CardSource? help;
   final int    difficulty;
   final int    bodyCount;
 
@@ -429,8 +540,8 @@ class CardHead {
     required this.regulatorSetIndex
   });
 
-  static Future<void> prepareMap(String path, Map<String, dynamic> map) async {
-    map[DjfCard.help] = await FileExt.getFileContent(path, map[DjfCard.help], setSourceType: true);
+  static Future<void> prepareMap(DbSource dbSource, int jsonFileID, Map<String, dynamic> map, Map<String, dynamic>? convertMap) async {
+    map[DjfCard.help] = await FileExt.prepareFieldContent(dbSource, jsonFileID, map[DjfCard.help], convertMap);
   }
 
   factory CardHead.fromMap(Map<String, dynamic> json) {
@@ -440,7 +551,7 @@ class CardHead {
       cardKey    : json[TabCardHead.kCardKey],
       group      : json[TabCardHead.kGroup],
       title      : json[TabCardHead.kTitle],
-      help       : json[TabCardHead.kHelp]??'',
+      help       : json[TabCardHead.kHelp] != null? CardSource(json[TabCardHead.kHelp]!) : null,
       difficulty : json[TabCardHead.kDifficulty]??0,
       bodyCount  : json[TabCardHead.kBodyCount],
       regulatorSetIndex : json[TabCardHead.kRegulatorSetIndex],
@@ -448,52 +559,16 @@ class CardHead {
   }
 }
 
-class QuestionData {
-  QuestionData({
-    this.text,
-    this.html,
-    this.markdown,
-    this.textConstructor,
-    this.audio,
-    this.video,
-    this.image,
-  });
-
-  final String? text;     // String question text
-  final String? html;     // html source
-  final String? markdown; // markdown source
-  final String? textConstructor; // textConstructor source
-  final String? audio;    // link to audio source
-  final String? video;    // link to video source
-  final String? image;    // link to image source
-
-  static Future<void> prepareMap(String path, Map<String, dynamic> map) async {
-    map[DjfQuestionData.html]            = await FileExt.getFileContent(path, map[DjfQuestionData.html]);
-    map[DjfQuestionData.markdown]        = await FileExt.getFileContent(path, map[DjfQuestionData.markdown]);
-    map[DjfQuestionData.textConstructor] = await FileExt.getFileContent(path, map[DjfQuestionData.textConstructor]);
-  }
-
-  factory QuestionData.fromMap(Map<String, dynamic> json) => QuestionData(
-    text     : json[DjfQuestionData.text],
-    html     : json[DjfQuestionData.html],
-    markdown : json[DjfQuestionData.markdown],
-    textConstructor : json[DjfQuestionData.textConstructor],
-    audio    : json[DjfQuestionData.audio],
-    video    : json[DjfQuestionData.video],
-    image    : json[DjfQuestionData.image],
-  );
-}
-
 class CardBody {
   final int    id;                // integer, body identifier in the database
   final int    jsonFileID;        // integer, file identifier in the database
   final int    cardID;            // integer, card identifier in the database
   final int    bodyNum;           // integer, body number
-  final QuestionData questionData;
+  final List<CardSource> questionData;
   final List<String> styleKeyList; // List of global styles
   final Map<String, dynamic> styleMap; // Own body style
   final List<String> answerList;
-  final String clue;
+  final CardSource? clue;
 
   const CardBody({
     required this.id,
@@ -507,11 +582,14 @@ class CardBody {
     required this.clue
   });
 
-  static Future<void> prepareMap(String path, Map<String, dynamic> map) async {
-    map[DjfCardBody.clue] = await FileExt.getFileContent(path, map[DjfCardBody.clue], setSourceType: true);
+  static Future<void> prepareMap(DbSource dbSource, int jsonFileID, Map<String, dynamic> map, Map<String, dynamic>? convertMap) async {
+    map[DjfCardBody.clue] = await FileExt.prepareFieldContent(dbSource, jsonFileID, map[DjfCardBody.clue], convertMap);
 
-    final Map<String, dynamic> questionMap = map[ DjfCardBody.questionData];
-    await QuestionData.prepareMap(path, questionMap);
+    final questionDataList = map[ DjfCardBody.questionData] as List<dynamic>;
+
+    for (var i = 0; i < questionDataList.length; i ++) {
+      questionDataList[i] = await FileExt.prepareFieldContent(dbSource, jsonFileID, questionDataList[i], convertMap);
+    }
   }
 
   factory CardBody.fromMap(Map<String, dynamic> json) {
@@ -520,11 +598,11 @@ class CardBody {
       jsonFileID        : json[TabCardBody.kJsonFileID],
       cardID            : json[TabCardBody.kCardID],
       bodyNum           : json[TabCardBody.kBodyNum],
-      questionData      : QuestionData.fromMap(json[ DjfCardBody.questionData]),
+      questionData      : json[DjfCardBody.questionData] != null ? List<CardSource>.from(json[ DjfCardBody.questionData].map((x) => CardSource(x))) : [],
       styleKeyList      : json[DjfCardBody.styleIdList] != null ? List<String>.from(json[ DjfCardBody.styleIdList].map((x) => x)) : [],
       styleMap          : json[DjfCardBody.style]??{},
       answerList        : json[DjfCardBody.answerList] != null ? List<String>.from(json[ DjfCardBody.answerList].map((x) => x)) : [],
-      clue              : json[DjfCardBody.clue]??'',
+      clue              : json[DjfCardBody.clue] != null ? CardSource(json[DjfCardBody.clue]!) : null,
     );
   }
 }
@@ -575,9 +653,7 @@ class CardStat {
 
 class PacInfo {
   final int    jsonFileID;
-  final int    sourceFileID;
-  final String path;
-  final String filename;
+  final String sourceFileID;
   final String title;
   final String guid;
   final int    version;
@@ -585,12 +661,11 @@ class PacInfo {
   final String site;
   final String email;
   final String license;
+  final String? sourceDir;
 
   PacInfo({
     required this.jsonFileID,
     required this.sourceFileID,
-    required this.path,
-    required this.filename,
     required this.title,
     required this.guid,
     required this.version,
@@ -598,14 +673,13 @@ class PacInfo {
     required this.site,
     required this.email,
     required this.license,
+    this.sourceDir,
   });
 
   factory PacInfo.fromMap(Map<String, dynamic> json){
     return PacInfo(
       jsonFileID   : json[TabJsonFile.kJsonFileID],
       sourceFileID : json[TabJsonFile.kSourceFileID],
-      path         : json[TabJsonFile.kPath],
-      filename     : json[TabJsonFile.kFilename],
       title        : json[TabJsonFile.kTitle],
       guid         : json[TabJsonFile.kGuid],
       version      : json[TabJsonFile.kVersion],
@@ -613,6 +687,7 @@ class PacInfo {
       site         : json[TabJsonFile.kSite],
       email        : json[TabJsonFile.kEmail],
       license      : json[TabJsonFile.kLicense],
+      sourceDir    : json[TabJsonFile.kRootPath],
     );
   }
 }

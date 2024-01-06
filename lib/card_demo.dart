@@ -31,11 +31,40 @@ class DeCardDemo extends StatefulWidget {
 }
 
 class _DeCardDemoState extends State<DeCardDemo> {
+  bool _isStarting = true;
+  late CardNavigatorData _cardNavigatorData;
 
   CardData? get _card => widget.child.cardController.card;
 
   @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _starting();
+    });
+  }
+
+  void _starting() async {
+    _cardNavigatorData = CardNavigatorData(widget.child.dbSource);
+    await _cardNavigatorData.setData();
+
+    setState(() {
+      _isStarting = false;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_isStarting) {
+      return Scaffold(
+        appBar: AppBar(
+          centerTitle: true,
+          title: Text(TextConst.txtLoading),
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
         appBar: AppBar(
@@ -73,22 +102,22 @@ class _DeCardDemoState extends State<DeCardDemo> {
 
   Widget _body() {
     return Column(children: [
-      CardNavigator(child: widget.child),
+      CardNavigator(
+        cardController: widget.child.cardController,
+        cardNavigatorData: _cardNavigatorData,
+      ),
       Expanded(child: _cardWidget()),
     ]);
   }
 
   Widget _cardWidget() {
-    return EventReceiverWidget(
-      builder: (_) {
-        if (widget.child.cardController.card == null) return Container();
-
-        return CardWidget(
-          card     : widget.child.cardController.card!,
-          demoMode : true,
-        );
-      },
-      events: [widget.child.cardController.onChange],
-    );
+    return widget.child.cardController.cardListenWidgetBuilder((card, cardParam, cardViewController) {
+      return CardWidget(
+        key        : ValueKey(card),
+        card       : card,
+        cardParam  : cardParam,
+        controller : cardViewController,
+      );
+    });
   }
 }

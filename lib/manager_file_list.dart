@@ -1,5 +1,5 @@
 import 'package:decard/app_state.dart';
-import 'package:decard/db.dart';
+//import 'package:decard/db.dart';
 import 'package:decard/simple_menu.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
@@ -61,16 +61,16 @@ class _FileListState extends State<FileList> {
 
     final toDelFileList = <PacInfo>[];
 
-    for (var file in _fileList) {
-      final sourceRow = await _viewFileChild.dbSource.tabSourceFile.getRow(sourceFileID: file.sourceFileID);
-      final String path = sourceRow![TabSourceFile.kFilePath]??'';
-      final deviceFile = File(path);
-      if (deviceFile.existsSync()) {
-        _pathMap[file] = path;
-      } else {
-        toDelFileList.add(file);
-      }
-    }
+    // for (var file in _fileList) {
+    //   final sourceRow = await _viewFileChild.dbSource.tabSourceFile.getRow(sourceFileID: file.sourceFileID);
+    //   final String path = sourceRow![TabSourceFile.kFilePath]??'';
+    //   final deviceFile = File(path);
+    //   if (deviceFile.existsSync()) {
+    //     _pathMap[file] = path;
+    //   } else {
+    //     toDelFileList.add(file);
+    //   }
+    // }
 
     for (var file in toDelFileList) {
       await _viewFileChild.dbSource.deleteJsonFile(file.jsonFileID);
