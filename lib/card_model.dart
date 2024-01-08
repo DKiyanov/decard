@@ -17,6 +17,8 @@ class CardParam {
   late int duration;
   late int lowCost;
 
+  bool noSaveResult = false;
+
   CardParam(this.difficulty, this.quality) {
     cost     = _getValueForQuality(difficulty.maxCost,     difficulty.minCost,     quality);
     penalty  = _getValueForQuality(difficulty.minPenalty,  difficulty.maxPenalty,  quality); // penalty moves in the opposite direction to all others

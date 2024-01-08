@@ -171,7 +171,7 @@ class _CardNavigatorState extends State<CardNavigator> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.cardController.card == null) {
+    if (_selCard == null) {
       return Container();
     }
 

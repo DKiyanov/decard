@@ -6,7 +6,6 @@ import 'package:decard/parse_connect.dart';
 import 'package:decard/server_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:flutter_broadcasts/flutter_broadcasts.dart';
@@ -14,25 +13,11 @@ import 'package:simple_events/simple_events.dart';
 
 import 'child.dart';
 import 'common.dart';
-import 'file_sources.dart';
 import 'package:path/path.dart' as path_util;
-
-enum UsingMode {
-  testing,
-  manager
-}
-
-enum AppMode {
-  testing,
-  demo,
-}
 
 final appState = AppState();
 
 class AppState {
-  static const String _kViewFileChildName       = 'fileViewer';
-  static const String _kViewFileChildDeviceName = 'this';
-
   static final AppState _instance = AppState._();
 
   late SharedPreferences prefs;
@@ -40,20 +25,12 @@ class AppState {
 
   late String _appDir;
 
-  late LoginMode loginMode;
-  late UsingMode usingMode;
-
   late ParseConnect serverConnect;
   late ServerFunctions serverFunctions;
 
   final childList = <Child>[];
 
   late EarnController earnController;
-
-  late AppMode appMode;
-
-  late Child viewFileChild;
-  late FileSources fileSources;
 
   factory AppState() {
     return _instance;
@@ -63,8 +40,6 @@ class AppState {
 
   Future<void> initialization(ParseConnect serverConnect, LoginMode loginMode) async {
     this.serverConnect = serverConnect;
-    this.loginMode     = loginMode;
-    usingMode = loginMode == LoginMode.child ? UsingMode.testing : UsingMode.manager;
 
     prefs = await SharedPreferences.getInstance();
 
@@ -81,27 +56,16 @@ class AppState {
   Future<void> _initFinish() async {
     await _initChildren();
 
-    if (usingMode == UsingMode.testing) {
-      if (childList.isNotEmpty) {
-        earnController = EarnController(prefs, packageInfo);
+    if (childList.isNotEmpty) {
+      earnController = EarnController(prefs, packageInfo);
 
-        earnController.onSendEarn.subscribe((listener, data) {
-          childList.first.saveTestsResultsToServer(serverFunctions);
-        });
+      earnController.onSendEarn.subscribe((listener, data) {
+        childList.first.saveTestsResultsToServer(serverFunctions);
+      });
 
-        childList.first.cardController.onAddEarn.subscribe((listener, earn){
-          earnController.addEarn(earn!);
-        });
-      }
-
-      appMode = AppMode.testing;
-    }
-
-    if (usingMode == UsingMode.manager) {
-      appMode = AppMode.demo;
-      await _searchNewChildrenInServer();
-
-      fileSources = FileSources(prefs);
+      childList.first.cardController.onAddEarn.subscribe((listener, earn){
+        earnController.addEarn(earn!);
+      });
     }
 
     await synchronize();
@@ -133,28 +97,7 @@ class AppState {
       }
     }
 
-    final specChild = childList.firstWhereOrNull((child) => child.name == _kViewFileChildName && child.deviceName == _kViewFileChildDeviceName );
-    if (specChild != null) {
-      childList.remove(specChild);
-      viewFileChild = specChild;
-    } else {
-      viewFileChild = Child(_kViewFileChildName, _kViewFileChildDeviceName, _appDir, prefs);
-      await viewFileChild.init();
-    }
-
     childList.sort((a, b) => a.name.compareTo(b.name));
-  }
-
-  /// Search for new children on the server and create them locally
-  Future<void> _searchNewChildrenInServer() async {
-    final serverChildMap = await appState.serverFunctions.getChildDeviceMap();
-
-    for (var childName in serverChildMap.keys) {
-      final deviceList = serverChildMap[childName]!;
-      for (var deviceName in deviceList) {
-        await addChild(childName, deviceName);
-      }
-    }
   }
 
   Future<void> firstRunOkPrepare(String childName, String deviceName) async {
@@ -178,17 +121,6 @@ class AppState {
         await child.synchronize(serverFunctions);
       }
     }
-  }
-
-  Future<bool> checkStoragePermission() async {
-    final status = await Permission.storage.status;
-    if (status != PermissionStatus.granted) {
-      final result = await Permission.storage.request();
-      if (result != PermissionStatus.granted) {
-        return false;
-      }
-    }
-    return true;
   }
 
   Future<void> errorsDialog(BuildContext context, List<String> errorList, String title) async {

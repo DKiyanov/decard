@@ -42,19 +42,12 @@ dependencies:
   path: ^1.8.2
   flutter_archive: ^5.0.0
   shared_preferences: ^2.0.15
-  flutter_slidable: ^2.0.0
-  permission_handler: ^9.0.2
   fluttertoast: ^8.1.2
   auto_size_text: ^3.0.0
-  webdav_client: ^1.1.8
-  flutter_speed_dial: ^6.2.0
-  crypto: ^3.0.2
   flutter_broadcasts: ^0.3.0
   package_info_plus: ^1.4.2
   audioplayers: ^2.0.0
   dio: ^4.0.6
-  filesystem_picker: ^3.1.0
-  fl_chart: ^0.55.0
   flutter_markdown: ^0.6.11
   flutter_inappwebview: ^5.7.1
   webviewx_plus: ^0.3.3

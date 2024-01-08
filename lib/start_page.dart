@@ -1,13 +1,9 @@
-import 'package:collection/collection.dart';
 import 'package:decard/parse_connect.dart';
-import 'package:decard/select_usage_mode.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'app_state.dart';
 import 'card_testing.dart';
-import 'child_list.dart';
 import 'common.dart';
-import 'login.dart';
 import 'login_invite.dart';
 import 'options.dart';
 
@@ -19,12 +15,12 @@ class StartPage extends StatefulWidget {
 }
 
 class _StartPageState extends State<StartPage> {
-  static const String _keyLoginMode = 'LoginMode';
+  static const String _keyNotFirstRun = 'NotFirstRun';
   static const String _keyFirstConfigOk = 'FirstConfigOk';
 
   bool _isStarting = true;
   SharedPreferences? _prefs;
-  LoginMode? _loginMode;
+  final LoginMode _loginMode = LoginMode.child;
   bool _firstRun = false;
   bool _reLogin = false;
   int _appStateInitMode = 0;
@@ -45,23 +41,12 @@ class _StartPageState extends State<StartPage> {
     _prefs = await SharedPreferences.getInstance();
     _serverConnect = ParseConnect(_prefs!);
 
-    final loginModeStr = _prefs!.getString(_keyLoginMode)??'';
-    _loginMode = LoginMode.values.firstWhereOrNull((loginMode) => loginMode.name == loginModeStr);
+    _firstRun = !(_prefs!.getBool(_keyNotFirstRun)??false);
 
-    if (_loginMode == null) {
-      _firstRun = true;
-    }
-
-    if (_loginMode != null) {
+    if (!_firstRun) {
       await _serverConnect!.wakeUp();
 
-      if (_loginMode != LoginMode.child) { // any parent
-        _reLogin = !(await _serverConnect!.sessionHealthOk());
-      }
-
-      if (_loginMode == LoginMode.child) {
-        _showFirstConfig = !(_prefs!.getBool(_keyFirstConfigOk)??false);
-      }
+      _showFirstConfig = !(_prefs!.getBool(_keyFirstConfigOk)??false);
     }
 
     setState(() {
@@ -75,18 +60,10 @@ class _StartPageState extends State<StartPage> {
       return _wait();
     }
 
-    if (_loginMode == null) {
-      return LoginModeSelector(onLoginModeSelectOk: (loginMode) {
-        setState(() {
-          _loginMode = loginMode;
-        });
-      });
-    }
-
     if (_firstRun) {
       return _login(
         onLoginOk: (){
-          _prefs!.setString(_keyLoginMode, _loginMode!.name);
+          _prefs!.setBool(_keyNotFirstRun, true);
 
           setState(() {
             _firstRun = false;
@@ -99,7 +76,7 @@ class _StartPageState extends State<StartPage> {
 
         onLoginCancel: () {
           setState(() {
-            _loginMode = null;
+            _firstRun = true;
           });
         }
       );
@@ -117,7 +94,7 @@ class _StartPageState extends State<StartPage> {
 
     if (_appStateInitMode == 0) {
       _appStateInitMode = 1;
-        appState.initialization(_serverConnect!, _loginMode!).then((_) {
+        appState.initialization(_serverConnect!, _loginMode).then((_) {
         setState(() {
           _appStateInitMode = 2;
         });
@@ -136,10 +113,6 @@ class _StartPageState extends State<StartPage> {
       });
     }
 
-    if (_loginMode != LoginMode.child) { // any parent
-      return const ChildList();
-    }
-
     if (_loginMode == LoginMode.child) {
       return DeCard(child: appState.childList.first);
     }
@@ -148,11 +121,7 @@ class _StartPageState extends State<StartPage> {
   }
 
   Widget _login({required VoidCallback onLoginOk, VoidCallback? onLoginCancel}) {
-    if (_loginMode == LoginMode.masterParent) {
-      return Login(connect: _serverConnect!, onLoginOk: onLoginOk, onLoginCancel: onLoginCancel);
-    }
-
-    return LoginInvite(connect: _serverConnect!, loginMode: _loginMode!, title: TextConst.txtConnecting, onLoginOk: onLoginOk, onLoginCancel: onLoginCancel);
+    return LoginInvite(connect: _serverConnect!, loginMode: _loginMode, title: TextConst.txtConnecting, onLoginOk: onLoginOk, onLoginCancel: onLoginCancel);
   }
 
   Widget _wait() {

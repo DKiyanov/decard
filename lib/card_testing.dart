@@ -79,7 +79,9 @@ class _DeCardState extends State<DeCard> {
                   menuItemList: [
                     SimpleMenuItem(
                         child: Text(TextConst.txtDemo),
-                        onPress: () {
+                        onPress: () async {
+                          await widget.child.cardController.setFirstCard();
+                          if (!mounted) return;
                           DeCardDemo.navigatorPush(context, widget.child);
                         }
                     ),
@@ -95,8 +97,6 @@ class _DeCardState extends State<DeCard> {
   }
 
   Widget _earnedBoxWidget() {
-    if (appState.appMode == AppMode.demo) return Container();
-
     final verticalPadding = inLimit( lineValue( context.scale, 1, 5, 1.9, 0), low: 0, high : 5);
 
     return EventReceiverWidget(
@@ -146,9 +146,7 @@ class _DeCardState extends State<DeCard> {
       );
     }
 
-    if (appState.appMode == AppMode.testing) return _cardWidget();
-
-    return Container();
+    return _cardWidget();
   }
 
   Widget _cardWidget() {
