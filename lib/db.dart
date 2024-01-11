@@ -131,7 +131,7 @@ abstract class TabCardHead {
     int? sourceRowId,
   });
 
-  Future<Map<String, dynamic>?> getRow(int cardID);
+  Future<Map<String, dynamic>?> getRow({required int jsonFileID, required int cardID});
 
   Future<int> getGroupCardCount({ required int jsonFileID, required cardGroupKey});
   Future<List<String>> getFileCardKeyList({ required int jsonFileID});
@@ -141,7 +141,7 @@ abstract class TabCardHead {
   Future<List<Map<String, Object?>>> getAllRows();
   Future<List<Map<String, Object?>>> getFileRows({ required int jsonFileID});
   Future<void> clearRegulatorPatchOnAllRow();
-  Future<void> setRegulatorPatchOnCard({required int cardID, required int regulatorSetIndex, required bool exclude});
+  Future<void> setRegulatorPatchOnCard({required int jsonFileID, required int cardID, required int regulatorSetIndex, required bool exclude});
 }
 
 abstract class TabCardTag {
@@ -338,7 +338,7 @@ class CardStatExchange {
     final cardDBID = await dbSource!.tabCardHead.getCardIdFromKey(jsonFileID: jsonFileID, cardKey: cardID);
     if (cardDBID == null) return {};
 
-    final row = (await dbSource!.tabCardHead.getRow(cardDBID))!;
+    final row = (await dbSource!.tabCardHead.getRow(jsonFileID: jsonFileID, cardID: cardDBID))!;
     final String groupKey = row[TabCardHead.kGroup]??'';
 
     Map<String, dynamic> map = {
@@ -407,7 +407,7 @@ abstract class TabCardStat {
     return jsonEncode(jsonMap);
   }
 
-  Future<Map<String, dynamic>?> getRow(int cardID);
+  Future<Map<String, dynamic>?> getRow({required int jsonFileID, required int cardID});
 
   Future<int> insertRow({
     required int    jsonFileID,

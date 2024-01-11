@@ -328,7 +328,7 @@ class TabCardHeadFlt extends TabCardHead {
   }
 
   @override
-  Future<Map<String, dynamic>?> getRow(int cardID) async {
+  Future<Map<String, dynamic>?> getRow({required int jsonFileID, required int cardID}) async {
     final rows = await db.query(TabCardHead.tabName,
         where     : '${TabCardHead.kCardID} = ?',
         whereArgs : [cardID]
@@ -375,7 +375,7 @@ class TabCardHeadFlt extends TabCardHead {
   }
 
   @override
-  Future<void> setRegulatorPatchOnCard({required int cardID, required int regulatorSetIndex, required bool exclude}) async {
+  Future<void> setRegulatorPatchOnCard({required int jsonFileID, required int cardID, required int regulatorSetIndex, required bool exclude}) async {
     final Map<String, dynamic> updateRow = {
       TabCardHead.kRegulatorSetIndex : regulatorSetIndex,
       TabCardHead.kExclude           : exclude,
@@ -740,7 +740,7 @@ class TabCardStatFlt extends TabCardStat {
   }
 
   @override
-  Future<Map<String, dynamic>?> getRow(int cardID) async {
+  Future<Map<String, dynamic>?> getRow({required int jsonFileID, required int cardID}) async {
     final rows = await db.query(TabCardStat.tabName,
         where     : '${TabCardStat.kCardID} = ?',
         whereArgs : [cardID]

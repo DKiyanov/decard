@@ -54,7 +54,6 @@ dependencies:
   http: ^0.13.4
   parse_server_sdk_flutter: ^3.1.2
   uuid: ^3.0.7
-  google_sign_in: ^5.4.2
   async: ^2.9.0
   simple_events:
     path: ../simple_events

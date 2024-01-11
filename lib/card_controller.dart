@@ -14,7 +14,7 @@ class CardController {
   final DbSource dbSource;
   late Regulator regulator;
   final Future<CardPointer?>? Function()? onSelectNextCard;
-  final void Function(int cardID)? onSetCard;
+  final void Function(int jsonFileID, int cardID)? onSetCard;
   final OnCardResult? onCardResult;
 
   CardController({required this.dbSource, Regulator? regulator, this.onSelectNextCard, this.onSetCard, this.onCardResult}) {
@@ -53,7 +53,7 @@ class CardController {
 
     _cardViewController = CardViewController(_card!, _cardParam!, _onCardResult, startTime);
 
-    onSetCard?.call(_card!.head.cardID);
+    onSetCard?.call(_card!.head.jsonFileID, _card!.head.cardID);
 
     onChange.send();
   }

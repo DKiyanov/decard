@@ -1,21 +1,24 @@
-import 'package:decard/parse_connect.dart';
+import 'parse_connect.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'common.dart';
 import 'package:async/async.dart';
 
+typedef GetDeviceID = Future<String> Function();
+
 class LoginInvite extends StatefulWidget {
-  static Future<Object> navigate({required BuildContext context, required ParseConnect connect, required LoginMode loginMode, required String title, VoidCallback? onLoginOk, VoidCallback? onLoginCancel}) async {
-    return Navigator.push(context, MaterialPageRoute(builder: (_) => LoginInvite(connect: connect, loginMode: loginMode, title: title, onLoginOk: onLoginOk, onLoginCancel: onLoginCancel)));
+  static Future<Object> navigate({required BuildContext context, required ParseConnect connect, required LoginMode loginMode, required GetDeviceID getDeviceID,  required String title, VoidCallback? onLoginOk, VoidCallback? onLoginCancel}) async {
+    return Navigator.push(context, MaterialPageRoute(builder: (_) => LoginInvite(connect: connect, loginMode: loginMode, getDeviceID: getDeviceID, title: title, onLoginOk: onLoginOk, onLoginCancel: onLoginCancel)));
   }
 
   final ParseConnect  connect;
   final LoginMode     loginMode;
   final String        title;
+  final GetDeviceID   getDeviceID;
   final VoidCallback? onLoginOk;
   final VoidCallback? onLoginCancel;
 
-  const LoginInvite({required this.connect, required this.loginMode, required this.title, this.onLoginOk, this.onLoginCancel, Key? key}) : super(key: key);
+  const LoginInvite({required this.connect, required this.loginMode, required this.getDeviceID, required this.title, this.onLoginOk, this.onLoginCancel, Key? key}) : super(key: key);
 
   @override
   State<LoginInvite> createState() => _LoginInviteState();
@@ -148,7 +151,8 @@ class _LoginInviteState extends State<LoginInvite> {
       return;
     }
 
-    final loginFuture = widget.connect.loginWithInvite(url, inviteKey, widget.loginMode);
+    final deviceID = await widget.getDeviceID.call();
+    final loginFuture = widget.connect.loginWithInvite(url, inviteKey, widget.loginMode, deviceID);
 
     loginFuture.then((ret) {
       if (_loginProcess == null) {
@@ -183,4 +187,5 @@ class _LoginInviteState extends State<LoginInvite> {
 
     setState(() {});
   }
+
 }

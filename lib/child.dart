@@ -87,8 +87,8 @@ class Child {
       dbSource: dbSource,
       regulator: regulator,
       onSelectNextCard: _selectNextCard,
-      onSetCard: (cardID) {
-        processCardController.setCard(cardID);
+      onSetCard: (jsonFileID, cardID) {
+        processCardController.setCard(jsonFileID, cardID);
       },
       onCardResult: _onCardResult,
     );

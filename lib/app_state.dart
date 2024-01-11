@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:collection/collection.dart';
 import 'package:decard/parse_connect.dart';
+import 'package:decard/platform_service.dart';
 import 'package:decard/server_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
@@ -148,6 +149,10 @@ class AppState {
         );
       },
     );
+  }
+
+  Future<String> getDeviceID() async {
+    return await PlatformService.getDeviceID();
   }
 }
 

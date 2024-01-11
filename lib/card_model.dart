@@ -355,7 +355,7 @@ class _CardGenerator {
     final pacData = await dbSource.tabJsonFile.getRow(jsonFileID: jsonFileID);
     _pacInfo = PacInfo.fromMap(pacData!);
 
-    final headData = (await dbSource.tabCardHead.getRow(cardID))!;
+    final headData = (await dbSource.tabCardHead.getRow(jsonFileID: jsonFileID, cardID: cardID))!;
 
 
     final templateSourceRowId = headData[TabCardHead.kSourceRowId];
@@ -384,7 +384,7 @@ class _CardGenerator {
       }
     }
 
-    final statData = await dbSource.tabCardStat.getRow(cardID);
+    final statData = await dbSource.tabCardStat.getRow(jsonFileID: jsonFileID, cardID: cardID);
     final cardStat = CardStat.fromMap(statData!);
 
     if (_cardHead!.regulatorSetIndex != null) {

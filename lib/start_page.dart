@@ -121,7 +121,7 @@ class _StartPageState extends State<StartPage> {
   }
 
   Widget _login({required VoidCallback onLoginOk, VoidCallback? onLoginCancel}) {
-    return LoginInvite(connect: _serverConnect!, loginMode: _loginMode, title: TextConst.txtConnecting, onLoginOk: onLoginOk, onLoginCancel: onLoginCancel);
+    return LoginInvite(connect: _serverConnect!, loginMode: _loginMode, getDeviceID: appState.getDeviceID, title: TextConst.txtConnecting, onLoginOk: onLoginOk, onLoginCancel: onLoginCancel);
   }
 
   Widget _wait() {

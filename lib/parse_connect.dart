@@ -1,11 +1,8 @@
-import 'package:decard/platform_service.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:parse_server_sdk_flutter/parse_server_sdk.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
-
-import '../common.dart';
-
+import 'package:simple_events/simple_events.dart' as event;
+import 'common.dart';
 
 class ParseConnect {
   static const String _applicationId   = 'dk_parental_control';
@@ -24,16 +21,44 @@ class ParseConnect {
   ParseUser? _user;
   ParseUser? get user => _user;
 
+  bool get isLoggedIn => _user != null;
+
   String _lastError = '';
   String get lastError => _lastError;
+
+  final onLoggedInChange = event.SimpleEvent();
+
+  Future<void> init() async {
+    await _init();
+  }
 
   Future<void> _init() async {
     await Parse().initialize(
         _applicationId,
-        _serverURL,
+        TextConst.defaultURL, //_serverURL,
         debug: true,
-        coreStore: await CoreStoreSharedPrefsImp.getInstance()
+        coreStore: await CoreStoreSharedPrefsImp.getInstance(),
     );
+
+    _user = await ParseUser.currentUser();
+
+    if (_user != null) {
+      if (! await sessionHealthOk()) {
+        _user = null;
+      }
+    }
+
+    if (_user == null) {
+      final parseUser = ParseUser.forQuery();
+      await parseUser.loginAnonymous();
+
+      // ParseUser parseUser = ParseUser('guest@gmail.com', '12345', 'guest@gmail.com');
+      // await parseUser.loginAnonymous(doNotSendInstallationID: true);
+      //
+      // if (!(await parseUser.login()).success) {
+      //   await parseUser.signUp();
+      // }
+    }
   }
 
   Future<void> wakeUp() async {
@@ -42,7 +67,7 @@ class ParseConnect {
 
     await _init();
 
-    _user = await ParseUser.currentUser();
+    //_user = await ParseUser.currentUser();
     _loginId = _user?.username??'';
   }
 
@@ -59,6 +84,7 @@ class ParseConnect {
 
     if (result){
       _loginId = loginID;
+      onLoggedInChange.send();
       return true;
     } else {
       _lastError = TextConst.errFailedLogin;
@@ -66,43 +92,26 @@ class ParseConnect {
     }
   }
 
-  Future<bool> loginWithGoogle() async {
-    final googleSignIn = GoogleSignIn( scopes: ['email', 'https://www.googleapis.com/auth/contacts.readonly'] );
-
-    final account = await googleSignIn.signIn();
-    if (account == null) {
-      _lastError = TextConst.errFailedLogin;
-      return false;
-    }
-
-    final authentication = await account.authentication;
-    if (authentication.accessToken == null || googleSignIn.currentUser == null || authentication.idToken == null) {
-      _lastError = TextConst.errFailedLogin;
-      return false;
-    }
-
-    final authData = google(authentication.accessToken!, googleSignIn.currentUser!.id, authentication.idToken!);
-
-    final response = await ParseUser.loginWith('google', authData);
+  Future<String> loginWith(String provider, Object authData) async {
+    final response = await ParseUser.loginWith(provider, authData);
 
     if (response.success) {
       _user = await ParseUser.currentUser();
       await _user!.fetch();
       _loginId = _user?.username??'';
-      return true;
+      onLoggedInChange.send();
+      return '';
     } else {
-      _lastError = TextConst.errFailedLogin;
-      return false;
+      return TextConst.errFailedLogin;
     }
   }
 
-  Future<bool> loginWithInvite(String serverURL, String inviteKey, LoginMode loginMode) async {
+  Future<bool> loginWithInvite(String serverURL, String inviteKey, LoginMode loginMode, String deviceID) async {
     await _setServerURL(serverURL);
 
     final sendKeyStr = inviteKey.replaceAll(RegExp('\\D'), '');
     final sendKeyInt = int.tryParse(sendKeyStr);
 
-    final deviceID = await PlatformService.getDeviceID();
     const uuid  = Uuid();
     final token = uuid.v4();
 
@@ -129,6 +138,7 @@ class ParseConnect {
       _user = await ParseUser.currentUser();
       await _user!.fetch();
       _loginId = _user?.username??'';
+      onLoggedInChange.send();
       return true;
     } else {
       _lastError = TextConst.errFailedLogin;

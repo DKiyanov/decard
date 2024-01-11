@@ -76,10 +76,10 @@ class ProcessCardController {
     }
   }
 
-  Future<void> setCard(int cardID) async {
+  Future<void> setCard(int jsonFileID, int cardID) async {
     if (cardStatList.any((stat) => stat.cardID == cardID)) return;
 
-    final statData = await tabCardStat.getRow(cardID);
+    final statData = await tabCardStat.getRow(jsonFileID: jsonFileID, cardID: cardID);
     final cardStat = ProcessCardStat.fromMap(statData!);
     cardStatList.add(cardStat);
     await _prepareGroup(cardStat);
