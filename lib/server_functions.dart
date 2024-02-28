@@ -1,39 +1,17 @@
 import 'dart:io';
 
 import 'package:collection/collection.dart';
-import 'package:decard/platform_service.dart';
 import 'package:parse_server_sdk_flutter/parse_server_sdk.dart';
 import 'package:path/path.dart' as path_util;
 
 import 'child.dart';
-import 'common.dart';
+import 'common_func.dart';
 import 'db.dart';
+import 'parse_class_info.dart';
+import 'platform_service.dart';
 
 class ServerFunctions {
   static const String _commonFolderName = "common_folder";
-
-  static const String _clsChild      = 'Child';
-  static const String _clsDevice     = 'Device';
-
-  static const String _clsFile       = 'DecardFile';
-  static const String _clsTestResult = 'DecardTestResult';
-  static const String _clsStat       = 'DecardStat';
-
-  static const String _fldObjectID   = 'objectId';
-  static const String _fldUserID     = 'UserID';
-  static const String _fldName       = 'Name';
-  static const String _fldChildID    = 'ChildID';
-  static const String _fldDeviceOSID = 'DeviceOSID';
-
-  static const String _fldPath     = 'Path';
-  static const String _fldFileName = 'FileName';
-  static const String _fldSize     = 'Size';
-  static const String _fldContent  = 'Content';
-
-  static const String _fldDateTime = 'dateTime';
-
-  static const String _fldFileGuid = 'FileGuid';
-  static const String _fldCardID   = 'CardID';
 
   final Map<String, String> _childName2IdMap = {};
 
@@ -47,9 +25,9 @@ class ServerFunctions {
       return result;
     }
 
-    final query =  QueryBuilder<ParseObject>(ParseObject(_clsChild));
-    query.whereEqualTo(_fldUserID, userID);
-    query.whereEqualTo(_fldName, childName);
+    final query =  QueryBuilder<ParseObject>(ParseObject(ParseChild.className));
+    query.whereEqualTo(ParseChild.userID, userID);
+    query.whereEqualTo(ParseChild.name, childName);
 
     final child = await query.first();
     result = child!.objectId!;
@@ -64,20 +42,20 @@ class ServerFunctions {
   Future<ChildAndDeviceNames?> getChildDeviceFromDeviceID() async {
     final deviceID = await PlatformService.getDeviceID();
 
-    final query =  QueryBuilder<ParseObject>(ParseObject(_clsDevice));
-    query.whereEqualTo(_fldDeviceOSID, deviceID);
+    final query =  QueryBuilder<ParseObject>(ParseObject(ParseDevice.className));
+    query.whereEqualTo(ParseDevice.deviceOSID, deviceID);
     final device = await query.first();
     if (device == null) return null;
 
-    final childID = device.get<String>(_fldChildID)!;
+    final childID = device.get<String>(ParseDevice.childID)!;
 
-    final query2 =  QueryBuilder<ParseObject>(ParseObject(_clsChild));
-    query2.whereEqualTo(_fldObjectID, childID);
+    final query2 =  QueryBuilder<ParseObject>(ParseObject(ParseChild.className));
+    query2.whereEqualTo(ParseObjectField.objectID, childID);
 
 
     final child = (await query2.first())!;
 
-    return ChildAndDeviceNames(child.get<String>(_fldName)!, device.get<String>(_fldName)!);
+    return ChildAndDeviceNames(child.get<String>(ParseChild.name)!, device.get<String>(ParseDevice.name)!);
   }
 
   /// Returns a list of children and devices associated with the child
@@ -86,19 +64,19 @@ class ServerFunctions {
   Future<Map<String, List<String>>> getChildDeviceMap() async {
     final Map<String, List<String>> result = {};
 
-    final query =  QueryBuilder<ParseObject>(ParseObject(_clsChild));
-    query.whereEqualTo(_fldUserID, userID);
+    final query =  QueryBuilder<ParseObject>(ParseObject(ParseChild.className));
+    query.whereEqualTo(ParseChild.userID, userID);
 
     final childList = await query.find();
     for (var child in childList) {
-      final childName = child.get<String>(_fldName)!;
+      final childName = child.get<String>(ParseChild.name)!;
 
-      final query =  QueryBuilder<ParseObject>(ParseObject(_clsDevice));
-      query.whereEqualTo(_fldChildID, child.objectId);
+      final query =  QueryBuilder<ParseObject>(ParseObject(ParseDevice.className));
+      query.whereEqualTo(ParseDevice.childID, child.objectId);
 
       final deviceList = await query.find();
 
-      result[childName] = deviceList.map<String>((device) => device.get<String>(_fldName)!).toList();
+      result[childName] = deviceList.map<String>((device) => device.get<String>(ParseDevice.name)!).toList();
     }
 
     return result;
@@ -108,42 +86,42 @@ class ServerFunctions {
   /// Child -> Server
   /// returns the names of the created child/device in the structure
   Future<ChildAndDeviceNames> addChildDevice(String newChildName, String newDeviceName) async {
-    final query =  QueryBuilder<ParseObject>(ParseObject(_clsChild));
-    query.whereEqualTo(_fldUserID, userID);
+    final query =  QueryBuilder<ParseObject>(ParseObject(ParseChild.className));
+    query.whereEqualTo(ParseChild.userID, userID);
 
     final childList = await query.find();
 
-    var child = childList.firstWhereOrNull((child) => child.get<String>(_fldName)!.toLowerCase() == newChildName.toLowerCase());
+    var child = childList.firstWhereOrNull((child) => child.get<String>(ParseChild.name)!.toLowerCase() == newChildName.toLowerCase());
 
     if (child != null) {
-      final query =  QueryBuilder<ParseObject>(ParseObject(_clsDevice));
-      query.whereEqualTo(_fldChildID, child.objectId);
+      final query =  QueryBuilder<ParseObject>(ParseObject(ParseDevice.className));
+      query.whereEqualTo(ParseDevice.childID, child.objectId);
 
       final deviceList = await query.find();
-      final device = deviceList.firstWhereOrNull((device) => device.get<String>(_fldName)!.toLowerCase() == newDeviceName.toLowerCase());
+      final device = deviceList.firstWhereOrNull((device) => device.get<String>(ParseDevice.name)!.toLowerCase() == newDeviceName.toLowerCase());
 
       if (device != null) {
-        return ChildAndDeviceNames(child.get<String>(_fldName)!, device.get<String>(_fldName)!);
+        return ChildAndDeviceNames(child.get<String>(ParseChild.name)!, device.get<String>(ParseDevice.name)!);
       }
     }
 
     if (child == null) {
-      child = ParseObject(_clsChild);
-      child.set<String>(_fldUserID, userID);
-      child.set<String>(_fldName  , newChildName);
+      child = ParseObject(ParseChild.className);
+      child.set<String>(ParseChild.userID, userID);
+      child.set<String>(ParseChild.name  , newChildName);
       await child.save();
     }
 
     final deviceID = await PlatformService.getDeviceID();
 
-    final device = ParseObject(_clsDevice);
-    device.set<String>(_fldUserID    , userID);
-    device.set<String>(_fldChildID   , child.objectId!);
-    device.set<String>(_fldName      , newDeviceName);
-    device.set<String>(_fldDeviceOSID, deviceID);
+    final device = ParseObject(ParseDevice.className);
+    device.set<String>(ParseDevice.userID    , userID);
+    device.set<String>(ParseDevice.childID   , child.objectId!);
+    device.set<String>(ParseDevice.name      , newDeviceName);
+    device.set<String>(ParseDevice.deviceOSID, deviceID);
     await device.save();
 
-    return ChildAndDeviceNames(child.get<String>(_fldName)!, device.get<String>(_fldName)!);
+    return ChildAndDeviceNames(child.get<String>(ParseChild.name)!, device.get<String>(ParseDevice.name)!);
   }
 
   /// Synchronizes the contents of the child's directories on the server and on the device
@@ -154,9 +132,9 @@ class ServerFunctions {
     var netPath = path_util.join(child.name, child.deviceName);
     if (fromCommonFolder) netPath = _commonFolderName;
 
-    final query =  QueryBuilder<ParseObject>(ParseObject(_clsFile));
-    query.whereEqualTo(_fldUserID, userID);
-    query.whereEqualTo(_fldPath, netPath);
+    final query =  QueryBuilder<ParseObject>(ParseObject(ParseWebChildSource.className));
+    query.whereEqualTo(ParseWebChildSource.userID, userID);
+    query.whereEqualTo(ParseWebChildSource.path, netPath);
 
     final fileList = await query.find();
 
@@ -164,9 +142,9 @@ class ServerFunctions {
 
     for (var file in fileList) {
 
-      final fileName = file.get<String>(_fldFileName)!;
+      final fileName = file.get<String>(ParseWebChildSource.fileName)!;
       final fileTime = file.updatedAt!;
-      final fileSize = file.get<int>(_fldSize)!;
+      final fileSize = file.get<int>(ParseWebChildSource.size)!;
 
       final netFilePath = path_util.join(serverURL, netPath, fileName);
 
@@ -175,13 +153,18 @@ class ServerFunctions {
         final localFile = File(filePath);
         if (localFile.existsSync()) localFile.deleteSync();
 
-        final content = file.get<ParseFile>(_fldContent)!;
-        await content.loadStorage();
-        if ( content.file == null){
-          await content.download();
-        }
+        final content = file.get<ParseFile>(ParseWebChildSource.content);
+        if (content != null) {
+          await content.loadStorage();
+          if ( content.file == null){
+            await content.download();
+          }
 
-        await content.file!.copy(filePath);
+          await content.file!.copy(filePath);
+        } else {
+          final textContent = file.get<String>(ParseWebChildSource.textContent)!;
+          await File(filePath).writeAsString(textContent);
+        }
 
         await child.dbSource.tabSourceFile.registerFile(netFilePath, fileTime, fileSize);
 
@@ -190,41 +173,6 @@ class ServerFunctions {
     }
 
     return newFileList;
-  }
-
-  /// sends file to the server
-  /// manager -> server
-  Future<void> putFileToServer(Child child, String path) async {
-    final fileName = path_util.basename(path);
-    final netPath = path_util.join(child.name, child.deviceName);
-
-    final query =  QueryBuilder<ParseObject>(ParseObject(_clsFile));
-    query.whereEqualTo(_fldUserID, userID);
-    query.whereEqualTo(_fldPath, netPath);
-    query.whereEqualTo(_fldFileName, fileName);
-
-    {
-      final serverFile = await query.first();
-      if (serverFile != null) {
-        await serverFile.delete();
-      }
-    }
-
-    final localFile   =  File(path);
-    final fileContent = localFile.readAsBytesSync();
-    final fileSize    = await localFile.length();
-    final techFileName = '${DateTime.now().millisecondsSinceEpoch}.data';
-
-    final serverFileContent = ParseWebFile(fileContent, name : techFileName);
-    await serverFileContent.save();
-
-    final serverFile = ParseObject(_clsFile);
-    serverFile.set<String>(_fldUserID  , userID);
-    serverFile.set<String>(_fldPath    , netPath);
-    serverFile.set<String>(_fldFileName, fileName);
-    serverFile.set<int>(_fldSize, fileSize);
-    serverFile.set<ParseWebFile>(_fldContent, serverFileContent);
-    await serverFile.save();
   }
 
   void _setFromJson(ParseObject object, Map<String, dynamic> json) {
@@ -244,10 +192,10 @@ class ServerFunctions {
     for (var row in resultList) {
       final json = row.toJson();
 
-      final testResult = ParseObject(_clsTestResult);
+      final testResult = ParseObject(ParseTestResult.className);
       _setFromJson(testResult, json);
-      testResult.set<String>(_fldUserID , userID);
-      testResult.set<String>(_fldChildID, childID);
+      testResult.set<String>(ParseTestResult.userID , userID);
+      testResult.set<String>(ParseTestResult.childID, childID);
 
       testResult.save();
     }
@@ -262,11 +210,11 @@ class ServerFunctions {
 
     final childID = await _getChildID(child.name);
 
-    final query =  QueryBuilder<ParseObject>(ParseObject(_clsTestResult));
-    query.whereEqualTo(_fldUserID, userID);
-    query.whereEqualTo(_fldChildID, childID);
-    query.whereGreaterThanOrEqualsTo(_fldDateTime, from);
-    query.whereLessThanOrEqualTo(_fldDateTime, to);
+    final query =  QueryBuilder<ParseObject>(ParseObject(ParseTestResult.className));
+    query.whereEqualTo(ParseTestResult.userID, userID);
+    query.whereEqualTo(ParseTestResult.childID, childID);
+    query.whereGreaterThanOrEqualsTo(ParseTestResult.dateTime, from);
+    query.whereLessThanOrEqualTo(ParseTestResult.dateTime, to);
 
     final resultList = await query.find();
 
@@ -285,9 +233,9 @@ class ServerFunctions {
   Future<void> saveStatToServer(Child child) async {
     final childID = await _getChildID(child.name);
 
-    final query =  QueryBuilder<ParseObject>(ParseObject(_clsStat));
-    query.whereEqualTo(_fldUserID, userID);
-    query.whereEqualTo(_fldChildID, childID);
+    final query =  QueryBuilder<ParseObject>(ParseObject(ParseDecardStat.className));
+    query.whereEqualTo(ParseDecardStat.userID, userID);
+    query.whereEqualTo(ParseDecardStat.childID, childID);
 
     final statList = await query.find();
 
@@ -298,11 +246,11 @@ class ServerFunctions {
     for (var row in rows) {
       final cse = CardStatExchange.fromDbMap(row);
 
-      var stat = statList.firstWhereOrNull((stat) => stat.get(_fldFileGuid)! == cse.fileGuid && stat.get(_fldCardID)! == cse.cardID );
+      var stat = statList.firstWhereOrNull((stat) => stat.get(ParseDecardStat.fileGuid)! == cse.fileGuid && stat.get(ParseDecardStat.cardID)! == cse.cardID );
       if (stat == null) {
-        stat = ParseObject(_clsStat);
-        stat.set<String>(_fldUserID , userID);
-        stat.set<String>(_fldChildID, childID);
+        stat = ParseObject(ParseDecardStat.className);
+        stat.set<String>(ParseDecardStat.userID, userID);
+        stat.set<String>(ParseDecardStat.userID, childID);
       }
 
       final json = cse.toJson();
@@ -318,9 +266,9 @@ class ServerFunctions {
   Future<int> updateStatFromServer(Child child, int lastStatDate) async {
     final childID = await _getChildID(child.name);
 
-    final query =  QueryBuilder<ParseObject>(ParseObject(_clsStat));
-    query.whereEqualTo(_fldUserID, userID);
-    query.whereEqualTo(_fldChildID, childID);
+    final query =  QueryBuilder<ParseObject>(ParseObject(ParseDecardStat.className));
+    query.whereEqualTo(ParseDecardStat.userID, userID);
+    query.whereEqualTo(ParseDecardStat.childID, childID);
 
     final statList = await query.find();
     if (statList.isEmpty) return 0;

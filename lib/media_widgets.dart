@@ -27,6 +27,18 @@ UrlType getUrlType(String url) {
   return UrlType.localPath;
 }
 
+Future<void> playAudioUrl(String fileUrl) async {
+  final urlType = getUrlType(fileUrl);
+  if ( urlType == UrlType.httpUrl ) {
+    playAudioNet(fileUrl);
+    return;
+  }
+  if ( urlType == UrlType.localPath ) {
+    playAudioFile(fileUrl);
+    return;
+  }
+}
+
 Widget audioPanelFromUrl(String fileUrl, key){
   final urlType = getUrlType(fileUrl);
 

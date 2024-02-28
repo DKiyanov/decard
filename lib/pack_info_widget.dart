@@ -1,7 +1,7 @@
-import 'package:decard/common.dart';
 import 'package:flutter/material.dart';
 
 import 'card_model.dart';
+import 'common.dart';
 
 class PackInfoWidget extends StatelessWidget {
   final PacInfo pacInfo;

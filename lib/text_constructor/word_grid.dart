@@ -4,13 +4,21 @@ import 'package:flutter/material.dart';
 import 'boxes_area.dart';
 import 'drag_box_widget.dart';
 
-typedef DragBoxTap = void Function(DragBoxInfo<GridBoxExt> boxInfo, Offset position);
+typedef GridDragBoxTap = void Function(DragBoxInfo<GridBoxExt> boxInfo, int boxInfoIndex, Offset position, Offset globalPosition);
 typedef OnChangeHeight = void Function(double newHeight);
 
 class GridBoxExt{
-  final String label;
+  String label;
   final bool isGroup;
-  GridBoxExt({required this.label, this.isGroup = false});
+  DragBoxSpec spec;
+  GridBoxExt({required this.label, this.isGroup = false, this.spec = DragBoxSpec.none});
+}
+
+class WordGridInfo{
+  String label;
+  final bool isGroup;
+  bool visible;
+  WordGridInfo({required this.label, required this.isGroup, required this.visible});
 }
 
 class WordGridController {
@@ -49,16 +57,77 @@ class WordGridController {
 
     _gridState!._setVisibleWords(words);
   }
+
+  List<WordGridInfo>? getWordList() {
+    if (_gridState == null) return null;
+    if (!_gridState!.mounted) return null;
+
+    return _gridState!._getWordList();
+  }
+
+  void setWordList(List<WordGridInfo> wordList) {
+    if (_gridState == null) return;
+    if (!_gridState!.mounted) return;
+
+    _gridState!._setWordList(wordList);
+  }
+
+  String? getText() {
+    if (_gridState == null) return null;
+    if (!_gridState!.mounted) return null;
+
+    return _gridState!._getText();
+  }
+
+  void hideFocus() {
+    if (_gridState == null) return;
+    if (!_gridState!.mounted) return;
+
+    _gridState!._hideFocus();
+  }
+
+  void setFocus(int index) {
+    if (_gridState == null) return;
+    if (!_gridState!.mounted) return;
+
+    _gridState!._setFocus(index);
+  }
+
+  int? getFocusIndex() {
+    if (_gridState == null) return null;
+    if (!_gridState!.mounted) return null;
+
+    return _gridState!._getFocusIndex();
+  }
+
+  void setLabel(int index, String label) {
+    if (_gridState == null) return;
+    if (!_gridState!.mounted) return;
+
+    _gridState!._setLabel(index, label);
+  }
 }
 
 class WordGrid extends StatefulWidget {
   final WordGridController controller;
   final DragBoxBuilder<GridBoxExt>  onDragBoxBuild;
-  final DragBoxTap?     onDragBoxTap;
+  final GridDragBoxTap? onDragBoxTap;
+  final GridDragBoxTap? onDragBoxLongPress;
   final OnChangeHeight? onChangeHeight;
+  final VoidCallback?   onChangeBasement;
   final double          lineSpacing;
 
-  const WordGrid({required this.controller, required this.onDragBoxBuild, this.onDragBoxTap, this.onChangeHeight, this.lineSpacing = 5, Key? key}) : super(key: key);
+  const WordGrid({
+    required this.controller,
+    required this.onDragBoxBuild,
+    this.onDragBoxTap,
+    this.onDragBoxLongPress,
+    this.onChangeHeight,
+    this.onChangeBasement,
+    this.lineSpacing = 5,
+
+    Key? key
+  }) : super(key: key);
 
   @override
   State<WordGrid> createState() => _WordGridState();
@@ -117,6 +186,8 @@ class _WordGridState extends State<WordGrid> {
 
     final endText = text.substring(pos);
     _addText(endText);
+
+    widget.onChangeBasement?.call();
   }
 
   void _addText(String str) {
@@ -370,6 +441,7 @@ class _WordGridState extends State<WordGrid> {
 
     return BoxesArea<GridBoxExt>(
       controller: _boxAreaController,
+      calcMinimalEmptyHeight: false,
 
       onRebuildLayout: (BoxConstraints viewportConstraints, List<DragBoxInfo<GridBoxExt>> boxInfoList) {
         if (_width != viewportConstraints.maxWidth) {
@@ -382,7 +454,14 @@ class _WordGridState extends State<WordGrid> {
 
       onBoxTap: (DragBoxInfo<GridBoxExt>? boxInfo, Offset position, Offset globalPosition) async {
         if (boxInfo == null) return;
-        widget.onDragBoxTap!.call(boxInfo, boxInfo.data.position);
+        final boxInfoIndex = _boxInfoList.indexOf(boxInfo);
+        widget.onDragBoxTap!.call(boxInfo, boxInfoIndex, boxInfo.data.position, globalPosition);
+      },
+
+      onBoxLongPress: (DragBoxInfo<GridBoxExt>? boxInfo, Offset position, Offset globalPosition) async {
+        if (boxInfo == null || widget.onDragBoxLongPress == null) return;
+        final boxInfoIndex = _boxInfoList.indexOf(boxInfo);
+        widget.onDragBoxLongPress!.call(boxInfo, boxInfoIndex, boxInfo.data.position, globalPosition);
       },
 
       onChangeSize: (double prevWidth, double newWidth, double prevHeight, double newHeight){
@@ -413,6 +492,7 @@ class _WordGridState extends State<WordGrid> {
       }
     }
 
+    widget.onChangeBasement?.call();
     _boxAreaController.refresh();
   }
 
@@ -432,7 +512,7 @@ class _WordGridState extends State<WordGrid> {
   }
 
   void _setVisibleWords(String words) {
-    final wordList = words.split('\n');
+    final wordList = words.isEmpty ? [] : words.split('\n');
 
     for (var boxInfo in _boxInfoList) {
       bool newVisible = false;
@@ -453,7 +533,90 @@ class _WordGridState extends State<WordGrid> {
          _createDragBoxInfo(word)
       );
     }
+
+    widget.onChangeBasement?.call();
     _refresh();
+  }
+
+  List<WordGridInfo> _getWordList() {
+    final result = <WordGridInfo>[];
+
+    for (var boxInfo in _boxInfoList) {
+      result.add(WordGridInfo(
+        label   : boxInfo.data.ext.label,
+        isGroup : boxInfo.data.ext.isGroup,
+        visible : boxInfo.data.visible
+      ));
+    }
+
+    return result;
+  }
+
+  void _setWordList(List<WordGridInfo> wordList) {
+    _boxInfoList.clear();
+    for (var wordInfo in wordList) {
+      if (wordInfo.isGroup) {
+        _boxInfoList.add(
+          DragBoxInfo.create<GridBoxExt>(
+            builder: widget.onDragBoxBuild,
+            ext: GridBoxExt(label: wordInfo.label, isGroup: true)
+          )
+        );
+      } else {
+        _boxInfoList.add(
+          DragBoxInfo.create<GridBoxExt>(
+            builder: widget.onDragBoxBuild,
+            ext: GridBoxExt(label: wordInfo.label),
+          )
+        );
+      }
+    }
+
+    widget.onChangeBasement?.call();
+    _refresh();
+  }
+
+  void _hideFocus() {
+    final focusBoxInfo = _boxInfoList.firstWhereOrNull((boxInfo) => boxInfo.data.ext.spec == DragBoxSpec.focus);
+    if (focusBoxInfo == null) return;
+    focusBoxInfo.data.ext.spec = DragBoxSpec.none;
+    focusBoxInfo.setState();
+  }
+
+  void _setFocus(int index) {
+    _hideFocus();
+    final boxInfo = _boxInfoList[index];
+    boxInfo.data.ext.spec = DragBoxSpec.focus;
+    boxInfo.setState();
+  }
+
+  int? _getFocusIndex() {
+    return _boxInfoList.indexWhere((boxInfo) => boxInfo.data.ext.spec == DragBoxSpec.focus);
+  }
+
+  void _setLabel(int index, String label) {
+    final boxInfo = _boxInfoList[index];
+    boxInfo.data.ext.label = label;
+    widget.onChangeBasement?.call();
+    boxInfo.setState();
+  }
+
+  String _getText() {
+    final resStrList = <String>[];
+
+    for (var boxInfo in _boxInfoList) {
+      if (boxInfo.data.ext.isGroup) {
+        resStrList.add('<|${boxInfo.data.ext.label}|>');
+        continue;
+      }
+
+      String str = boxInfo.data.ext.label;
+      if (str.contains(' ')) str = "'$str'";
+      if (!boxInfo.data.visible) str = '~$str';
+      resStrList.add(str);
+    }
+
+    return resStrList.join(' ');
   }
 
   DragBoxInfo<GridBoxExt> _createDragBoxInfo(String word){

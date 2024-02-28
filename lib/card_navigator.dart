@@ -92,18 +92,20 @@ class _CardNavigatorState extends State<CardNavigator> {
   void onChange() {
     if (!mounted) return;
 
-    if (_selFile == null || _selFile!.jsonFileID != widget.cardController.card!.pacInfo.jsonFileID) {
-      final file =  _fileList.firstWhereOrNull((file) => file.jsonFileID == widget.cardController.card!.pacInfo.jsonFileID);
+    if (widget.cardController.cardKeyInfo == null) return;
+
+    if (_selFile == null || _selFile!.jsonFileID != widget.cardController.cardKeyInfo!.jsonFileID) {
+      final file =  _fileList.firstWhereOrNull((file) => file.jsonFileID == widget.cardController.cardKeyInfo!.jsonFileID);
       if (file ==null) return;
 
       setSelFile(file);
     }
 
-    if (_selCard == null || _selCard!.jsonFileID != widget.cardController.card!.head.jsonFileID || _selCard!.cardID != widget.cardController.card!.head.cardID) {
-      _selCard = _selFileCardList.firstWhere((card) => card.cardID == widget.cardController.card!.head.cardID);
+    if (_selCard == null || _selCard!.jsonFileID != widget.cardController.cardKeyInfo!.jsonFileID || _selCard!.cardID != widget.cardController.cardKeyInfo!.cardID) {
+      _selCard = _selFileCardList.firstWhere((card) => card.cardID == widget.cardController.cardKeyInfo!.cardID);
     }
 
-    _selBodyNum = widget.cardController.card!.body.bodyNum;
+    _selBodyNum = widget.cardController.cardKeyInfo!.bodyNum;
     setState(() {});
   }
 
@@ -358,12 +360,12 @@ class _CardNavigatorTreeState extends State<CardNavigatorTree> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.cardController.card == null) {
+    if (widget.cardController.cardKeyInfo == null) {
       return Container();
     }
 
     if (widget.mode == NavigatorMode.singlePack || widget.mode == NavigatorMode.noPackHead) {
-      final file = widget.cardNavigatorData.fileList.firstWhere((file) => file.jsonFileID == widget.cardController.card!.head.jsonFileID);
+      final file = widget.cardNavigatorData.fileList.firstWhere((file) => file.jsonFileID == widget.cardController.cardKeyInfo!.jsonFileID);
       final cardList = widget.cardNavigatorData.cardList.where((card) => card.jsonFileID == file.jsonFileID).toList();
 
       return Scrollbar(
@@ -443,9 +445,9 @@ class _TreeFileWidgetState extends State<_TreeFileWidget> {
 
   void onChange() {
     if (!mounted) return;
-    if (widget.cardController.card == null) return;
+    if (widget.cardController.cardKeyInfo == null) return;
 
-    final isSelected = widget.cardController.card!.head.jsonFileID == widget.jsonFileID;
+    final isSelected = widget.cardController.cardKeyInfo!.jsonFileID == widget.jsonFileID;
 
     if (_isSelected != isSelected) {
       setState(() {
@@ -560,13 +562,13 @@ class _TreeCardWidgetState extends State<_TreeCardWidget> {
 
   void onChange() {
     if (!mounted) return;
-    if (widget.cardController.card == null) return;
+    if (widget.cardController.cardKeyInfo == null) return;
 
-    if (widget.cardController.card!.head.cardID == widget.card.cardID) {
-      if (!_isSelected || _selBodyNum != widget.cardController.card!.body.bodyNum) {
+    if (widget.cardController.cardKeyInfo!.cardID == widget.card.cardID) {
+      if (!_isSelected || _selBodyNum != widget.cardController.cardKeyInfo!.bodyNum) {
         setState(() {
           _isSelected = true;
-          _selBodyNum = widget.cardController.card!.body.bodyNum;
+          _selBodyNum = widget.cardController.cardKeyInfo!.bodyNum;
         });
 
         if (_controller.isAssigned) {
@@ -674,9 +676,9 @@ class _TreeGroupWidgetState extends State<_TreeGroupWidget> {
 
   void onChange() {
     if (!mounted) return;
-    if (widget.cardController.card == null) return;
+    if (widget.cardController.cardKeyInfo == null) return;
 
-    final isSelected = widget.cardList.any((card) => card.cardID == widget.cardController.card!.head.cardID);
+    final isSelected = widget.cardList.any((card) => card.cardID == widget.cardController.cardKeyInfo!.cardID);
 
     if (_isSelected != isSelected) {
       setState(() {

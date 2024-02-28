@@ -290,8 +290,6 @@ class RegDifficulty {
   };
 }
 
-typedef ApplySetItemToDB = Future<void> Function(DbSource dbSource, RegCardSet set, int setIndex);
-
 class Regulator {
   static const int maxQuality               = 100; // Maximum learning quality
   static const int completelyStudiedQuality = 99;
@@ -299,8 +297,6 @@ class Regulator {
 
   static const int lowDifficultyLevel  = 0;
   static const int highDifficultyLevel = 5;
-
-  static late ApplySetItemToDB? applySetItemToDB;
 
   final RegOptions options;
   final List<RegCardSet> cardSetList;
@@ -442,7 +438,48 @@ class Regulator {
   }
 
   Future<void> _applySetItemToDB(DbSource dbSource, RegCardSet set, int setIndex) async {
-    applySetItemToDB?.call(dbSource, set, setIndex);
+    final jsonFileID = dbSource.tabJsonFile.fileGuidToJsonFileId(set.fileGUID);
+
+    if (jsonFileID == null) return;
+
+    final cardHeadRows = await dbSource.tabCardHead.getFileRows(jsonFileID: jsonFileID);
+
+    for (var cardHeadRow in cardHeadRows) {
+      final cardID    = cardHeadRow[TabCardHead.kCardID ] as int;
+      final cardKey   = cardHeadRow[TabCardHead.kCardKey] as String;
+      final cardGroup = cardHeadRow[TabCardHead.kGroup  ] as String;
+
+      final cardTags = await dbSource.tabCardTag.getCardTags(jsonFileID: jsonFileID, cardID: cardID);
+
+      if (set.cards!.isNotEmpty  && !set.cards!.contains(cardKey   )) continue;
+      if (set.groups!.isNotEmpty && !set.groups!.contains(cardGroup)) continue;
+
+      if (set.tags!.isNotEmpty) {
+        var containTag = false;
+        for (var tag in cardTags) {
+          if (set.tags!.contains(tag)){
+            containTag = true;
+            break;
+          }
+        }
+        if (!containTag) continue;
+      }
+
+      if (set.andTags!.isNotEmpty) {
+        if (cardTags.isEmpty) continue;
+
+        var containAllTag = true;
+        for (var tag in set.andTags!) {
+          if (!cardTags.contains(tag)){
+            containAllTag = false;
+            break;
+          }
+        }
+        if (!containAllTag) continue;
+      }
+
+      await dbSource.tabCardHead.setRegulatorPatchOnCard(jsonFileID: jsonFileID, cardID: cardID, regulatorSetIndex: setIndex, exclude: set.exclude);
+    }
   }
 
 }

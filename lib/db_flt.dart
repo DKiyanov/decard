@@ -288,6 +288,8 @@ class TabCardHeadFlt extends TabCardHead {
       "${TabCardHead.kGroup}         TEXT,"
       "${TabCardHead.kBodyCount}     INTEGER,"
       "${TabCardHead.kExclude}       INTEGER,"
+      "${TabCardHead.kTemplateIndex} INTEGER,"
+      "${TabCardHead.kSourceIndex}   INTEGER,"
       "${TabCardHead.kSourceRowId}   INTEGER,"
       "${TabCardHead.kRegulatorSetIndex} INTEGER"
       ")";
@@ -309,6 +311,10 @@ class TabCardHeadFlt extends TabCardHead {
     required int    difficulty,
     required String cardGroupKey,
     required int    bodyCount,
+    required int    cardListIndex,
+
+    int? templateIndex,
+    int? sourceIndex,
     int? sourceRowId,
   }) async {
     final Map<String, Object?> row = {
@@ -320,6 +326,8 @@ class TabCardHeadFlt extends TabCardHead {
       TabCardHead.kGroup      : cardGroupKey,
       TabCardHead.kBodyCount  : bodyCount,
       TabCardHead.kExclude    : 0,
+      TabCardHead.kTemplateIndex: templateIndex,
+      TabCardHead.kSourceIndex: sourceIndex,
       TabCardHead.kSourceRowId: sourceRowId,
     };
 
@@ -482,6 +490,7 @@ class TabCardLinkFlt extends TabCardLink {
       "${TabCardLink.kLinkID}         INTEGER PRIMARY KEY AUTOINCREMENT,"
       "${TabCardLink.kJsonFileID}     INTEGER,"
       "${TabCardLink.kCardID}         INTEGER,"
+      "${TabCardLink.kLinkIndex}      INTEGER,"
       "${TabCardLink.kQualityName}    TEXT"
       ")";
 
@@ -494,15 +503,25 @@ class TabCardLinkFlt extends TabCardLink {
   }
 
   @override
-  Future<int> insertRow({ required int jsonFileID, required int cardID, required String qualityName}) async {
+  Future<int> insertRow({required int jsonFileID, required int cardID, required String qualityName, required int linkIndex}) async {
     final Map<String, Object?> row = {
       TabCardLink.kJsonFileID     : jsonFileID,
       TabCardLink.kCardID         : cardID,
       TabCardLink.kQualityName    : qualityName,
+      TabCardLink.kLinkIndex      : linkIndex,
     };
 
     final ret = await db.insert(TabCardLink.tabName, row);
     return ret;
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getFileRowList({required int jsonFileID}) async {
+    final rows = await db.query(TabCardLink.tabName,
+        where     : '${TabCardLink.kJsonFileID} = ?',
+        whereArgs : [jsonFileID]
+    );
+    return rows;
   }
 }
 
@@ -531,6 +550,15 @@ class TabCardLinkTagFlt extends TabCardLinkTag {
     };
 
     await db.insert(TabCardLinkTag.tabName, row);
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getFileRowList({required int jsonFileID}) async {
+    final rows = await db.query(TabCardLinkTag.tabName,
+        where     : '${TabCardLinkTag.kJsonFileID} = ?',
+        whereArgs : [jsonFileID]
+    );
+    return rows;
   }
 }
 
@@ -582,6 +610,24 @@ class TabCardBodyFlt extends TabCardBody {
     });
 
     return jsonMap;
+  }
+
+  @override
+  Future<List<BodyKey>> getFileKeyList({required int jsonFileID}) async {
+    final result = <BodyKey>[];
+
+    final rows = await db.query(TabCardBody.tabName,
+        where     : '${TabCardBody.kJsonFileID} = ?',
+        whereArgs : [jsonFileID]
+    );
+
+    if (rows.isEmpty) return result;
+
+    for (var row in rows) {
+      result.add( BodyKey(row[TabCardBody.kCardID] as int, row[TabCardBody.kBodyNum] as int));
+    }
+
+    return result;
   }
 }
 

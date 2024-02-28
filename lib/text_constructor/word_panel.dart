@@ -5,18 +5,10 @@ import 'package:collection/collection.dart';
 import 'boxes_area.dart';
 import 'drag_box_widget.dart';
 
-typedef DragBoxTap = Future<String?> Function(String label, Widget child, Offset position, Offset globalPosition);
+typedef DragBoxTap = Future<String?> Function(String label, Widget child, int pos, Offset position, Offset globalPosition);
 typedef OnChangeHeight = void Function(double newHeight);
 
-enum DragBoxSpec {
-  none,
-  move,
-  canDrop,
-  tapInProcess,
-  focus,
-  insertPos,
-  editPos,
-}
+
 
 class PanelBoxExt{
   String label;
@@ -29,7 +21,7 @@ class WordPanelController {
 
   final VoidCallback? onChange;
 
-  final bool canMoveWord;
+  bool canMoveWord;
   final bool noCursor;
   final bool focusAsCursor;
 
@@ -70,6 +62,14 @@ class WordPanelController {
     if (!_panelState!.mounted) return null;
 
     return _panelState!._getBoxAtPos(pos);
+  }
+
+  List<String> getWordList(){
+    if (_panelState == null) return [];
+    if (!_panelState!.mounted) return [];
+
+    final wordList= _panelState!._getWordList();
+    return wordList;
   }
 
   String _getText(){
@@ -169,6 +169,13 @@ class WordPanelController {
     _panelState!._deleteWord(fromPos, count);
   }
 
+  void deleteWordEverywhere(String word) {
+    if (_panelState == null) return;
+    if (!_panelState!.mounted) return;
+
+    _panelState!._deleteWordEverywhere(word);
+  }
+
   void insertText(int pos, String text) {
     if (_panelState == null) return;
     if (!_panelState!.mounted) return;
@@ -181,6 +188,13 @@ class WordPanelController {
     if (!_panelState!.mounted) return;
 
     _panelState!._insertWord(pos, word);
+  }
+
+  void appendWord(String word) {
+    if (_panelState == null) return;
+    if (!_panelState!.mounted) return;
+
+    _panelState!._appendWord(word);
   }
 
   void refreshPanel() {
@@ -346,7 +360,7 @@ class WordPanelState extends State<WordPanel> {
       }
 
       nextPosition = Offset(position.dx + boxInfo.size.width, position.dy);
-      if (nextPosition.dx >= width){
+      if (nextPosition.dx >= width && position.dx > 0){
         position = Offset(0, position.dy + _wordBoxHeight + widget.lineSpacing);
         nextPosition = Offset(position.dx + boxInfo.size.width, position.dy);
       }
@@ -380,12 +394,18 @@ class WordPanelState extends State<WordPanel> {
     }
   }
 
-  String _getText(){
+  List<String> _getWordList() {
     final wordList = <String>[];
 
     for (var i = 0; i < _boxInfoList.length; i++) {
       wordList.add(_boxInfoList[i].data.ext.label);
     }
+
+    return wordList;
+  }
+
+  String _getText(){
+    final wordList = _getWordList();
 
     final ret = WordPanelController.wordListToText(wordList);
     return ret;
@@ -408,6 +428,11 @@ class WordPanelState extends State<WordPanel> {
     widget.controller.onChange?.call();
   }
 
+  void _deleteWordEverywhere(String word) {
+    _boxInfoList.removeWhere((boxInfo) => boxInfo.data.ext.label == word);
+    widget.controller.onChange?.call();
+  }
+
   void _insertText(int pos, String text){
     _boxInfoList.insertAll(pos, _splitText(text));
     widget.controller.onChange?.call();
@@ -415,6 +440,11 @@ class WordPanelState extends State<WordPanel> {
 
   void _insertWord(int pos, String word) {
     _boxInfoList.insert(pos, _createDragBoxInfo(label: word));
+    widget.controller.onChange?.call();
+  }
+
+  void _appendWord(String word) {
+    _boxInfoList.add(_createDragBoxInfo(label: word));
     widget.controller.onChange?.call();
   }
 
@@ -516,6 +546,7 @@ class WordPanelState extends State<WordPanel> {
 
     return BoxesArea<PanelBoxExt>(
       controller: _boxAreaController,
+      calcMinimalEmptyHeight: true,
 
       onRebuildLayout: (BoxConstraints viewportConstraints, List<DragBoxInfo<PanelBoxExt>> boxInfoList) {
         if (_width != viewportConstraints.maxWidth) {
@@ -752,7 +783,9 @@ class WordPanelState extends State<WordPanel> {
       boxInfo.data.ext.spec = DragBoxSpec.tapInProcess;
       boxInfo.setState();
 
-      final newLabel = await widget.onDragBoxTap!.call(boxInfo.data.ext.label, boxInfo.data.subWidget!, position, globalPosition);
+      final pos = _boxInfoList.indexOf(boxInfo);
+
+      final newLabel = await widget.onDragBoxTap!.call(boxInfo.data.ext.label, boxInfo.data.subWidget!, pos, position, globalPosition);
       if (newLabel != null ) {
         if (boxInfo.data.ext.label != newLabel) {
           boxInfo.data.ext.label = newLabel;
@@ -784,7 +817,9 @@ class WordPanelState extends State<WordPanel> {
     if (onDragTap == null) return;
     if (boxInfo == null) return;
 
-    final newLabel = await onDragTap.call(boxInfo.data.ext.label, boxInfo.data.subWidget!, position, globalPosition);
+    final pos = _boxInfoList.indexOf(boxInfo);
+
+    final newLabel = await onDragTap.call(boxInfo.data.ext.label, boxInfo.data.subWidget!, pos, position, globalPosition);
     if (newLabel == null || boxInfo.data.ext.label == newLabel) return;
 
     boxInfo.data.ext.label = newLabel;

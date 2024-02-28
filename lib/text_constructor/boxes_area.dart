@@ -41,6 +41,7 @@ class BoxesAreaController<T> {
 class BoxesArea<T> extends StatefulWidget {
   final BoxesAreaController<T> controller;
   final OnRebuildLayout<T>   onRebuildLayout;
+  final bool calcMinimalEmptyHeight;
   final DragBoxTap<T>?       onBoxTap;
   final OnChangeSize?     onChangeSize;
 
@@ -54,6 +55,7 @@ class BoxesArea<T> extends StatefulWidget {
   const BoxesArea({
     required this.controller,
     required this.onRebuildLayout,
+    this.calcMinimalEmptyHeight = false,
     this.onBoxTap,
     this.onChangeSize,
 
@@ -100,6 +102,7 @@ class _BoxesAreaState<T> extends State<BoxesArea<T>> {
 
     return LayoutBuilder(builder: (BuildContext context, BoxConstraints viewportConstraints) {
       WidgetsBinding.instance.addPostFrameCallback((_){
+        if (!mounted) return;
 
         if (_viewportSize.width != viewportConstraints.maxWidth || _viewportSize.height != viewportConstraints.maxHeight) {
           _viewportSize = Size(viewportConstraints.maxWidth, viewportConstraints.maxHeight);
@@ -182,6 +185,17 @@ class _BoxesAreaState<T> extends State<BoxesArea<T>> {
       final bottom = boxInfo.data.position.dy + boxInfo.size.height;
       if (height < bottom) {
         height = bottom;
+      }
+    }
+
+    if (widget.calcMinimalEmptyHeight && _controller.boxInfoList.isEmpty && _controller.techBoxInfoList != null) {
+      for (var boxInfo in _controller.techBoxInfoList!) {
+        if (width < boxInfo.size.width) {
+          width = boxInfo.size.width;
+        }
+        if (height < boxInfo.size.height) {
+          height = boxInfo.size.height;
+        }
       }
     }
 

@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'dart:ui';
-import 'regulator.dart';
+import 'package:decard/regulator.dart';
+
 import 'package:path/path.dart' as path_util;
 
 import 'db.dart';
@@ -48,6 +49,9 @@ class CardSource {
   String get data => _data!;
   String get source => '$_type:$_data';
 
+  bool get isPackFile => _isPackFile();
+  bool get isLink     => _isLink();
+
   CardSource(String source) {
     _type = FileExt.getContentExt(source);
     _data = FileExt.getContentData(_type!, source);
@@ -73,11 +77,29 @@ class CardSource {
       }
     }
   }
+
+  bool _isLink() {
+    if ([FileExt.contentText].contains(_type)) return false;
+    if (_hasLinkPrefix()) return true;
+    return false;
+  }
+
+  bool _isPackFile() {
+    if ([FileExt.contentText, FileExt.contentUnknown].contains(_type)) return false;
+    if (_hasLinkPrefix()) return false;
+    return true;
+  }
+
+  bool _hasLinkPrefix() {
+    final prefix = data.split('://').first.toLowerCase();
+    if (["http", "https"].contains(prefix)) return true;
+    return false;
+  }
 }
 
 class FileExt {
   static const String textFile = "text:";
-  static const txtExtList    = <String>['txt', 'md', 'html'];
+  static const txtExtList    = <String>[contentTxt, contentMarkdown, contentHtml, contentTextConstructor];
   static const imageExtList  = <String>['apng', 'avif', 'gif', 'jpg', 'jpeg', 'jfif', 'pjpeg', 'pjp', 'png', 'svg', 'webp', 'bmp', 'tif', 'tiff'];
   static const audioExtList  = <String>['m4a', 'flac', 'mp3', 'mp4', 'wav', 'wma', 'aac'];
   static const videoExtList  = <String>['mp4'];
@@ -89,7 +111,7 @@ class FileExt {
   static const contentVideo    = 'video';
   static const contentHtml     = 'html';
   static const contentMarkdown = 'md';
-  static const contentTextConstructor = 'decardtc';
+  static const contentTextConstructor = 'dtc';
   static const contentTxt      = 'txt'; // text file
   static const contentText     = 'text'; // text in field
   static const contentValues    = <String>[contentImage, contentAudio, contentVideo, contentHtml, contentMarkdown, contentTxt, contentText];
@@ -98,7 +120,7 @@ class FileExt {
   static String getFileExt(String fileName) {
     final fileExt = path_util.extension(fileName);
     if (fileExt.isEmpty) return '';
-    if (fileExt.length > 6) return '';
+    if (fileExt.length > 9) return '';
 
     final extension = fileExt.toLowerCase().substring(1);
 
@@ -286,6 +308,9 @@ class CardData {
     this.regSet,
   });
 
+  static int? _createSelectedBodyNum;
+  static int? get createSelectedBodyNum => _createSelectedBodyNum;
+
   static Future<CardData> create(
     DbSource dbSource,
     Regulator regulator,
@@ -296,7 +321,7 @@ class CardData {
       CardSetBody setBody = CardSetBody.random,
     }
   ) async {
-
+    _createSelectedBodyNum = null;
     final card = await _CardGenerator.createCard(dbSource, regulator, jsonFileID, cardID, bodyNum: bodyNum, setBody: setBody);
     return card;
   }
@@ -412,6 +437,8 @@ class _CardGenerator {
   }
 
   static Future<void> _setBodyNum(int bodyNum) async {
+    CardData._createSelectedBodyNum = bodyNum;
+
     final bodyData = (await _dbSource!.tabCardBody.getRow(jsonFileID: _cardHead!.jsonFileID, cardID: _cardHead!.cardID, bodyNum: bodyNum))!;
     await CardBody.prepareMap(_dbSource!, _pacInfo!.jsonFileID, bodyData, _convertMap);
     _cardBody = CardBody.fromMap(bodyData);

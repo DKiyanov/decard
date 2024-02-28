@@ -10,6 +10,7 @@ import 'card_demo.dart';
 import 'card_widget.dart';
 import 'child.dart';
 import 'common.dart';
+import 'common_func.dart';
 
 class DeCard extends StatefulWidget {
   static Future<Object?> navigatorPush(BuildContext context, Child child) async {

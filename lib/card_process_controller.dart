@@ -4,7 +4,7 @@ import 'package:decard/regulator.dart';
 
 import 'package:sqflite/sqflite.dart';
 
-import 'common.dart';
+import 'common_func.dart';
 import 'db.dart';
 import 'card_model.dart';
 

@@ -6,6 +6,12 @@ import 'package:async/async.dart';
 
 typedef GetDeviceID = Future<String> Function();
 
+enum LoginMode{
+  masterParent,
+  slaveParent,
+  child
+}
+
 class LoginInvite extends StatefulWidget {
   static Future<Object> navigate({required BuildContext context, required ParseConnect connect, required LoginMode loginMode, required GetDeviceID getDeviceID,  required String title, VoidCallback? onLoginOk, VoidCallback? onLoginCancel}) async {
     return Navigator.push(context, MaterialPageRoute(builder: (_) => LoginInvite(connect: connect, loginMode: loginMode, getDeviceID: getDeviceID, title: title, onLoginOk: onLoginOk, onLoginCancel: onLoginCancel)));

@@ -33,6 +33,7 @@ abstract class TabJsonFile {
   static const String kJsonFileID   = 'jsonFileID';
   static const String kSourceFileID = 'sourceFileID';
   static const String kRootPath     = 'rootPath';
+  static const String kLoadTime     = 'loadTime';
   static const String kTitle        = DjfFile.title;
   static const String kGuid         = DjfFile.guid;
   static const String kVersion      = DjfFile.version;
@@ -114,6 +115,10 @@ abstract class TabCardHead {
   static const String kGroup         = 'groupKey'; // map from DjfCard.group;
   static const String kBodyCount     = 'bodyCount'; // number of records in the DjfCard.bodyList
   static const String kExclude       = 'exclude'; // card excluded from use
+
+  static const String kCardListIndex = 'cardListIndex'; // row number in cardList of template cardList or root cardList
+  static const String kTemplateIndex = 'templateIndex'; // row number in templateList
+  static const String kSourceIndex   = 'sourceIndex'; // template source row index in templatesSources
   static const String kSourceRowId   = 'sourceRowId'; // template source row from which was generated card
 
   static const String kRegulatorSetIndex   = 'regulatorSetIndex'; // index of set in Regulator.setList
@@ -128,6 +133,10 @@ abstract class TabCardHead {
     required int    difficulty,
     required String cardGroupKey,
     required int    bodyCount,
+    required int    cardListIndex,
+
+    int? templateIndex,
+    int? sourceIndex,
     int? sourceRowId,
   });
 
@@ -164,13 +173,15 @@ abstract class TabCardLink {
   static const String tabName         = 'CardLink';
 
   static const String kLinkID         = 'linkID';
+  static const String kLinkIndex      = 'linkIndex'; // row num in card.upLinks list
   static const String kJsonFileID     = TabJsonFile.kJsonFileID;
   static const String kCardID         = TabCardHead.kCardID;
   static const String kQualityName    = 'qualityName';
 
   Future<void> deleteJsonFile(int jsonFileID);
 
-  Future<int> insertRow({required int jsonFileID, required int cardID, required String qualityName});
+  Future<int> insertRow({required int jsonFileID, required int cardID, required String qualityName, required int linkIndex});
+  Future<List<Map<String, dynamic>>> getFileRowList({required int jsonFileID});
 }
 
 abstract class TabCardLinkTag {
@@ -184,6 +195,13 @@ abstract class TabCardLinkTag {
   Future<void> deleteJsonFile(int jsonFileID);
 
   Future<void> insertRow({ required int jsonFileID, required int linkId, required String tag});
+  Future<List<Map<String, dynamic>>> getFileRowList({required int jsonFileID});
+}
+
+class BodyKey {
+  final int cardID;
+  final int bodyNum;
+  BodyKey(this.cardID, this.bodyNum);
 }
 
 abstract class TabCardBody {
@@ -212,6 +230,8 @@ abstract class TabCardBody {
 
     return jsonMap;
   }
+
+  Future<List<BodyKey>> getFileKeyList({required int jsonFileID});
 }
 
 abstract class TabTemplateSource {

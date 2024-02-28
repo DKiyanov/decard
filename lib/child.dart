@@ -12,7 +12,7 @@ import 'package:path/path.dart' as path_util;
 import 'card_controller.dart';
 import 'card_model.dart';
 import 'card_process_controller.dart';
-import 'common.dart';
+import 'common_func.dart';
 import 'db.dart';
 import 'local_pack_load.dart';
 

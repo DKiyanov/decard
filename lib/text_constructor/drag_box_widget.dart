@@ -2,6 +2,15 @@ import 'package:flutter/material.dart';
 
 typedef DragBoxBuilder<T> = Widget Function(BuildContext context, T ext);
 
+enum DragBoxSpec {
+  none,
+  move,
+  canDrop,
+  tapInProcess,
+  focus,
+  insertPos,
+  editPos,
+}
 
 class DragBoxData<T>{
   Offset position;
@@ -48,6 +57,7 @@ class DragBoxInfo<T>{
 
   bool refreshSize() {
     final boxKey = widget.key as GlobalKey<DragBoxState>;
+    if (boxKey.currentContext == null) return false;
     final renderBox = boxKey.currentContext!.findRenderObject() as RenderBox;
 
     if (size.width != renderBox.size.width || size.height != renderBox.size.height) {

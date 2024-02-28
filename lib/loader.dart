@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:path/path.dart' as path_util;
 
+import 'card_model.dart';
 import 'db.dart';
 import 'decardj.dart';
 import 'media_widgets.dart';
@@ -141,12 +142,16 @@ class DataLoader {
   }
 
   Future<void> _processTemplateList({required int jsonFileID, required List templateList, required List sourceList, required List<String> cardKeyList}) async {
-    for (var template in templateList) {
+    for(int templateListIndex = 0; templateListIndex < templateList.length; templateListIndex ++) {
+      final template = templateList[templateListIndex];
+
       final templateName          = template[DjfCardTemplate.templateName] as String;
       final cardTemplateList      = template[DjfCardTemplate.cardTemplateList];
       final cardsTemplatesJsonStr = jsonEncode(cardTemplateList);
 
-      for (Map<String, dynamic> sourceRow in sourceList) {
+      for( int sourceListIndex = 0; sourceListIndex < sourceList.length; sourceListIndex ++) {
+        final sourceRow = sourceList[sourceListIndex] as Map<String, dynamic>;
+
         if (sourceRow[DjfTemplateSource.templateName] == templateName) {
 
           final sourceRowId = await dbSource.tabTemplateSource.insertRow(jsonFileID: jsonFileID, source: sourceRow);
@@ -158,14 +163,16 @@ class DataLoader {
           });
 
           final cardList = jsonDecode(curTemplate) as List;
-          await _processCardList(jsonFileID: jsonFileID, cardList : cardList, cardKeyList : cardKeyList, sourceRowId: sourceRowId);
+          await _processCardList(jsonFileID: jsonFileID, cardList : cardList, cardKeyList : cardKeyList, templateIndex: templateListIndex, sourceIndex: sourceListIndex, sourceRowId: sourceRowId);
         }
       }
     }
   }
 
-  Future<void> _processCardList({required int jsonFileID, required List cardList, required List<String> cardKeyList, int? sourceRowId}) async {
-    for (Map<String, dynamic> card in cardList) {
+  Future<void> _processCardList({required int jsonFileID, required List cardList, required List<String> cardKeyList, int? templateIndex, int? sourceIndex, int? sourceRowId}) async {
+    for(int cardLisIndex = 0; cardLisIndex < cardList.length; cardLisIndex ++) {
+      final card = cardList[cardLisIndex] as Map<String, dynamic>;
+
       final String cardKey = card[DjfCard.id];
 
       if (cardKey.isEmpty) continue; // the card must have a unique identifier within the file
@@ -185,6 +192,9 @@ class DataLoader {
         difficulty   : card[DjfCard.difficulty]??0,
         cardGroupKey : groupKey,
         bodyCount    : bodyList.length,
+        cardListIndex: cardLisIndex,
+        templateIndex: templateIndex,
+        sourceIndex  : sourceIndex,
         sourceRowId  : sourceRowId,
       );
 
@@ -220,11 +230,14 @@ class DataLoader {
   Future<void> _processCardLinkList({ required int jsonFileID, required int cardID, required List? linkList }) async {
     if (linkList == null) return;
 
-    for (var link in linkList) {
+    for (int linkListIndex = 0; linkListIndex < linkList.length; linkListIndex ++) {
+      final link = linkList[linkListIndex];
+
       final linkID = await dbSource.tabCardLink.insertRow(
-          jsonFileID  : jsonFileID,
-          cardID      : cardID,
-          qualityName : link[DjfUpLink.qualityName],
+        jsonFileID  : jsonFileID,
+        cardID      : cardID,
+        qualityName : link[DjfUpLink.qualityName],
+        linkIndex   :  linkListIndex,
       );
 
       await _processCardLinkTagList( jsonFileID: jsonFileID, linkID: linkID, tagList: link[DjfUpLink.tags  ] as List?);
@@ -301,3 +314,140 @@ class DataLoader {
     await dbSource.tabFileUrlMap.deleteJsonFile(jsonFileID);
   }
 }
+
+class DbValidatorResult {
+  final String path;
+  final String message;
+  final int?   sourceIndex;
+
+  DbValidatorResult(this.path, this.message, this.sourceIndex);
+}
+
+// pack json file validator
+class DbValidator {
+  DbSource dbSource;
+  int _jsonFileID = 0;
+
+  DbValidator(this.dbSource);
+
+
+  Future<List<DbValidatorResult>> checkJsonFile(int jsonFileID) async {
+    _jsonFileID = jsonFileID;
+
+    final result = <DbValidatorResult>[];
+
+    final tagList       = await dbSource.tabCardTag.getFileTagList(jsonFileID: jsonFileID);
+    final cardKeyList   = await dbSource.tabCardHead.getFileCardKeyList(jsonFileID: jsonFileID);
+    final cardGroupList = await dbSource.tabCardHead.getFileGroupList(jsonFileID: jsonFileID);
+    final qualityList   = await dbSource.tabQualityLevel.getLevelNameList(jsonFileID: jsonFileID);
+
+    final linkTagRowList = await dbSource.tabCardLinkTag.getFileRowList(jsonFileID: jsonFileID);
+    final linkHeadRowList = await dbSource.tabCardLink.getFileRowList(jsonFileID: jsonFileID);
+
+    for (var linkRow in linkTagRowList) {
+      final linkTag = linkRow[TabCardLinkTag.kTag] as String;
+      String? fieldName;
+      String? message;
+
+      // card upLink cards
+      if (linkTag.startsWith(DjfUpLink.cardTagPrefix)) {
+        final cardKey = linkTag.substring(DjfUpLink.cardTagPrefix.length);
+        if (cardKeyList.contains(cardKey)) continue;
+        fieldName = DjfUpLink.cards;
+        message = 'Нет карточки с идентификатором "$cardKey" в пакете';
+      }
+
+      // card upLink groups
+      if (linkTag.startsWith(DjfUpLink.groupTagPrefix)) {
+        final cardGroup = linkTag.substring(DjfUpLink.groupTagPrefix.length);
+        if (cardGroupList.contains(cardGroup)) continue;
+        fieldName = DjfUpLink.groups;
+        message = 'Нет группы карточек "$cardGroup" в пакете';
+      }
+
+      // card upLink tags
+      if (tagList.contains(linkTag)) continue;
+
+      fieldName ??= DjfUpLink.tags;
+      message   ??= 'Нет карточек с тегом "$linkTag" в пакете';
+
+      final linkID = linkRow[TabCardLinkTag.kLinkID] as int;
+
+      final linkHeadRow = linkHeadRowList.firstWhere((headRow) => (headRow[TabCardLink.kLinkID] as int) == linkID);
+      final cardID      = linkHeadRow[TabCardLink.kCardID   ] as int;
+      final linkIndex   = linkHeadRow[TabCardLink.kLinkIndex] as int;
+
+      final subPath = '${DjfCard.upLinks}[$linkIndex]/$fieldName';
+
+      result.add(await getCardResult(cardID, subPath, message));
+    }
+
+    // card upLink quality level
+    for (var linkHeadRow in linkHeadRowList) {
+      final qualityName = linkHeadRow[TabCardLink.kQualityName] as String;
+      if (qualityList.contains(qualityName)) continue;
+
+      final cardID    = linkHeadRow[TabCardLink.kCardID   ] as int;
+      final linkIndex = linkHeadRow[TabCardLink.kLinkIndex] as int;
+      final subPath = '${DjfCard.upLinks}[$linkIndex]/${DjfUpLink.qualityName}';
+      final message = 'Нет уровня качества "$qualityName" в пакете';
+
+      result.add(await getCardResult(cardID, subPath, message));
+    }
+
+    final styleKeyList = await dbSource.tabCardStyle.getStyleKeyList(jsonFileID: jsonFileID);
+
+    final bodyKeyList = await dbSource.tabCardBody.getFileKeyList(jsonFileID: jsonFileID);
+    for (var bodyKey in bodyKeyList) {
+      final bodyRow = (await dbSource.tabCardBody.getRow(jsonFileID: jsonFileID, cardID:  bodyKey.cardID, bodyNum: bodyKey.bodyNum))!;
+
+      // body styleIdList
+      final bodyStyleKeyList = (bodyRow[DjfCardBody.styleIdList]??[]) as List;
+      for (var row in bodyStyleKeyList) {
+        final styleKey = row as String;
+        if (styleKeyList.contains(styleKey)) continue;
+
+        final subPath = '${DjfCard.bodyList}[${bodyKey.bodyNum}]/${DjfCardBody.styleIdList}';
+        final message = 'Нет стиля "$styleKey" в пакете';
+
+        result.add(await getCardResult(bodyKey.cardID, subPath, message));
+      }
+
+      // body questionData pack file source
+      final questionDataList = (bodyRow[DjfCardBody.questionData]??[]) as List;
+      for (var row in questionDataList) {
+        final source = CardSource(row as String);
+        if (!source.isPackFile) continue;
+        final fileUrl = dbSource.getFileUrl(jsonFileID, source.data);
+        if (fileUrl != null) continue;
+
+        final subPath = '${DjfCard.bodyList}[${bodyKey.bodyNum}]/${DjfCardBody.questionData}';
+        final message = 'Файла "${source.data}" в пакете нет';
+
+        result.add(await getCardResult(bodyKey.cardID, subPath, message));
+      }
+
+    }
+
+    return result;
+  }
+
+  Future<DbValidatorResult> getCardResult(int cardID, subPath, message) async {
+    final row = (await dbSource.tabCardHead.getRow(jsonFileID: _jsonFileID, cardID: cardID))!;
+
+    final cardListIndex = row[TabCardHead.kCardListIndex] as int;
+    final templateIndex = row[TabCardHead.kTemplateIndex] as int?;
+    final sourceIndex   = row[TabCardHead.kSourceIndex  ] as int?;
+
+    String path;
+    if (templateIndex != null) {
+      path = '${DjfFile.templateList}[$templateIndex]/${DjfCardTemplate.cardTemplateList}[$cardListIndex]';
+    } else {
+      path = '${DjfFile.cardList}[$cardListIndex]';
+    }
+
+    return DbValidatorResult('$path/$subPath', message, sourceIndex);
+  }
+}
+
+

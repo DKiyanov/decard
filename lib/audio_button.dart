@@ -2,7 +2,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 
-Future<void> playAudio(String fileName) async {
+Future<void> playAudioFile(String fileName) async {
   final audioFile = File(fileName);
 
   if (!audioFile.existsSync()) return;
@@ -10,6 +10,16 @@ Future<void> playAudio(String fileName) async {
   final player = AudioPlayer();
 
   await player.setSourceDeviceFile(fileName);
+  player.resume();
+
+  await player.onPlayerComplete.first;
+}
+
+Future<void> playAudioNet(String httpUrl) async {
+  final player = AudioPlayer();
+
+  await player.setSourceUrl(httpUrl);
+
   player.resume();
 
   await player.onPlayerComplete.first;

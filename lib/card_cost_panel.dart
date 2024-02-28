@@ -1,6 +1,7 @@
 import 'dart:async';
 
-import 'regulator.dart';
+import 'package:decard/regulator.dart';
+
 import 'package:flutter/material.dart';
 
 import 'card_model.dart';

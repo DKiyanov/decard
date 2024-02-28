@@ -113,20 +113,10 @@ class DjfUpLink { // element of DjfCard.upLinks
 	static const String groupTagPrefix = "grp@";   // prefix for make tag from card.group
 }
 
-class DjfQuestionData { // structure of DjfCardBody.questionData
-	static const String text     = "text";     // optional, string, question text
-	static const String html     = "html";     // optional, local path to html file, file can be a template
-	static const String markdown = "markdown"; // optional, local path to markdown file, file can be a template
-	static const String textConstructor = "textConstructor"; // optional, local path to text constructor json file, file can be a template
-	static const String audio    = "audio";    // optional, local path to audio resource
-	static const String video    = "video";    // TODO optional, url/local path to video resource
-	static const String image    = "image";    // optional, local path to image
-}
-
 class DjfCardBody { // element of DjfCard.bodyList
 	static const String styleIdList  = "styleIdList";  // array of DjfCardStyle.id
 	static const String style        = "style";        // embedded structure DjfCardStyle
-	static const String questionData = "questionData"; // array with source with data for question
+	static const String questionData = "questionData"; // array with source string with data for question
 	static const String answerList   = "answerList";   // array of answer values
 	static const String audioOnRightAnswer = "audioOnRightAnswer"; // TODO optional, link to audio resource
 	static const String audioOnWrongAnswer = "audioOnWrongAnswer"; // TODO optional, link to audio resource
