@@ -89,7 +89,7 @@ class CardController {
     final cardPointer =  (await onSelectNextCard?.call()) ?? (await _selectNextCard());
     if (cardPointer == null) return false;
 
-    setCard(cardPointer.jsonFileID, cardPointer.cardID);
+    await setCard(cardPointer.jsonFileID, cardPointer.cardID);
     return true;
   }
 

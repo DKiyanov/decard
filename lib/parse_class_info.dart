@@ -89,3 +89,12 @@ class ParseDecardStat {
   static const String fileGuid  = 'FileGuid';
   static const String cardID    = 'cardID';
 }
+
+class ParseInvite {
+  static const String className = 'Invite';
+
+  static const String forWhom        = 'for';
+  static const String expirationTime = 'expirationTime';
+  static const String userID         = 'userID';
+  static const String inviteKey      = 'inviteKey';
+}

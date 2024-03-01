@@ -579,7 +579,7 @@ abstract class DbSource {
 
     if (jsonFileID == null) return null;
 
-    tabFileUrlMap.insertRows(jsonFileID: jsonFileID, fileUrlMap: fileUrlMap);
+    await tabFileUrlMap.insertRows(jsonFileID: jsonFileID, fileUrlMap: fileUrlMap);
 
     if (reInitDB) {
       await init();

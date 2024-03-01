@@ -43,6 +43,7 @@ class ServerFunctions {
     final deviceID = await PlatformService.getDeviceID();
 
     final query =  QueryBuilder<ParseObject>(ParseObject(ParseDevice.className));
+    query.whereEqualTo(ParseDevice.userID, userID);
     query.whereEqualTo(ParseDevice.deviceOSID, deviceID);
     final device = await query.first();
     if (device == null) return null;

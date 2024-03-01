@@ -51,7 +51,7 @@ Future<int?> loadPack(DbSource dbSource, String sourceFileID, Map<String, String
 
   final jsonMap = jsonDecode(jsonStr);
 
-  final jsonFileID = await dbSource.loadJson(sourceFileID: sourceFileID, rootPath: rootPath, jsonMap: jsonMap, fileUrlMap: fileUrlMapOk);
+  final jsonFileID = await dbSource.loadJson(sourceFileID: sourceFileID, rootPath: rootPath, jsonMap: jsonMap, fileUrlMap: fileUrlMapOk, reInitDB: reInitDB);
 
   if (jsonFileID == null) return null;
 

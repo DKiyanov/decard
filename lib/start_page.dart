@@ -39,7 +39,10 @@ class _StartPageState extends State<StartPage> {
 
   void _starting() async {
     _prefs = await SharedPreferences.getInstance();
+    //await _prefs!.clear(); // for debug, imitation first run
+
     _serverConnect = ParseConnect(_prefs!);
+    _serverConnect!.init();
 
     _firstRun = !(_prefs!.getBool(_keyNotFirstRun)??false);
 

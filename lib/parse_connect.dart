@@ -8,6 +8,7 @@ import 'login_invite.dart';
 class ParseConnect {
   static const String _applicationId   = 'dk_parental_control';
   static const String _keyServerURL    = 'ServerURL';
+  static const String _keyIsAnonymous  = 'isAnonymous';
 
   ParseConnect(this._prefs);
 
@@ -23,6 +24,9 @@ class ParseConnect {
   ParseUser? get user => _user;
 
   bool get isLoggedIn => _user != null;
+
+  bool _isAnonymous = false;
+  bool get isAnonymous => _isAnonymous;
 
   String _lastError = '';
   String get lastError => _lastError;
@@ -42,6 +46,15 @@ class ParseConnect {
     );
 
     _user = await ParseUser.currentUser();
+    _isAnonymous = _prefs.getBool(_keyIsAnonymous)??false;
+
+    if (_isAnonymous) {
+      if (_user == null) {
+        await _prefs.remove(_keyIsAnonymous);
+      } else {
+        _user = null;
+      }
+    }
 
     if (_user != null) {
       if (! await sessionHealthOk()) {
@@ -51,17 +64,44 @@ class ParseConnect {
         onLoggedInChange.send();
       }
     }
+  }
 
-    if (_user == null) {
-      final parseUser = ParseUser.forQuery();
-      await parseUser.loginAnonymous();
+  Future<bool> loginAnonymous() async {
+    if (_isAnonymous) {
+      final ParseUser? user = await ParseUser.currentUser();
+      if (user != null) {
+        if (await sessionHealthOk()) return true;
+      }
+      await _prefs.remove(_keyIsAnonymous);
+    }
 
-      // ParseUser parseUser = ParseUser('guest@gmail.com', '12345', 'guest@gmail.com');
-      // await parseUser.loginAnonymous(doNotSendInstallationID: true);
-      //
-      // if (!(await parseUser.login()).success) {
-      //   await parseUser.signUp();
-      // }
+    await logout();
+
+    final parseUser = ParseUser.forQuery();
+    final response = await parseUser.loginAnonymous();
+    if (!response.success) return false;
+    await _prefs.setBool(_keyIsAnonymous, true);
+    return true;
+  }
+
+  Future<void> logout() async {
+    final ParseUser? user = await ParseUser.currentUser();
+    if (user == null) {
+      if (_user != null) {
+        _user = null;
+        onLoggedInChange.send();
+      }
+      return;
+    }
+
+    await user.logout();
+    if (_user != null) {
+      _user = null;
+      onLoggedInChange.send();
+    }
+
+    if (_isAnonymous) {
+      await _prefs.remove(_keyIsAnonymous);
     }
   }
 
@@ -74,6 +114,8 @@ class ParseConnect {
 
   Future<bool> loginWithPassword(String serverURL, String loginID, String password, bool signUp) async {
     await _setServerURL(serverURL);
+
+    await logout();
 
     _user = ParseUser(loginID, password, loginID);
     bool result;
@@ -94,6 +136,8 @@ class ParseConnect {
   }
 
   Future<String> loginWith(String provider, Object authData) async {
+    await logout();
+
     final response = await ParseUser.loginWith(provider, authData);
 
     if (response.success) {
@@ -109,6 +153,8 @@ class ParseConnect {
 
   Future<bool> loginWithInvite(String serverURL, String inviteKey, LoginMode loginMode, String deviceID) async {
     await _setServerURL(serverURL);
+
+    await logout();
 
     final sendKeyStr = inviteKey.replaceAll(RegExp('\\D'), '');
     final sendKeyInt = int.tryParse(sendKeyStr);
@@ -127,12 +173,17 @@ class ParseConnect {
     // и выполняет (linkWith) привязку authData2 id + token к учётной записи пользователя
     var response = await ParseUser.loginWith('decard', authData1);
     if (!response.success) {
-      // второй запуск должен выполнить вход по уже привязанным данным авторизации
-      final authData2 = <String, dynamic>{
-        'id'    : deviceID,
-        'token' : token,
-      };
-      response = await ParseUser.loginWith('decard', authData2);
+      if (response.error!.code    == 101 &&
+          response.error!.type    == 'ObjectNotFound' &&
+          response.error!.message == 'After linkWith call'
+      ){
+        // второй запуск должен выполнить вход по уже привязанным данным авторизации
+        final authData2 = <String, dynamic>{
+          'id'    : deviceID,
+          'token' : token,
+        };
+        response = await ParseUser.loginWith('decard', authData2);
+      }
     }
 
     if (response.success) {
@@ -142,7 +193,7 @@ class ParseConnect {
       onLoggedInChange.send();
       return true;
     } else {
-      _lastError = TextConst.errFailedLogin;
+      _lastError = '${TextConst.errFailedLogin}\nhttp code: ${response.error?.code}\n${response.error?.message}';
       return false;
     }
   }
