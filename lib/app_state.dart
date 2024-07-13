@@ -70,7 +70,7 @@ class AppState {
       });
     }
 
-    await synchronize();
+    synchronize(); // await removed - for start with out connect
   }
 
   /// add new child if it not exists

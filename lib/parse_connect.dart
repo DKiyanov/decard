@@ -57,12 +57,8 @@ class ParseConnect {
     }
 
     if (_user != null) {
-      if (! await sessionHealthOk()) {
-        _user = null;
-      } else {
-        _loginId = _user?.username??'';
-        onLoggedInChange.send();
-      }
+      onLoggedInChange.send();
+      checkSessionHealth();
     }
   }
 
@@ -70,7 +66,7 @@ class ParseConnect {
     if (_isAnonymous) {
       final ParseUser? user = await ParseUser.currentUser();
       if (user != null) {
-        if (await sessionHealthOk()) return true;
+        if (await checkSessionHealth()) return true;
       }
       await _prefs.remove(_keyIsAnonymous);
     }
@@ -205,7 +201,7 @@ class ParseConnect {
   }
 
 
-  Future<bool> sessionHealthOk() async {
+  Future<bool> checkSessionHealth() async {
     // Parse().healthCheck() - не выдаёт исключение когда сервер доступен но сейсия протухла
     try {
       final query = QueryBuilder<ParseUser>(ParseUser.forQuery());
@@ -213,7 +209,10 @@ class ParseConnect {
 
       await query.find();
       return true;
-    } catch (e) {
+    } on ParseError catch (e) {
+      if (  [ParseError.sessionMissing, ParseError.invalidSessionToken, ParseError.invalidLinkedSession].contains(e.code)) {
+        logout();
+      }
       return false;
     }
   }

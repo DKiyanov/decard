@@ -1,7 +1,9 @@
 class TextConst{
-  static String versionDateStr    = '19.09.2023';
+  static String versionDateStr    = '15.06.2024';
   static String version           = 'Версия';
-  static String defaultURL        = 'http://192.168.0.202:1337/parse';
+  static String defaultURL        = 'https://parse.decardsys.ru/parse';
+//  static String defaultURL        = 'http://192.168.0.202:1337/parse';
+//  static String defaultURL        = 'http://192.168.0.142:1337/parse';
   static String defaultLogin      = 'decard_stat_writer';
   static String txtServerURL      = 'Адрес сервера';
   static String txtSignUp         = 'Зарегистрироваться';
