@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
-import 'package:parse_server_sdk_flutter/parse_server_sdk.dart';
+import 'package:parse_server_sdk_flutter/parse_server_sdk_flutter.dart';
 
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path_util;
@@ -280,6 +280,7 @@ Future<Map<String, String>?> _getPackSourceWeb(int packId) async {
   final query = QueryBuilder<ParseObject>(ParseObject(ParseWebPackSubFile.className));
   query.whereEqualTo(ParseWebPackSubFile.packId, packId);
   query.keysToReturn([ParseWebPackSubFile.path, ParseWebPackSubFile.file, ParseWebPackSubFile.isText]);
+  query.setLimit(10000);
   final sourceList = await query.find();
 
   final Map<String, String> fileUrlMap = {};

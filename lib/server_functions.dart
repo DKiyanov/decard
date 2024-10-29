@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:collection/collection.dart';
-import 'package:parse_server_sdk_flutter/parse_server_sdk.dart';
+import 'package:parse_server_sdk_flutter/parse_server_sdk_flutter.dart';
 import 'package:path/path.dart' as path_util;
 
 import 'child.dart';
@@ -11,8 +11,6 @@ import 'parse_class_info.dart';
 import 'platform_service.dart';
 
 class ServerFunctions {
-  static const String _commonFolderName = "common_folder";
-
   final Map<String, String> _childName2IdMap = {};
 
   final String serverURL;
@@ -129,13 +127,12 @@ class ServerFunctions {
   /// Server -> Child
   /// missing directories, on server or device - NOT created
   /// returns a list of updated/added files
-  Future<List<String>> synchronizeChild(Child child, {bool fromCommonFolder = false}) async {
+  Future<List<String>> synchronizeChild(Child child) async {
     var netPath = path_util.join(child.name, child.deviceName);
-    if (fromCommonFolder) netPath = _commonFolderName;
 
     final query =  QueryBuilder<ParseObject>(ParseObject(ParseWebChildSource.className));
     query.whereEqualTo(ParseWebChildSource.userID, userID);
-    query.whereEqualTo(ParseWebChildSource.path, netPath);
+    query.whereContainedIn(ParseWebChildSource.path, [child.name, child.name]);
 
     final fileList = await query.find();
 

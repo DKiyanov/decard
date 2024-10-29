@@ -1,4 +1,4 @@
-import 'package:parse_server_sdk_flutter/parse_server_sdk.dart';
+import 'package:parse_server_sdk_flutter/parse_server_sdk_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:simple_events/simple_events.dart' as event;
@@ -42,7 +42,7 @@ class ParseConnect {
         _applicationId,
         TextConst.defaultURL, //_serverURL,
         debug: true,
-        coreStore: await CoreStoreSharedPrefsImp.getInstance(),
+//        coreStore: await CoreStoreSharedPrefsImp.getInstance(),
     );
 
     _user = await ParseUser.currentUser();

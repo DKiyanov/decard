@@ -44,7 +44,7 @@ abstract class TabJsonFile {
 
   FileKey jsonFileIdToFileKey(int jsonFileId);
 
-  int? fileGuidToJsonFileId(String guid);
+  int? fileGuidToJsonFileId(String guid, int version);
 
   Future<List<Map<String, Object?>>> getRowByGuid(String guid, {int? version});
 
@@ -297,11 +297,13 @@ class DayResult {
 
 class CardStatExchange {
   static const String kFileGuid = "fileGuid";
+  static const String kVersion  = "version";
   static const String kCardID   = "cardID";
 
   static DbSource? dbSource; // for time fromMap / toJson
 
   final String fileGuid;
+  final int    version;
   final String cardID;            // == json Card.id
   final int    quality;           // studying quality, 100 - card is completely studied; 0 - minimum studying quality
   final int    qualityFromDate;   // the first date taken into account when calculating quality
@@ -311,6 +313,7 @@ class CardStatExchange {
 
   CardStatExchange({
     required this.fileGuid,
+    required this.version,
     required this.cardID,
     required this.quality,
     required this.qualityFromDate,
@@ -325,6 +328,7 @@ class CardStatExchange {
     final fileKey = dbSource!.tabJsonFile.jsonFileIdToFileKey(json[TabCardStat.kJsonFileID]);
     return CardStatExchange(
       fileGuid          : fileKey.guid,
+      version           : fileKey.version,
       cardID            : json[TabCardStat.kCardKey],
       quality           : json[TabCardStat.kQuality],
       qualityFromDate   : json[TabCardStat.kQualityFromDate],
@@ -339,6 +343,7 @@ class CardStatExchange {
     // for load from server to child DB
     return CardStatExchange(
       fileGuid          : json[kFileGuid],
+      version           : json[kVersion],
       cardID            : json[kCardID],
       quality           : json[TabCardStat.kQuality],
       qualityFromDate   : json[TabCardStat.kQualityFromDate],
@@ -352,7 +357,7 @@ class CardStatExchange {
     // server -> child
     // make map for save to DB tab TabCardStat
 
-    final jsonFileID = dbSource!.tabJsonFile.fileGuidToJsonFileId(fileGuid);
+    final jsonFileID = dbSource!.tabJsonFile.fileGuidToJsonFileId(fileGuid, version);
     if (jsonFileID == null) return {};
 
     final cardDBID = await dbSource!.tabCardHead.getCardIdFromKey(jsonFileID: jsonFileID, cardKey: cardID);

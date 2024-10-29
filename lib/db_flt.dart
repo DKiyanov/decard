@@ -79,9 +79,9 @@ class TabJsonFileFlt extends TabJsonFile {
   }
 
   @override
-  int? fileGuidToJsonFileId(String guid) {
+  int? fileGuidToJsonFileId(String guid, int version) {
     for (var element in _jsonFileIdToGuidMap.entries) {
-      if (element.value.guid == guid) return element.key;
+      if (element.value.guid == guid && element.value.version == version) return element.key;
     }
 
     return null;

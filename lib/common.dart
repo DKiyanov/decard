@@ -1,5 +1,5 @@
 class TextConst{
-  static String versionDateStr    = '15.06.2024';
+  static String versionDateStr    = '26.10.2024';
   static String version           = 'Версия';
   static String defaultURL        = 'https://parse.decardsys.ru/parse';
 //  static String defaultURL        = 'http://192.168.0.202:1337/parse';

@@ -47,6 +47,7 @@ class DrfOptions {
 /// Filtering and customizing cards
 class DrfCardSet {
   static const String fileGUID = "fileGUID"; // GUID of decardj file
+  static const String version  = "version";  // version of decardj file
   static const String cards    = "cards";    // array of cardID or mask
   static const String groups   = "groups";   // array of cards group or mask
   static const String tags     = "tags";     // array of tags
@@ -163,6 +164,7 @@ class RegOptions {
 
 class RegCardSet {
   final String fileGUID;        // GUID of decardj file
+  final int    version;         // version of decardj file
   final List<String>? cards;    // array of cardID or mask
   final List<String>? groups;   // array of cards group or mask
   final List<String>? tags;     // array of tags
@@ -175,6 +177,7 @@ class RegCardSet {
 
   RegCardSet({
     required this.fileGUID,
+    required this.version,
     this.cards,
     this.groups,
     this.tags,
@@ -190,6 +193,7 @@ class RegCardSet {
 
     return RegCardSet(
       fileGUID         : json[DrfCardSet.fileGUID],
+      version          : json[DrfCardSet.version ]??0,
       cards            : json[DrfCardSet.cards   ] != null ? List<String>.from(json[DrfCardSet.cards].map((x)   => x)) : [],
       groups           : json[DrfCardSet.groups  ] != null ? List<String>.from(json[DrfCardSet.groups].map((x)  => x)) : [],
       tags             : json[DrfCardSet.tags    ] != null ? List<String>.from(json[DrfCardSet.tags].map((x)    => x)) : [],
@@ -204,6 +208,7 @@ class RegCardSet {
 
   Map<String, dynamic> toJson() => {
     DrfCardSet.fileGUID         : fileGUID,
+    DrfCardSet.version          : version,
     DrfCardSet.cards            : cards,
     DrfCardSet.groups           : groups,
     DrfCardSet.tags             : tags,
@@ -404,16 +409,20 @@ class Regulator {
   }
 
   Map<String, dynamic> toJson() => {
-    DrfRegulator.options        : options,
-    DrfRegulator.setList        : cardSetList,
-    DrfRegulator.difficultyList : difficultyList,
+    DrfRegulator.options        : options.toJson(),
+    DrfRegulator.setList        : cardSetList.map((cardSet) => cardSet.toJson()).toList(),
+    DrfRegulator.difficultyList : difficultyList.map((difficulty) => difficulty.toJson()).toList(),
   };
+
+  factory Regulator.newEmpty() {
+    return Regulator(options: RegOptions(), cardSetList: [], difficultyList: []);
+  }
 
   static Future<Regulator> fromFile(String filePath) async {
     final jsonFile = File(filePath);
 
     if (! await jsonFile.exists()) {
-      return Regulator(options: RegOptions(), cardSetList: [], difficultyList: []);
+      return Regulator.newEmpty();
     }
 
     final fileData = await jsonFile.readAsString();
@@ -438,7 +447,7 @@ class Regulator {
   }
 
   Future<void> _applySetItemToDB(DbSource dbSource, RegCardSet set, int setIndex) async {
-    final jsonFileID = dbSource.tabJsonFile.fileGuidToJsonFileId(set.fileGUID);
+    final jsonFileID = dbSource.tabJsonFile.fileGuidToJsonFileId(set.fileGUID, set.version);
 
     if (jsonFileID == null) return;
 
